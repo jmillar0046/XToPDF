@@ -20,7 +20,7 @@ public class FileConversionService {
     public void convertFile(String inputFile, String outputFile) {
         FileConverterFactory factory = getFactoryForFile(inputFile);
 
-        if(Objects.isNull(factory){
+        if(Objects.isNull(factory)) {
             //No converter found for this file type
         } else {
             FileConverter converter = factory.createFileConverter();
