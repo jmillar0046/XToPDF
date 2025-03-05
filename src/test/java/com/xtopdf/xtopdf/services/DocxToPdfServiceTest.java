@@ -11,7 +11,6 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +38,6 @@ public class DocxToPdfServiceTest {
     @Mock
     private Document mockDocument;
 
-    @InjectMocks
     private DocxToPdfService docxToPdfService;
 
     @BeforeEach
