@@ -39,7 +39,7 @@ public class DocxToPdfServiceTest {
     @Mock
     private Document mockDocument;
 
-    @Autowired
+    @InjectMocks
     private DocxToPdfService docxToPdfService;
 
     @BeforeEach

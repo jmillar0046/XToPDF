@@ -1,6 +1,11 @@
 package com.xtopdf.xtopdf.converters;
 
+import java.io.File;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.xtopdf.xtopdf.services.DocxToPdfService;
 
 @Component
 public class DocxFileConverter implements FileConverter {
