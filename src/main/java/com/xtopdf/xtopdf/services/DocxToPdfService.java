@@ -20,6 +20,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
 
+@Service
 public class DocxToPdfService {
    public void convertDocxToPdf(File docxFile, File pdfFile) throws IOException {
         // Read the DOCX file using Apache POI
