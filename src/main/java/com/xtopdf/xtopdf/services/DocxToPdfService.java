@@ -19,6 +19,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DocxToPdfService {
