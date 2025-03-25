@@ -9,7 +9,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(17)
 	}
 }
 
@@ -29,7 +29,8 @@ dependencies {
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
 	implementation 'com.itextpdf:itext7-core:8.0.5'
 	implementation 'com.itextpdf:layout:8.0.5'
-    implementation 'com.itextpdf:pdfa:8.0.5'
+	implementation 'com.itextpdf:pdfa:8.0.5'
+	implementation 'org.apache.pdfbox:pdfbox:2.0.33'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

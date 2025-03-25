@@ -34,11 +34,9 @@ public class TxtToPdfService {
             // Add the text content as a paragraph to the PDF
             document.add(new Paragraph(textContent.toString()));
             
-            // Close the document after writing
             document.close();
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new IOException("Error creating PDF: " + e.getMessage());
-        }    
+            throw new IOException("Error creating PDF from a .txt: " + e.getMessage());
+        }
     }
 }

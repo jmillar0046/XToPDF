@@ -59,7 +59,6 @@ public class DocxToPdfServiceTest {
         when(mockRun.getText(0)).thenReturn("Sample text");
         when(mockRun.isBold()).thenReturn(true);  // Simulating bold text
 
-        // Act
         docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
 
         // Verify that methods are called as expected
@@ -79,7 +78,6 @@ public class DocxToPdfServiceTest {
         // Mock the DOCX document to return no paragraphs
         when(mockDocxDocument.getParagraphs()).thenReturn(Collections.emptyList());
 
-        // Act
         docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
 
         // Verify that no paragraphs are processed
@@ -89,7 +87,6 @@ public class DocxToPdfServiceTest {
 
     @Test
     void testConvertDocxToPdfHandlesException() {
-        // Arrange
         File docxFile = mock(File.class);
         File pdfFile = mock(File.class);
 
@@ -97,11 +94,9 @@ public class DocxToPdfServiceTest {
         try {
             when(mockDocxDocument.getParagraphs()).thenThrow(new IOException("Mocked exception"));
 
-            // Act
             docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
 
         } catch (Exception e) {
-            // Assert that an exception is thrown
             assert(e instanceof IOException);
         }
 
@@ -111,7 +106,6 @@ public class DocxToPdfServiceTest {
 
     @Test
     void testDocumentWriting() throws Exception {
-        // Arrange
         File docxFile = new File("test.docx");
         File pdfFile = new File("test.pdf");
 
@@ -120,7 +114,6 @@ public class DocxToPdfServiceTest {
         when(mockParagraph.getRuns()).thenReturn(Collections.singletonList(mockRun));
         when(mockRun.getText(0)).thenReturn("Test text");
 
-        // Act
         docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
 
         // Verify that the PDF document writing methods are invoked
