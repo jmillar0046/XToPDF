@@ -26,9 +26,9 @@ public class DocxToPdfService {
    public void convertDocxToPdf(File docxFile, File pdfFile) throws IOException {
         // Read the DOCX file using Apache POI
         try (FileInputStream fis = new FileInputStream(docxFile)) {
-            XWPFDocument docxDocument = new XWPFDocument(fis);
             // Create a PdfWriter and PdfDocument to write the PDF file
-            try (PdfWriter writer = new PdfWriter(pdfFile)) {
+            try (XWPFDocument docxDocument = new XWPFDocument(fis);
+                 PdfWriter writer = new PdfWriter(pdfFile)) {
                 PdfDocument pdfDocument = new PdfDocument(writer);
                 Document pdfDoc = new Document(pdfDocument);
 
@@ -43,8 +43,6 @@ public class DocxToPdfService {
                 }
 
                 pdfDoc.close();
-            }finally {
-                docxDocument.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,11 +62,16 @@ public class DocxToPdfService {
                 var pdfText = new Text(text);
 
                 // Apply styles from the DOCX to the PDF
-                if (run.isBold()) pdfText.setBold();
-                if (run.isItalic()) pdfText.setItalic();
-                if (Objects.nonNull(run.getUnderline())) pdfText.setUnderline();
-                if (Objects.nonNull(run.getColor())) pdfText.setFontColor(getColorFromDocxColor(run.getColor()));
-                if (run.getFontSizeAsDouble() > 0) pdfText.setFontSize(run.getFontSizeAsDouble().floatValue() * 0.75f); // Font size in PDF
+                if (run.isBold())
+                    pdfText.setBold();
+                if (run.isItalic())
+                    pdfText.setItalic();
+                if (Objects.nonNull(run.getUnderline()))
+                    pdfText.setUnderline();
+                if (Objects.nonNull(run.getColor()))
+                    pdfText.setFontColor(getColorFromDocxColor(run.getColor()));
+                // Font size in PDF
+                pdfText.setFontSize(run.getFontSizeAsDouble().floatValue() * 0.75f);
 
                 // Add text to the paragraph
                 pdfParagraph.add(pdfText);
