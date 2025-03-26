@@ -19,13 +19,12 @@ public class DocxToPdfServiceTest {
     @Test
     void testConvertDocxToPdf() throws Exception {
         var docxFile = new File("src/test/resources/test.docx");
-        var pdfFile = new File("src/test/resources" + "/testOutput.pdf");
+        var pdfFile = new File(System.getProperty("java.io.tmpdir") + "/testOutput.pdf");
 
         docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
 
         assertTrue(pdfFile.exists(), "The PDF file should be created.");
         assertTrue(pdfFile.length() > 0, "The PDF file should not be empty.");
-
     }
 
 //    @Test
