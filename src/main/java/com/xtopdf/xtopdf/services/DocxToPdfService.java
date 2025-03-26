@@ -70,8 +70,8 @@ public class DocxToPdfService {
                     pdfText.setUnderline();
                 if (Objects.nonNull(run.getColor()))
                     pdfText.setFontColor(getColorFromDocxColor(run.getColor()));
-                // Font size in PDF
-                pdfText.setFontSize(run.getFontSizeAsDouble().floatValue() * 0.75f);
+                if (Objects.nonNull(run.getFontSizeAsDouble()))
+                    pdfText.setFontSize(run.getFontSizeAsDouble().floatValue() * 0.75f); // Font size in PDF
 
                 // Add text to the paragraph
                 pdfParagraph.add(pdfText);
