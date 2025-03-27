@@ -19,9 +19,9 @@ configurations {
 	}
 }
 
-configurations.all {
+configurations.configureEach {
 	resolutionStrategy {
-		force 'groupid:artifactid:fixed_version'
+		force 'org.apache.commons:commons-compress:1.26.0'
 	}
 }
 
