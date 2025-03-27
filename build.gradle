@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.4.1'
+	id 'org.springframework.boot' version '3.4.4'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,12 +19,18 @@ configurations {
 	}
 }
 
+configurations.all {
+	resolutionStrategy {
+		force 'groupid:artifactid:fixed_version'
+	}
+}
+
 repositories {
 	mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-web:3.4.4'
 	implementation 'org.apache.poi:poi:5.4.0'
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
 	implementation 'com.itextpdf:itext7-core:8.0.5'
@@ -33,7 +39,7 @@ dependencies {
 	implementation 'org.apache.pdfbox:pdfbox:2.0.33'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.4'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
