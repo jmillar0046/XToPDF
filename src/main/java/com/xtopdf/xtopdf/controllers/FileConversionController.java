@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.controllers;
 
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +13,9 @@ import com.xtopdf.xtopdf.services.FileConversionService;
 
 @RestController
 @RequestMapping("/convert")
+@AllArgsConstructor
 public class FileConversionController {
-     @Autowired
-     private FileConversionService fileConversionService;
+     private final FileConversionService fileConversionService;
 
      @PostMapping
      public ResponseEntity<String> convertFile (@RequestParam("inputFile") String inputFile, @RequestParam("outputFile") String outputFile) {
