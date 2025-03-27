@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
 
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,12 +11,11 @@ import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.FileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 
+@AllArgsConstructor
 @Service
 public class FileConversionService {
-    @Autowired
-    private TxtFileConverterFactory txtFileConverterFactory;
-    @Autowired
-    private DocxFileConverterFactory docxFileConverterFactory;
+    private final TxtFileConverterFactory txtFileConverterFactory;
+    private final DocxFileConverterFactory docxFileConverterFactory;
 
     public void convertFile(String inputFile, String outputFile) {
         FileConverterFactory factory = getFactoryForFile(inputFile);
