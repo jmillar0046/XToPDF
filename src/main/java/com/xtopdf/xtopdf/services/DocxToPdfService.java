@@ -1,7 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.Objects;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -20,12 +19,13 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DocxToPdfService {
-   public void convertDocxToPdf(File docxFile, File pdfFile) throws IOException {
+   public void convertDocxToPdf(MultipartFile docxFile, File pdfFile) throws IOException {
         // Read the DOCX file using Apache POI
-        try (FileInputStream fis = new FileInputStream(docxFile)) {
+        try (var fis = docxFile.getInputStream()) {
             // Create a PdfWriter and PdfDocument to write the PDF file
             try (XWPFDocument docxDocument = new XWPFDocument(fis);
                  PdfWriter writer = new PdfWriter(pdfFile)) {

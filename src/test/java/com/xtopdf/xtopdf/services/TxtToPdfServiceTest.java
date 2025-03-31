@@ -3,6 +3,8 @@ package com.xtopdf.xtopdf.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.*;
 
@@ -25,7 +27,9 @@ class TxtToPdfServiceTest {
 
     @Test
     void testConvertTxtToPdf_Success() throws Exception {
-        txtFile = new File("src/test/resources/test.txt");
+        var content = "Hello, this is a test file content!";
+        var txtFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, content.getBytes());
+
         pdfFile = new File(System.getProperty("java.io.tmpdir") + "/testOutput.pdf");
 
         txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
@@ -35,16 +39,10 @@ class TxtToPdfServiceTest {
     }
 
     @Test
-    void testConvertTxtToPdf_FileNotFound() {
-        txtFile = new File("src/test/resources/badPath.txt");
-        assertThrows(IOException.class, () -> {
-            txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
-        });
-    }
-
-    @Test
     void testConvertTxtToPdf_EmptyFile() throws Exception {
-        txtFile = new File("src/test/resources/empty.txt");
+        var content = "";
+        var txtFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, content.getBytes());
+
         pdfFile = new File(System.getProperty("java.io.tmpdir") + "/testEmptyOutput.pdf");
 
         txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
@@ -54,7 +52,8 @@ class TxtToPdfServiceTest {
 
     @Test
     void testConvertTxtToPdf_InvalidPdfCreation() throws Exception {
-        txtFile = new File("src/test/resources/empty.txt");
+        var content = "Hello, this is a test file content!";
+        var txtFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, content.getBytes());
 
         assertThrows(IOException.class, () -> {
             txtToPdfService.convertTxtToPdf(txtFile, pdfFile);

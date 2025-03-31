@@ -6,18 +6,19 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 @Service
 public class TxtToPdfService {
-     public void convertTxtToPdf(File txtFile, File pdfFile) throws IOException {
+     public void convertTxtToPdf(MultipartFile txtFile, File pdfFile) throws IOException {
        // Read the .txt file content
-        BufferedReader br = new BufferedReader(new FileReader(txtFile));
+        BufferedReader br = new BufferedReader(new InputStreamReader(txtFile.getInputStream()));
         String line;
         StringBuilder textContent = new StringBuilder();
 
