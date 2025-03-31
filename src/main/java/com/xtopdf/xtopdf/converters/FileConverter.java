@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import java.io.File;
+
 public interface FileConverter {
-    void convertToPDF(String inputFile, String outputFile);
+    void convertToPDF(File inputFile, String outputFile);
 }

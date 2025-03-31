@@ -1,8 +1,10 @@
 package com.xtopdf.xtopdf.services;
 
+import java.io.File;
 import java.util.Objects;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,16 +15,15 @@ import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 
 @AllArgsConstructor
 @Service
+@Slf4j
 public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
 
-    public void convertFile(String inputFile, String outputFile) {
-        FileConverterFactory factory = getFactoryForFile(inputFile);
+    public void convertFile(File inputFile, String outputFile) {
+        FileConverterFactory factory = getFactoryForFile(inputFile.getAbsolutePath());
 
-        if(Objects.isNull(factory)) {
-            //No converter found for this file type
-        } else {
+        if (Objects.nonNull(factory)) {
             FileConverter converter = factory.createFileConverter();
             converter.convertToPDF(inputFile, outputFile);
         }
@@ -34,7 +35,9 @@ public class FileConversionService {
         } else if (inputFile.endsWith(".docx")){
             return docxFileConverterFactory;
         } else {
+            log.error("No converter found for file {}", inputFile);
             return null;
         }
     }
+
 }
