@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.xtopdf.xtopdf.services.FileConversionService;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.util.Objects;
-
 @RestController
 @RequestMapping("/api/convert")
 @AllArgsConstructor
