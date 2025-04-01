@@ -22,13 +22,14 @@ public class FileConversionController {
 
      @PostMapping
      public ResponseEntity<String> convertFile (@RequestParam("inputFile") MultipartFile inputFile, @RequestParam("outputFile") String outputFile) {
-         var sanitizedOutputString = Paths.get(outputFile).normalize().toString();
-         if(!sanitizedOutputString.endsWith(".pdf")) {
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing parameter");
+         var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
+         var sanitizedOutputPath = baseDirectory.resolve(outputFile).normalize().toAbsolutePath();
+         if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
          }
 
          try {
-            fileConversionService.convertFile(inputFile, sanitizedOutputString);
+            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString());
             return ResponseEntity.ok("File converted successfully");
          } catch (FileConversionException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
