@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.xtopdf.xtopdf.services.FileConversionService;
 import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/api/convert")
@@ -21,11 +22,13 @@ public class FileConversionController {
 
      @PostMapping
      public ResponseEntity<String> convertFile (@RequestParam("inputFile") MultipartFile inputFile, @RequestParam("outputFile") String outputFile) {
-         if(outputFile.isEmpty()){
+         var sanitizedOutputString = Paths.get(outputFile).normalize().toString();
+         if(!sanitizedOutputString.endsWith(".pdf")) {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing parameter");
          }
+
          try {
-            fileConversionService.convertFile(inputFile, outputFile);
+            fileConversionService.convertFile(inputFile, sanitizedOutputString);
             return ResponseEntity.ok("File converted successfully");
          } catch (FileConversionException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
