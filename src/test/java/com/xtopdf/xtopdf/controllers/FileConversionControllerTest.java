@@ -29,7 +29,7 @@ class FileConversionControllerTest {
     private FileConversionController fileConversionController;
 
     @Test
-    void convertFileTestAllGood() throws Exception {
+    void testConvertFileAllGood() throws Exception {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
 

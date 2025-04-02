@@ -1,12 +1,9 @@
 package com.xtopdf.xtopdf.services;
 
-import java.io.File;
 import java.util.Objects;
-
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.xtopdf.xtopdf.converters.FileConverter;
@@ -33,7 +30,7 @@ public class FileConversionService {
         }
     }
 
-    private FileConverterFactory getFactoryForFile(String inputFile) {
+    FileConverterFactory getFactoryForFile(String inputFile) {
         if(inputFile.endsWith(".txt")){
             return txtFileConverterFactory;
         } else if (inputFile.endsWith(".docx")){

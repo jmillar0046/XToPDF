@@ -8,7 +8,7 @@ import com.xtopdf.xtopdf.converters.TxtFileConverter;
 
 @AllArgsConstructor
 @Component
-public class TxtFileConverterFactory implements FileConverterFactory{
+public class TxtFileConverterFactory implements FileConverterFactory {
     private final TxtFileConverter txtFileConverter;
 
     @Override
