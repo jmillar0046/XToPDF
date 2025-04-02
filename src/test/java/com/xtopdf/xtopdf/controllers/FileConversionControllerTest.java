@@ -81,6 +81,6 @@ class FileConversionControllerTest {
                         .file(inputFile)
                     .param("outputFile", ""))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Missing parameter"));
+                .andExpect(content().string("Invalid output file path"));
     }
 }
