@@ -33,7 +33,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web:3.4.4'
 	implementation 'org.apache.poi:poi:5.4.0'
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
-	implementation 'com.itextpdf:itext7-core:8.0.5'
+	implementation 'com.itextpdf:itext7-core:9.1.0'
 	implementation 'com.itextpdf:layout:8.0.5'
 	implementation 'com.itextpdf:pdfa:8.0.5'
 	implementation 'org.apache.pdfbox:pdfbox:3.0.4'
