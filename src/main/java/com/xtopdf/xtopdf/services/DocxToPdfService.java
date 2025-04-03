@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.io.File;
 import java.util.Objects;
 
+import com.itextpdf.kernel.colors.Color;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -11,7 +12,6 @@ import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 import com.itextpdf.io.exceptions.IOException;
-import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
