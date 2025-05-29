@@ -14,6 +14,13 @@ public class HtmlFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile htmlFile, String outputFile) {
+        if (htmlFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
+        }
+
         htmlToPdfService.convertHtmlToPdf(htmlFile, new File(outputFile));
     }
 }

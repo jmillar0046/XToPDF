@@ -17,11 +17,11 @@ public class TxtFileConverter implements FileConverter {
     @Override
     public void convertToPDF(MultipartFile txtFile, String outputFile) {
         var pdfFile = new File(outputFile);
-    try {
-        txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
-    } catch (IOException e) {
-        // bad file path
-    }
+        try {
+            txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
+        } catch (IOException e) {
+            // bad file path
+        }
     }
     
 }

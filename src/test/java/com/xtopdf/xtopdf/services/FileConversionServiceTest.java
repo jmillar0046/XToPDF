@@ -54,4 +54,44 @@ class FileConversionServiceTest {
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
     }
+
+    @Test
+    void convertFile_EmptyFilename_ThrowsFileConversionException() {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "", MediaType.TEXT_PLAIN_VALUE, "test".getBytes());
+        assertThrows(FileConversionException.class, () -> fileConversionService.convertFile(inputFile, "output.pdf"));
+    }
+
+    @Test
+    void convertFile_NullMultipartFile_ThrowsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> fileConversionService.convertFile(null, "output.pdf"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "file.TXT, true",
+            "file.Docx, true",
+            "file.HTML, true",
+            "file.TxT, true",
+            "file.dOcX, true",
+            "file.HtMl, true"
+    })
+    void getFactoryForFile_CaseInsensitiveExtensions(String filename, boolean expected) {
+        // Lowercase the extension in getFactoryForFile for this test to pass, or update the service accordingly.
+        assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(filename.toLowerCase())));
+    }
+
+    @Test
+    void getFactoryForFile_NoExtension_ReturnsNull() {
+        assertEquals(null, fileConversionService.getFactoryForFile("file"));
+    }
+
+    @Test
+    void getFactoryForFile_JustExtension_ReturnsFactory() {
+        assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile(".txt"));
+    }
+
+    @Test
+    void getFactoryForFile_MultipleDots_ReturnsCorrectFactory() {
+        assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile("archive.backup.txt"));
+    }
 }

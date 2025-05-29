@@ -1,32 +1,32 @@
 package com.xtopdf.xtopdf.services;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Objects;
 
 import com.itextpdf.kernel.colors.Color;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.apache.poi.xwpf.usermodel.XWPFTable;
-import org.apache.poi.xwpf.usermodel.XWPFTableCell;
-import org.apache.poi.xwpf.usermodel.XWPFTableRow;
-
-import com.itextpdf.io.exceptions.IOException;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DocxToPdfService {
    public void convertDocxToPdf(MultipartFile docxFile, File pdfFile) throws IOException {
-        // Read the DOCX file using Apache POI
+        // Check if the input file is empty
         try (var fis = docxFile.getInputStream()) {
-            // Create a PdfWriter and PdfDocument to write the PDF file
             try (XWPFDocument docxDocument = new XWPFDocument(fis);
                  PdfWriter writer = new PdfWriter(pdfFile)) {
                 PdfDocument pdfDocument = new PdfDocument(writer);
@@ -50,7 +50,7 @@ public class DocxToPdfService {
         }
     }
 
-    void processParagraph(XWPFParagraph paragraph, Document pdfDoc) {
+    void processParagraph(XWPFParagraph paragraph, Document pdfDoc) throws IOException {
         // Create a new paragraph for each paragraph in DOCX
         Paragraph pdfParagraph = new Paragraph();
 
@@ -62,10 +62,13 @@ public class DocxToPdfService {
                 var pdfText = new Text(text);
 
                 // Apply styles from the DOCX to the PDF
-                if (run.isBold())
-                    pdfText.setBold();
-                if (run.isItalic())
-                    pdfText.setItalic();
+                if (run.isBold() && run.isItalic()) {
+                    pdfText.setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE));
+                } else if (run.isBold()) {
+                    pdfText.setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD));
+                } else if (run.isItalic()) {
+                    pdfText.setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE));
+                }
                 if (Objects.nonNull(run.getUnderline()))
                     pdfText.setUnderline();
                 if (Objects.nonNull(run.getColor()))
