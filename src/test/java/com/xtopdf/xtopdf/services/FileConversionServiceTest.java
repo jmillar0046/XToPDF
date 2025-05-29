@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
+import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,14 @@ class FileConversionServiceTest {
     private TxtFileConverterFactory txtFileConverterFactory;
     @Mock
     private DocxFileConverterFactory docxFileConverterFactory;
+    @Mock
+    private HtmlFileConverterFactory htmlFileConverterFactory;
 
     private FileConversionService fileConversionService;
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory);
     }
 
     @Test
@@ -45,9 +48,50 @@ class FileConversionServiceTest {
     @CsvSource({
             ".txt, true",
             ".docx, true",
-            ".fake, false"
+            ".html, true",
+            ".xlsx, false"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
+    }
+
+    @Test
+    void convertFile_EmptyFilename_ThrowsFileConversionException() {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "", MediaType.TEXT_PLAIN_VALUE, "test".getBytes());
+        assertThrows(FileConversionException.class, () -> fileConversionService.convertFile(inputFile, "output.pdf"));
+    }
+
+    @Test
+    void convertFile_NullMultipartFile_ThrowsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> fileConversionService.convertFile(null, "output.pdf"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "file.TXT, true",
+            "file.Docx, true",
+            "file.HTML, true",
+            "file.TxT, true",
+            "file.dOcX, true",
+            "file.HtMl, true"
+    })
+    void getFactoryForFile_CaseInsensitiveExtensions(String filename, boolean expected) {
+        // Lowercase the extension in getFactoryForFile for this test to pass, or update the service accordingly.
+        assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(filename.toLowerCase())));
+    }
+
+    @Test
+    void getFactoryForFile_NoExtension_ReturnsNull() {
+        assertEquals(null, fileConversionService.getFactoryForFile("file"));
+    }
+
+    @Test
+    void getFactoryForFile_JustExtension_ReturnsFactory() {
+        assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile(".txt"));
+    }
+
+    @Test
+    void getFactoryForFile_MultipleDots_ReturnsCorrectFactory() {
+        assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile("archive.backup.txt"));
     }
 }

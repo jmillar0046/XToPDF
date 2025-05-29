@@ -7,6 +7,8 @@ import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.IOException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -15,7 +17,7 @@ import static org.mockito.Mockito.verify;
 class DocxFileConverterTest {
 
     @Test
-    void testConvertToPDF() {
+    void testConvertToPDF() throws IOException {
         DocxToPdfService docxToPdfService = Mockito.mock(DocxToPdfService.class);
         DocxFileConverter docxFileConverter = new DocxFileConverter(docxToPdfService);
         var outputFile = "outputFile.pdf";
