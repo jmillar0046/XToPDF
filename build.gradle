@@ -31,11 +31,11 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web:3.4.4'
-	implementation 'org.apache.poi:poi:5.4.0'
-    implementation 'org.apache.poi:poi-ooxml:5.4.0'
-	implementation 'com.itextpdf:itext7-core:9.1.0'
-	implementation 'com.itextpdf:layout:9.1.0'
-	implementation 'com.itextpdf:pdfa:9.1.0'
+	implementation 'org.apache.poi:poi:5.4.1'
+    implementation 'org.apache.poi:poi-ooxml:5.4.1'
+	implementation 'com.itextpdf:itext7-core:9.2.0'
+	implementation 'com.itextpdf:layout:9.2.0'
+	implementation 'com.itextpdf:pdfa:9.2.0'
     implementation 'com.itextpdf:html2pdf:6.1.0'
 	implementation 'org.apache.pdfbox:pdfbox:3.0.4'
 	compileOnly 'org.projectlombok:lombok'
