@@ -20,7 +20,9 @@ public class TxtFileConverter implements FileConverter {
         try {
             txtToPdfService.convertTxtToPdf(txtFile, pdfFile);
         } catch (IOException e) {
-            // bad file path
+            throw new RuntimeException("Error converting TXT to PDF: " + e.getMessage(), e);
+        } catch (NullPointerException e) {
+            throw new NullPointerException("Input file or output file must not be null");
         }
     }
     

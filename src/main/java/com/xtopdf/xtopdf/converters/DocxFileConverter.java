@@ -19,7 +19,7 @@ public class DocxFileConverter implements FileConverter {
         try {
             docxToPdfService.convertDocxToPdf(docxFile, new File(outputFile));
         } catch (IOException e) {
-            // bad file path
+            throw new RuntimeException("Error converting DOCX to PDF: " + e.getMessage(), e);
         }
     }
     
