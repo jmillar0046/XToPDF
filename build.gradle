@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web:3.4.4'
+	implementation 'org.springframework.boot:spring-boot-starter-web:3.5.0'
 	implementation 'org.apache.poi:poi:5.4.1'
     implementation 'org.apache.poi:poi-ooxml:5.4.1'
 	implementation 'com.itextpdf:itext7-core:9.2.0'
