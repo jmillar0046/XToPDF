@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ class FileConversionServiceTest {
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
+    @Mock
+    private RtfFileConverterFactory rtfFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -41,7 +44,7 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, rtfFileConverterFactory);
     }
 
     @Test
@@ -70,6 +73,7 @@ class FileConversionServiceTest {
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".rtf, true",
             ".xlsx, false"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
@@ -92,9 +96,11 @@ class FileConversionServiceTest {
             "file.TXT, true",
             "file.Docx, true",
             "file.HTML, true",
+            "file.RTF, true",
             "file.TxT, true",
             "file.dOcX, true",
-            "file.HtMl, true"
+            "file.HtMl, true",
+            "file.rTf, true"
     })
     void getFactoryForFile_CaseInsensitiveExtensions(String filename, boolean expected) {
         // Lowercase the extension in getFactoryForFile for this test to pass, or update the service accordingly.
