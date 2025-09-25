@@ -6,6 +6,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.http.MediaType;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 class HtmlToPdfServiceTest {
 
@@ -65,6 +67,20 @@ class HtmlToPdfServiceTest {
         } catch (Exception e) {
             assert false : "Expected NullPointerException";
         }
+    }
+
+    @Test
+    void testConvertHtmlToPdfWithInvalidOutputPath() {
+        HtmlToPdfService service = new HtmlToPdfService();
+        MockMultipartFile htmlFile = new MockMultipartFile("file", "test.html", MediaType.TEXT_HTML_VALUE, "<html></html>".getBytes());
+        // Use an invalid path (directory that doesn't exist and can't be created)
+        File invalidFile = new File("/nonexistent/directory/that/cannot/be/created/test.pdf");
+        
+        // This should trigger the IOException catch block without throwing an exception
+        service.convertHtmlToPdf(htmlFile, invalidFile);
+        
+        // If we reach here, the exception was caught properly and didn't propagate
+        assert true;
     }
 
 }

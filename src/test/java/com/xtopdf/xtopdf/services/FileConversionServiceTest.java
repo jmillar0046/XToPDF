@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
@@ -18,6 +19,10 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FileConversionServiceTest {
@@ -28,6 +33,9 @@ class FileConversionServiceTest {
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
+    
+    @Mock
+    private FileConverter mockConverter;
 
     private FileConversionService fileConversionService;
 
@@ -42,6 +50,19 @@ class FileConversionServiceTest {
         var inputFile = new MockMultipartFile("inputFile", "test.fake", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
         assertThrows(FileConversionException.class, () -> fileConversionService.convertFile(inputFile, fake));
+    }
+
+    @Test
+    void convertFile_TxtFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(txtFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
     @ParameterizedTest
