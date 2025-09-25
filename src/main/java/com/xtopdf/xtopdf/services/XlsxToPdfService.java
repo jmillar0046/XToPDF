@@ -101,6 +101,24 @@ public class XlsxToPdfService {
         pdfDoc.add(table);
     }
     
+    /**
+     * Converts the given Excel cell to its string representation.
+     * <p>
+     * Handles the following cell types:
+     * <ul>
+     *   <li><b>STRING</b>: Returns the cell's string value.</li>
+     *   <li><b>NUMERIC</b>: Returns the numeric value as a string. If the cell is date-formatted, returns the date as a string.
+     *       For integer values, returns without decimal point; otherwise, returns the double value as a string.</li>
+     *   <li><b>BOOLEAN</b>: Returns "true" or "false".</li>
+     *   <li><b>FORMULA</b>: Attempts to return the cached formula result as a string, handling STRING, NUMERIC, and BOOLEAN results.
+     *       If unable to evaluate, returns the formula itself as a string.</li>
+     *   <li><b>BLANK</b> or unknown types: Returns an empty string.</li>
+     * </ul>
+     * If the cell is {@code null}, returns an empty string.
+     *
+     * @param cell the Excel cell to convert
+     * @return the string representation of the cell's value, or an empty string if the cell is null or blank
+     */
     String getCellValueAsString(org.apache.poi.ss.usermodel.Cell cell) {
         if (cell == null) {
             return "";
