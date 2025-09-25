@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ class FileConversionServiceTest {
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
+    @Mock
+    private SvgFileConverterFactory svgFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -41,7 +44,7 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, svgFileConverterFactory);
     }
 
     @Test
@@ -65,11 +68,25 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_SvgFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.svg", "image/svg+xml", "<svg></svg>".getBytes());
+        
+        when(svgFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(svgFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
     @ParameterizedTest
     @CsvSource({
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".svg, true",
             ".xlsx, false"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
