@@ -67,4 +67,18 @@ class HtmlToPdfServiceTest {
         }
     }
 
+    @Test
+    void testConvertHtmlToPdfWithInvalidOutputPath() {
+        HtmlToPdfService service = new HtmlToPdfService();
+        MockMultipartFile htmlFile = new MockMultipartFile("file", "test.html", MediaType.TEXT_HTML_VALUE, "<html></html>".getBytes());
+        // Use an invalid path (directory that doesn't exist and can't be created)
+        File invalidFile = new File("/nonexistent/directory/that/cannot/be/created/test.pdf");
+        
+        // This should trigger the IOException catch block without throwing an exception
+        service.convertHtmlToPdf(htmlFile, invalidFile);
+        
+        // If we reach here, the exception was caught properly and didn't propagate
+        assert true;
+    }
+
 }

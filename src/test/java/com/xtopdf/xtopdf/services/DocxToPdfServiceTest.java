@@ -142,6 +142,46 @@ public class DocxToPdfServiceTest {
         assertTrue(pdfFile.length() > 0);
     }
 
+    @Test
+    void testConvertDocxWithBoldOnlyText() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+        XWPFRun run = paragraph.createRun();
+        run.setText("Bold only text");
+        run.setBold(true);
+        run.setItalic(false);
+        byte[] docxBytes;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            document.write(baos);
+            docxBytes = baos.toByteArray();
+        }
+        var docxFile = new MockMultipartFile("file", "bold-only.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = new File(System.getProperty("java.io.tmpdir") + "/bold-only.pdf");
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+        assertTrue(pdfFile.exists());
+        assertTrue(pdfFile.length() > 0);
+    }
+
+    @Test
+    void testConvertDocxWithItalicOnlyText() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+        XWPFRun run = paragraph.createRun();
+        run.setText("Italic only text");
+        run.setBold(false);
+        run.setItalic(true);
+        byte[] docxBytes;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            document.write(baos);
+            docxBytes = baos.toByteArray();
+        }
+        var docxFile = new MockMultipartFile("file", "italic-only.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = new File(System.getProperty("java.io.tmpdir") + "/italic-only.pdf");
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+        assertTrue(pdfFile.exists());
+        assertTrue(pdfFile.length() > 0);
+    }
+
     private byte[] createMockDocxFileContent() throws IOException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             XWPFDocument document = new XWPFDocument();
