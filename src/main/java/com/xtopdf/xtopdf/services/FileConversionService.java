@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class FileConversionService {
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
     private final PngFileConverterFactory pngFileConverterFactory;
+    private final XlsxFileConverterFactory xlsxFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
@@ -43,6 +45,8 @@ public class FileConversionService {
             return htmlFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".png")){
             return pngFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".xlsx")){
+            return xlsxFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;

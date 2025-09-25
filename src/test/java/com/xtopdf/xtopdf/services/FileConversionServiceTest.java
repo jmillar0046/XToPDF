@@ -6,6 +6,7 @@ import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
+import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ class FileConversionServiceTest {
     private HtmlFileConverterFactory htmlFileConverterFactory;
     @Mock
     private PngFileConverterFactory pngFileConverterFactory;
+    private XlsxFileConverterFactory xlsxFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -44,7 +46,8 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, pngFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory,
+                                                          htmlFileConverterFactory, xlsxFileConverterFactory, pngFileConverterFactory);
     }
 
     @Test
@@ -87,7 +90,7 @@ class FileConversionServiceTest {
             ".docx, true",
             ".html, true",
             ".png, true",
-            ".xlsx, false"
+            ".xlsx, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
