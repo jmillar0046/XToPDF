@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
+    private final BmpFileConverterFactory bmpFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
@@ -39,6 +41,8 @@ public class FileConversionService {
             return docxFileConverterFactory;
         } else if (inputFile.endsWith(".html")){
             return htmlFileConverterFactory;
+        } else if (inputFile.endsWith(".bmp")){
+            return bmpFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;
