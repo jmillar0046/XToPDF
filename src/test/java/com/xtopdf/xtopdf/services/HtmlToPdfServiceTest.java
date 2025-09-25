@@ -6,8 +6,6 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.http.MediaType;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 class HtmlToPdfServiceTest {
 
