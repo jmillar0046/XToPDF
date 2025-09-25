@@ -35,13 +35,13 @@ public class FileConversionService {
     }
 
     FileConverterFactory getFactoryForFile(String inputFile) {
-        if(inputFile.endsWith(".txt")){
+        if(inputFile.toLowerCase().endsWith(".txt")){
             return txtFileConverterFactory;
-        } else if (inputFile.endsWith(".docx")){
+        } else if (inputFile.toLowerCase().endsWith(".docx")){
             return docxFileConverterFactory;
-        } else if (inputFile.endsWith(".html")){
+        } else if (inputFile.toLowerCase().endsWith(".html")){
             return htmlFileConverterFactory;
-        } else if (inputFile.endsWith(".png")){
+        } else if (inputFile.toLowerCase().endsWith(".png")){
             return pngFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
