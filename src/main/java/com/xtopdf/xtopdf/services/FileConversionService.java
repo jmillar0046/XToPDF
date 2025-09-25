@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.FileConverterFactory;
+import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
+    private final PngFileConverterFactory pngFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
@@ -39,6 +41,8 @@ public class FileConversionService {
             return docxFileConverterFactory;
         } else if (inputFile.endsWith(".html")){
             return htmlFileConverterFactory;
+        } else if (inputFile.endsWith(".png")){
+            return pngFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;
