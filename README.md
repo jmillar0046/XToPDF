@@ -1,12 +1,13 @@
 # XToPDF
 
-XToPDF is a Spring Boot application for converting various file formats (such as DOCX and TXT) to PDF.
+XToPDF is a Spring Boot application for converting various file formats (such as DOCX, TXT, HTML, and JPEG) to PDF.
 
 ## Features
 
 - Convert DOCX files to PDF
 - Convert TXT files to PDF
 - Convert HTML files to PDF
+- Convert JPEG/JPG images to PDF
 - REST API endpoints for file conversion
 
 ## Technologies
