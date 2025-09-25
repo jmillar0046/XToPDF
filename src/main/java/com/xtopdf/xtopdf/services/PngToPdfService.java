@@ -20,7 +20,7 @@ public class PngToPdfService {
             throw new NullPointerException("PNG file cannot be null");
         }
         if (pdfFile == null) {
-            throw new IOException("Output PDF file cannot be null");
+            throw new NullPointerException("Output PDF file cannot be null");
         }
         
         // Create a PDF document using iText
