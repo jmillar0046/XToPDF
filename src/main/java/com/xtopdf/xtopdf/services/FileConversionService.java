@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
+    private final JpegFileConverterFactory jpegFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
@@ -33,12 +35,15 @@ public class FileConversionService {
     }
 
     FileConverterFactory getFactoryForFile(String inputFile) {
-        if(inputFile.endsWith(".txt")){
+        String lowerCaseFile = inputFile.toLowerCase();
+        if(lowerCaseFile.endsWith(".txt")){
             return txtFileConverterFactory;
-        } else if (inputFile.endsWith(".docx")){
+        } else if (lowerCaseFile.endsWith(".docx")){
             return docxFileConverterFactory;
-        } else if (inputFile.endsWith(".html")){
+        } else if (lowerCaseFile.endsWith(".html")){
             return htmlFileConverterFactory;
+        } else if (lowerCaseFile.endsWith(".jpeg") || lowerCaseFile.endsWith(".jpg")){
+            return jpegFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;

@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ class FileConversionServiceTest {
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
+    @Mock
+    private JpegFileConverterFactory jpegFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -41,7 +44,7 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, jpegFileConverterFactory);
     }
 
     @Test
@@ -65,11 +68,26 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_JpegFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.jpeg", "image/jpeg", "fake jpeg content".getBytes());
+        
+        when(jpegFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(jpegFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
     @ParameterizedTest
     @CsvSource({
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".jpeg, true",
+            ".jpg, true",
             ".xlsx, false"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
@@ -92,9 +110,13 @@ class FileConversionServiceTest {
             "file.TXT, true",
             "file.Docx, true",
             "file.HTML, true",
+            "file.JPEG, true",
+            "file.JPG, true",
             "file.TxT, true",
             "file.dOcX, true",
-            "file.HtMl, true"
+            "file.HtMl, true",
+            "file.JpEg, true",
+            "file.jPg, true"
     })
     void getFactoryForFile_CaseInsensitiveExtensions(String filename, boolean expected) {
         // Lowercase the extension in getFactoryForFile for this test to pass, or update the service accordingly.
