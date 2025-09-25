@@ -57,6 +57,16 @@ public class XlsxToPdfService {
         }
     }
     
+    /**
+     * Processes the given Excel sheet and adds its contents to the provided PDF document.
+     * <p>
+     * If the sheet is empty, a message indicating an empty sheet is added to the PDF.
+     * If the sheet has no data (no columns), a message indicating no data is added.
+     * Otherwise, the sheet's data is rendered as a table in the PDF.
+     *
+     * @param sheet   the Excel sheet to process
+     * @param pdfDoc  the PDF document to which the sheet's contents will be added
+     */
     void processSheet(Sheet sheet, Document pdfDoc) {
         if (sheet.getPhysicalNumberOfRows() == 0) {
             pdfDoc.add(new Paragraph("(Empty sheet)"));
