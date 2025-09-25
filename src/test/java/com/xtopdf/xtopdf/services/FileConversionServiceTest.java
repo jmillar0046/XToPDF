@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ class FileConversionServiceTest {
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
+    @Mock
+    private TiffFileConverterFactory tiffFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -41,7 +44,7 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, tiffFileConverterFactory);
     }
 
     @Test
@@ -70,6 +73,8 @@ class FileConversionServiceTest {
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".tiff, true",
+            ".tif, true",
             ".xlsx, false"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
@@ -109,6 +114,19 @@ class FileConversionServiceTest {
     @Test
     void getFactoryForFile_JustExtension_ReturnsFactory() {
         assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile(".txt"));
+    }
+
+    @Test
+    void convertFile_TiffFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.tiff", "image/tiff", "test content".getBytes());
+        
+        when(tiffFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(tiffFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
     @Test
