@@ -4,6 +4,8 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
+import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,10 @@ class FileConversionServiceTest {
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
     @Mock
+    private JpegFileConverterFactory jpegFileConverterFactory;
+    @Mock
+    private PngFileConverterFactory pngFileConverterFactory;
+    @Mock
     private XlsxFileConverterFactory xlsxFileConverterFactory;
     
     @Mock
@@ -44,7 +50,9 @@ class FileConversionServiceTest {
 
     @BeforeEach
     void setUp() {
-        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, htmlFileConverterFactory, xlsxFileConverterFactory);
+        fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, 
+                                                          htmlFileConverterFactory, jpegFileConverterFactory, 
+                                                          pngFileConverterFactory, xlsxFileConverterFactory);
     }
 
     @Test
@@ -68,11 +76,40 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_JpegFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.jpeg", "image/jpeg", "test content".getBytes());
+        
+        when(jpegFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(jpegFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_PngFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());
+        
+        when(pngFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(pngFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
     @ParameterizedTest
     @CsvSource({
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".jpeg, true",
+            ".jpg, true",
+            ".png, true",
             ".xlsx, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
@@ -95,9 +132,15 @@ class FileConversionServiceTest {
             "file.TXT, true",
             "file.Docx, true",
             "file.HTML, true",
+            "file.JPEG, true",
+            "file.JPG, true",
+            "file.PNG, true",
             "file.TxT, true",
             "file.dOcX, true",
-            "file.HtMl, true"
+            "file.HtMl, true",
+            "file.JpEg, true",
+            "file.jPg, true",
+            "file.PnG, true"
     })
     void getFactoryForFile_CaseInsensitiveExtensions(String filename, boolean expected) {
         // Lowercase the extension in getFactoryForFile for this test to pass, or update the service accordingly.
@@ -112,6 +155,21 @@ class FileConversionServiceTest {
     @Test
     void getFactoryForFile_JustExtension_ReturnsFactory() {
         assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile(".txt"));
+    }
+
+    @Test
+    void getFactoryForFile_JpegExtension_ReturnsCorrectFactory() {
+        assertEquals(jpegFileConverterFactory, fileConversionService.getFactoryForFile(".jpeg"));
+    }
+
+    @Test
+    void getFactoryForFile_JpgExtension_ReturnsCorrectFactory() {
+        assertEquals(jpegFileConverterFactory, fileConversionService.getFactoryForFile(".jpg"));
+    }
+
+    @Test
+    void getFactoryForFile_PngExtension_ReturnsCorrectFactory() {
+        assertEquals(pngFileConverterFactory, fileConversionService.getFactoryForFile(".png"));
     }
 
     @Test

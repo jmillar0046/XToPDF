@@ -3,6 +3,8 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
+import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
+    private final JpegFileConverterFactory jpegFileConverterFactory;
+    private final PngFileConverterFactory pngFileConverterFactory;
     private final XlsxFileConverterFactory xlsxFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
@@ -35,13 +39,17 @@ public class FileConversionService {
     }
 
     FileConverterFactory getFactoryForFile(String inputFile) {
-        if(inputFile.endsWith(".txt")){
+        if(inputFile.toLowerCase().endsWith(".txt")){
             return txtFileConverterFactory;
-        } else if (inputFile.endsWith(".docx")){
+        } else if (inputFile.toLowerCase().endsWith(".docx")){
             return docxFileConverterFactory;
-        } else if (inputFile.endsWith(".html")){
+        } else if (inputFile.toLowerCase().endsWith(".html")){
             return htmlFileConverterFactory;
-        } else if (inputFile.endsWith(".xlsx")){
+        } else if (inputFile.toLowerCase().endsWith(".jpeg") || inputFile.toLowerCase().endsWith(".jpg")){
+            return jpegFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".png")){
+            return pngFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".xlsx")){
             return xlsxFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
