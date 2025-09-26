@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class FileConversionService {
     private final TxtFileConverterFactory txtFileConverterFactory;
     private final DocxFileConverterFactory docxFileConverterFactory;
     private final HtmlFileConverterFactory htmlFileConverterFactory;
+    private final JpegFileConverterFactory jpegFileConverterFactory;
     private final PngFileConverterFactory pngFileConverterFactory;
     private final XlsxFileConverterFactory xlsxFileConverterFactory;
 
@@ -43,6 +45,8 @@ public class FileConversionService {
             return docxFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".html")){
             return htmlFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".jpeg") || inputFile.toLowerCase().endsWith(".jpg")){
+            return jpegFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".png")){
             return pngFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".xlsx")){
