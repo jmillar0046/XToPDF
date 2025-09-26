@@ -16,8 +16,11 @@ public class JpegFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile jpegFile, String outputFile) {
-        if (jpegFile == null || outputFile == null) {
-            throw new NullPointerException("Input file or output file must not be null");
+        if (jpegFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
         }
         
         var pdfFile = new File(outputFile);
