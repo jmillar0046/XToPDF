@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
@@ -26,7 +27,8 @@ public class FileConversionService {
     private final JpegFileConverterFactory jpegFileConverterFactory;
     private final PngFileConverterFactory pngFileConverterFactory;
     private final XlsxFileConverterFactory xlsxFileConverterFactory;
-
+    private final SvgFileConverterFactory svgFileConverterFactory;
+  
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
@@ -45,6 +47,8 @@ public class FileConversionService {
             return docxFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".html")){
             return htmlFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".svg")){
+            return svgFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".jpeg") || inputFile.toLowerCase().endsWith(".jpg")){
             return jpegFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".png")){

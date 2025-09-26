@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
@@ -37,6 +38,7 @@ class FileConversionServiceTest {
     @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
     @Mock
+    private SvgFileConverterFactory svgFileConverterFactory;
     private JpegFileConverterFactory jpegFileConverterFactory;
     @Mock
     private PngFileConverterFactory pngFileConverterFactory;
@@ -52,7 +54,7 @@ class FileConversionServiceTest {
     void setUp() {
         fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, 
                                                           htmlFileConverterFactory, jpegFileConverterFactory, 
-                                                          pngFileConverterFactory, xlsxFileConverterFactory);
+                                                          pngFileConverterFactory, xlsxFileConverterFactory, svgFileConverterFactory);
     }
 
     @Test
@@ -76,6 +78,18 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_SvgFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.svg", "image/svg+xml", "<svg></svg>".getBytes());
+        
+        when(svgFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(svgFileConverterFactory).createFileConverter();
+    }
+  
     @Test
     void convertFile_JpegFile_SuccessfulConversion() throws FileConversionException {
         var outputFile = "output.pdf";
@@ -107,6 +121,7 @@ class FileConversionServiceTest {
             ".txt, true",
             ".docx, true",
             ".html, true",
+            ".svg, true",
             ".jpeg, true",
             ".jpg, true",
             ".png, true",
