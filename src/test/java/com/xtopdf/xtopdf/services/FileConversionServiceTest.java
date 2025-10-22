@@ -2,10 +2,15 @@ package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
+import com.xtopdf.xtopdf.factories.PptxFileConverterFactory;
+import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
+import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
+import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
 import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +47,16 @@ class FileConversionServiceTest {
     private PngFileConverterFactory pngFileConverterFactory;
     @Mock
     private XlsxFileConverterFactory xlsxFileConverterFactory;
+    @Mock
+    private BmpFileConverterFactory bmpFileConverterFactory;
+    @Mock
+    private PptxFileConverterFactory pptxFileConverterFactory;
+    @Mock
+    private RtfFileConverterFactory rtfFileConverterFactory;
+    @Mock
+    private SvgFileConverterFactory svgFileConverterFactory;
+    @Mock
+    private TiffFileConverterFactory tiffFileConverterFactory;
     
     @Mock
     private FileConverter mockConverter;
@@ -52,7 +67,10 @@ class FileConversionServiceTest {
     void setUp() {
         fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, 
                                                           htmlFileConverterFactory, jpegFileConverterFactory, 
-                                                          pngFileConverterFactory, xlsxFileConverterFactory);
+                                                          pngFileConverterFactory, xlsxFileConverterFactory,
+                                                          bmpFileConverterFactory, pptxFileConverterFactory,
+                                                          rtfFileConverterFactory, svgFileConverterFactory,
+                                                          tiffFileConverterFactory);
     }
 
     @Test
@@ -102,6 +120,71 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_BmpFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.bmp", "image/bmp", "test content".getBytes());
+        
+        when(bmpFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(bmpFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_PptxFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "test content".getBytes());
+        
+        when(pptxFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(pptxFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_RtfFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.rtf", "application/rtf", "test content".getBytes());
+        
+        when(rtfFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(rtfFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_SvgFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.svg", "image/svg+xml", "<svg></svg>".getBytes());
+        
+        when(svgFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(svgFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_TiffFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.tiff", "image/tiff", "test content".getBytes());
+        
+        when(tiffFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(tiffFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
     @ParameterizedTest
     @CsvSource({
             ".txt, true",
@@ -110,7 +193,13 @@ class FileConversionServiceTest {
             ".jpeg, true",
             ".jpg, true",
             ".png, true",
-            ".xlsx, true"
+            ".xlsx, true",
+            ".bmp, true",
+            ".pptx, true",
+            ".rtf, true",
+            ".svg, true",
+            ".tiff, true",
+            ".tif, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));

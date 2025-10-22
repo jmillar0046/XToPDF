@@ -2,9 +2,14 @@ package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
+import com.xtopdf.xtopdf.factories.PptxFileConverterFactory;
+import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
+import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
+import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +31,11 @@ public class FileConversionService {
     private final JpegFileConverterFactory jpegFileConverterFactory;
     private final PngFileConverterFactory pngFileConverterFactory;
     private final XlsxFileConverterFactory xlsxFileConverterFactory;
+    private final BmpFileConverterFactory bmpFileConverterFactory;
+    private final PptxFileConverterFactory pptxFileConverterFactory;
+    private final RtfFileConverterFactory rtfFileConverterFactory;
+    private final SvgFileConverterFactory svgFileConverterFactory;
+    private final TiffFileConverterFactory tiffFileConverterFactory;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
@@ -51,6 +61,16 @@ public class FileConversionService {
             return pngFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".xlsx")){
             return xlsxFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".bmp")){
+            return bmpFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".pptx")){
+            return pptxFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".rtf")){
+            return rtfFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".svg")){
+            return svgFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".tiff") || inputFile.toLowerCase().endsWith(".tif")){
+            return tiffFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;
