@@ -1,19 +1,18 @@
 package com.xtopdf.xtopdf.services;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -147,13 +146,21 @@ class PdfMergeServiceTest {
         });
     }
 
-    // Helper method to create a test PDF
+    // Helper method to create a test PDF using PDFBox
     private void createTestPdf(File file, String content) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(file))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            document.add(new Paragraph(content));
-            document.close();
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                contentStream.newLineAtOffset(100, 700);
+                contentStream.showText(content);
+                contentStream.endText();
+            }
+            
+            document.save(file);
         }
     }
 

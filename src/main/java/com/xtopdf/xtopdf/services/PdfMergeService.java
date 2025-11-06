@@ -23,11 +23,15 @@ public class PdfMergeService {
      */
     public void mergePdfs(File convertedPdfFile, MultipartFile existingPdf, String position) throws IOException {
         PDFMergerUtility pdfMerger = new PDFMergerUtility();
-        File tempFile = File.createTempFile("merged_", ".pdf");
+        File tempFile = null;
+        File existingPdfFile = null;
         
         try {
+            // Create temporary files
+            tempFile = File.createTempFile("merged_", ".pdf");
+            existingPdfFile = File.createTempFile("existing_", ".pdf");
+            
             // Save the existing PDF to a temporary file
-            File existingPdfFile = File.createTempFile("existing_", ".pdf");
             try (FileOutputStream fos = new FileOutputStream(existingPdfFile)) {
                 fos.write(existingPdf.getBytes());
             }
@@ -58,13 +62,20 @@ public class PdfMergeService {
                 }
             }
             
-            // Clean up temporary files
-            existingPdfFile.delete();
-            tempFile.delete();
-            
         } catch (Exception e) {
-            tempFile.delete();
             throw new IOException("Error merging PDFs: " + e.getMessage(), e);
+        } finally {
+            // Clean up temporary files in finally block to ensure cleanup always happens
+            if (existingPdfFile != null && existingPdfFile.exists()) {
+                if (!existingPdfFile.delete()) {
+                    log.warn("Could not delete temporary existing PDF file: {}", existingPdfFile.getAbsolutePath());
+                }
+            }
+            if (tempFile != null && tempFile.exists()) {
+                if (!tempFile.delete()) {
+                    log.warn("Could not delete temporary merged PDF file: {}", tempFile.getAbsolutePath());
+                }
+            }
         }
     }
 }
