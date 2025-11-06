@@ -34,7 +34,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service method for successful conversion
-        doNothing().when(fileConversionService).convertFile(any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -49,7 +49,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to handle invalid file type
-        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any());
+        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -64,7 +64,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to throw FileConversionException
-        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any());
+        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -121,7 +121,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "large.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, largeContent);
         String outputFile = "large.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -144,11 +144,109 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any());
+        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testConvertFileWithExistingPdfAtBack() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "back"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithExistingPdfAtFront() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "front"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithExistingPdfDefaultPosition() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        // Test without position parameter - should default to "back"
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithInvalidPosition() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "middle"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Invalid position. Must be 'front' or 'back'"));
+    }
+
+    @Test
+    void testConvertFileWithoutExistingPdf() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        // Test without existingPdf parameter - should work as before
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithExistingPdfMergeFailure() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doThrow(new FileConversionException("Failed to merge PDF files")).when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "back"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Error with conversion"));
     }
 }

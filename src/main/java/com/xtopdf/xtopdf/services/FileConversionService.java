@@ -36,13 +36,28 @@ public class FileConversionService {
     private final RtfFileConverterFactory rtfFileConverterFactory;
     private final SvgFileConverterFactory svgFileConverterFactory;
     private final TiffFileConverterFactory tiffFileConverterFactory;
+    private final PdfMergeService pdfMergeService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
+        convertFile(inputFile, outputFile, null, null);
+    }
+
+    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
             FileConverter converter = factory.createFileConverter();
             converter.convertToPDF(inputFile, outputFile);
+            
+            // If an existing PDF is provided, merge it with the converted PDF
+            if (existingPdf != null && !existingPdf.isEmpty()) {
+                try {
+                    java.io.File outputPdfFile = new java.io.File(outputFile);
+                    pdfMergeService.mergePdfs(outputPdfFile, existingPdf, position);
+                } catch (java.io.IOException e) {
+                    throw new FileConversionException("Failed to merge PDF files: " + e.getMessage());
+                }
+            }
         } else {
             throw new FileConversionException("Failed to convert file: " + inputFile.getName());
         }
