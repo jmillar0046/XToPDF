@@ -21,15 +21,24 @@ public class FileConversionController {
      private final FileConversionService fileConversionService;
 
      @PostMapping
-     public ResponseEntity<String> convertFile (@RequestParam("inputFile") MultipartFile inputFile, @RequestParam("outputFile") String outputFile) {
+     public ResponseEntity<String> convertFile(
+             @RequestParam("inputFile") MultipartFile inputFile, 
+             @RequestParam("outputFile") String outputFile,
+             @RequestParam(value = "existingPdf", required = false) MultipartFile existingPdf,
+             @RequestParam(value = "position", required = false, defaultValue = "back") String position) {
          var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
          var sanitizedOutputPath = baseDirectory.resolve(outputFile).normalize().toAbsolutePath();
          if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
          }
 
+         // Validate position parameter
+         if (existingPdf != null && !position.equalsIgnoreCase("front") && !position.equalsIgnoreCase("back")) {
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid position. Must be 'front' or 'back'");
+         }
+
          try {
-            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString());
+            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, position);
             return ResponseEntity.ok("File converted successfully");
          } catch (FileConversionException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");

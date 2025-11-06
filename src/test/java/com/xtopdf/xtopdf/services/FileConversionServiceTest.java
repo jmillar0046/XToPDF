@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +61,9 @@ class FileConversionServiceTest {
     private TiffFileConverterFactory tiffFileConverterFactory;
     
     @Mock
+    private PdfMergeService pdfMergeService;
+    
+    @Mock
     private FileConverter mockConverter;
 
     private FileConversionService fileConversionService;
@@ -70,7 +75,7 @@ class FileConversionServiceTest {
                                                           pngFileConverterFactory, xlsxFileConverterFactory,
                                                           bmpFileConverterFactory, pptxFileConverterFactory,
                                                           rtfFileConverterFactory, svgFileConverterFactory,
-                                                          tiffFileConverterFactory);
+                                                          tiffFileConverterFactory, pdfMergeService);
     }
 
     @Test
@@ -264,5 +269,78 @@ class FileConversionServiceTest {
     @Test
     void getFactoryForFile_MultipleDots_ReturnsCorrectFactory() {
         assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile("archive.backup.txt"));
+    }
+
+    @Test
+    void convertFile_WithExistingPdfAtBack_SuccessfulConversion() throws Exception {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        var existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", "application/pdf", "existing pdf content".getBytes());
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile, existingPdf, "back");
+        
+        verify(txtFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("back"));
+    }
+
+    @Test
+    void convertFile_WithExistingPdfAtFront_SuccessfulConversion() throws Exception {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        var existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", "application/pdf", "existing pdf content".getBytes());
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile, existingPdf, "front");
+        
+        verify(txtFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("front"));
+    }
+
+    @Test
+    void convertFile_WithoutExistingPdf_SuccessfulConversion() throws Exception {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile, null, null);
+        
+        verify(txtFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
+    }
+
+    @Test
+    void convertFile_WithEmptyExistingPdf_DoesNotMerge() throws Exception {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        var emptyExistingPdf = new MockMultipartFile("existingPdf", "existing.pdf", "application/pdf", new byte[0]);
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile, emptyExistingPdf, "back");
+        
+        verify(txtFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
+    }
+
+    @Test
+    void convertFile_PdfMergeFailure_ThrowsFileConversionException() throws Exception {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        var existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", "application/pdf", "existing pdf content".getBytes());
+        
+        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        doThrow(new java.io.IOException("Merge failed")).when(pdfMergeService).mergePdfs(any(), any(), any());
+        
+        assertThrows(FileConversionException.class, () -> 
+            fileConversionService.convertFile(inputFile, outputFile, existingPdf, "back")
+        );
     }
 }
