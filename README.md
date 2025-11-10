@@ -7,6 +7,7 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 - Convert DOCX files to PDF
 - Convert TXT files to PDF
 - Convert HTML files to PDF
+- Convert Markdown files to PDF (.md and .markdown)
 - Convert PNG files to PDF
 - Convert JPEG/JPG images to PDF
 - Convert XLSX files to PDF
@@ -24,6 +25,7 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 - Apache POI
 - iText 7
 - PDFBox
+- Commonmark (Markdown parser)
 - Gradle
 
 ## Getting Started

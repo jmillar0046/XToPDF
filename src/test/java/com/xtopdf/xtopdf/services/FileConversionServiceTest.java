@@ -6,6 +6,7 @@ import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
+import com.xtopdf.xtopdf.factories.MarkdownFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PptxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
@@ -59,6 +60,8 @@ class FileConversionServiceTest {
     private SvgFileConverterFactory svgFileConverterFactory;
     @Mock
     private TiffFileConverterFactory tiffFileConverterFactory;
+    @Mock
+    private MarkdownFileConverterFactory markdownFileConverterFactory;
     
     @Mock
     private PdfMergeService pdfMergeService;
@@ -75,7 +78,8 @@ class FileConversionServiceTest {
                                                           pngFileConverterFactory, xlsxFileConverterFactory,
                                                           bmpFileConverterFactory, pptxFileConverterFactory,
                                                           rtfFileConverterFactory, svgFileConverterFactory,
-                                                          tiffFileConverterFactory, pdfMergeService);
+                                                          tiffFileConverterFactory, markdownFileConverterFactory,
+                                                          pdfMergeService);
     }
 
     @Test
@@ -190,6 +194,32 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
     }
 
+    @Test
+    void convertFile_MarkdownFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# test content".getBytes());
+        
+        when(markdownFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(markdownFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
+    @Test
+    void convertFile_MarkdownExtensionFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.markdown", MediaType.TEXT_MARKDOWN_VALUE, "# test content".getBytes());
+        
+        when(markdownFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(markdownFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+    }
+
     @ParameterizedTest
     @CsvSource({
             ".txt, true",
@@ -204,7 +234,9 @@ class FileConversionServiceTest {
             ".rtf, true",
             ".svg, true",
             ".tiff, true",
-            ".tif, true"
+            ".tif, true",
+            ".md, true",
+            ".markdown, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
@@ -269,6 +301,21 @@ class FileConversionServiceTest {
     @Test
     void getFactoryForFile_MultipleDots_ReturnsCorrectFactory() {
         assertEquals(txtFileConverterFactory, fileConversionService.getFactoryForFile("archive.backup.txt"));
+    }
+
+    @Test
+    void getFactoryForFile_MdExtension_ReturnsCorrectFactory() {
+        assertEquals(markdownFileConverterFactory, fileConversionService.getFactoryForFile(".md"));
+    }
+
+    @Test
+    void getFactoryForFile_MarkdownExtension_ReturnsCorrectFactory() {
+        assertEquals(markdownFileConverterFactory, fileConversionService.getFactoryForFile(".markdown"));
+    }
+
+    @Test
+    void getFactoryForFile_MdFileWithName_ReturnsCorrectFactory() {
+        assertEquals(markdownFileConverterFactory, fileConversionService.getFactoryForFile("README.md"));
     }
 
     @Test

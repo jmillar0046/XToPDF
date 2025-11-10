@@ -5,6 +5,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
+import com.xtopdf.xtopdf.factories.MarkdownFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
 import com.xtopdf.xtopdf.factories.PptxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
@@ -36,6 +37,7 @@ public class FileConversionService {
     private final RtfFileConverterFactory rtfFileConverterFactory;
     private final SvgFileConverterFactory svgFileConverterFactory;
     private final TiffFileConverterFactory tiffFileConverterFactory;
+    private final MarkdownFileConverterFactory markdownFileConverterFactory;
     private final PdfMergeService pdfMergeService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
@@ -86,6 +88,8 @@ public class FileConversionService {
             return svgFileConverterFactory;
         } else if (inputFile.toLowerCase().endsWith(".tiff") || inputFile.toLowerCase().endsWith(".tif")){
             return tiffFileConverterFactory;
+        } else if (inputFile.toLowerCase().endsWith(".md") || inputFile.toLowerCase().endsWith(".markdown")){
+            return markdownFileConverterFactory;
         } else {
             log.error("No converter found for file {}", inputFile);
             return null;
