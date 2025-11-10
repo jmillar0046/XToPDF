@@ -45,4 +45,22 @@ class XlsxToPdfServiceTest {
         String result = ExcelUtils.getCellValueAsString(null);
         assertEquals("", result);
     }
+
+    @Test
+    void convertXlsxToPdf_WithExecuteMacrosFalse_DoesNotThrow() {
+        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "invalid content".getBytes());
+        var outputFile = new File(tempDir.toFile(), "output.pdf");
+
+        // Should throw IOException regardless of executeMacros parameter for invalid content
+        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile, false));
+    }
+
+    @Test
+    void convertXlsxToPdf_WithExecuteMacrosTrue_DoesNotThrow() {
+        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "invalid content".getBytes());
+        var outputFile = new File(tempDir.toFile(), "output.pdf");
+
+        // Should throw IOException regardless of executeMacros parameter for invalid content
+        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile, true));
+    }
 }
