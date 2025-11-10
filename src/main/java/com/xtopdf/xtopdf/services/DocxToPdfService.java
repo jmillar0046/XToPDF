@@ -13,6 +13,7 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFontFactory;
+import com.xtopdf.xtopdf.utils.WordUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -27,10 +28,20 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class DocxToPdfService {
    public void convertDocxToPdf(MultipartFile docxFile, File pdfFile) throws IOException {
+        convertDocxToPdf(docxFile, pdfFile, false);
+    }
+    
+   public void convertDocxToPdf(MultipartFile docxFile, File pdfFile, boolean executeMacros) throws IOException {
         // Check if the input file is empty
         try (var fis = docxFile.getInputStream()) {
             try (XWPFDocument docxDocument = new XWPFDocument(fis);
                  PdfWriter writer = new PdfWriter(pdfFile)) {
+                
+                // Update fields if macro execution is enabled
+                if (executeMacros) {
+                    WordUtils.updateFields(docxDocument);
+                }
+                
                 PdfDocument pdfDocument = new PdfDocument(writer);
                 Document pdfDoc = new Document(pdfDocument);
 

@@ -15,9 +15,14 @@ public class DocFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile docFile, String outputFile) {
+        convertToPDF(docFile, outputFile, false);
+    }
+    
+    @Override
+    public void convertToPDF(MultipartFile docFile, String outputFile, boolean executeMacros) {
         var pdfFile = new File(outputFile);
         try {
-            docToPdfService.convertDocToPdf(docFile, pdfFile);
+            docToPdfService.convertDocToPdf(docFile, pdfFile, executeMacros);
         } catch (IOException e) {
             throw new RuntimeException("Error converting DOC to PDF: " + e.getMessage(), e);
         } catch (NullPointerException e) {

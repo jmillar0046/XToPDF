@@ -25,11 +25,11 @@ class DocxFileConverterTest {
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
-        doNothing().when(docxToPdfService).convertDocxToPdf(any(), any());
+        doNothing().when(docxToPdfService).convertDocxToPdf(any(), any(), any(Boolean.class));
 
         docxFileConverter.convertToPDF(inputFile, outputFile);
 
-        verify(docxToPdfService).convertDocxToPdf(any(), any());
+        verify(docxToPdfService).convertDocxToPdf(any(), any(), any(Boolean.class));
     }
 
     @Test
@@ -39,7 +39,7 @@ class DocxFileConverterTest {
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
-        doThrow(new IOException("File processing error")).when(docxToPdfService).convertDocxToPdf(any(), any());
+        doThrow(new IOException("File processing error")).when(docxToPdfService).convertDocxToPdf(any(), any(), any(Boolean.class));
 
         assertThrows(RuntimeException.class, () -> docxFileConverter.convertToPDF(inputFile, outputFile));
     }

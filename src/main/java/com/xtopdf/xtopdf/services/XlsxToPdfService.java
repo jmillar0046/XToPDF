@@ -7,15 +7,11 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.UnitValue;
-import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.xtopdf.xtopdf.utils.ExcelUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,9 +20,18 @@ import org.springframework.web.multipart.MultipartFile;
 public class XlsxToPdfService {
     
     public void convertXlsxToPdf(MultipartFile xlsxFile, File pdfFile) throws IOException {
+        convertXlsxToPdf(xlsxFile, pdfFile, false);
+    }
+    
+    public void convertXlsxToPdf(MultipartFile xlsxFile, File pdfFile, boolean executeMacros) throws IOException {
         try (var fis = xlsxFile.getInputStream();
              Workbook workbook = new XSSFWorkbook(fis);
              PdfWriter writer = new PdfWriter(pdfFile)) {
+            
+            // Recalculate all formulas if macro execution is enabled
+            if (executeMacros) {
+                ExcelUtils.recalculateFormulas(workbook);
+            }
             
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document pdfDoc = new Document(pdfDocument);
@@ -48,124 +53,12 @@ public class XlsxToPdfService {
                 }
                 pdfDoc.add(sheetHeader);
                 
-                processSheet(sheet, pdfDoc);
+                ExcelUtils.processSheet(sheet, pdfDoc);
             }
             
             pdfDoc.close();
         } catch (Exception e) {
             throw new IOException("Error processing XLSX file: " + e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Processes the given Excel sheet and adds its contents to the provided PDF document.
-     * <p>
-     * If the sheet is empty, a message indicating an empty sheet is added to the PDF.
-     * If the sheet has no data (no columns), a message indicating no data is added.
-     * Otherwise, the sheet's data is rendered as a table in the PDF.
-     *
-     * @param sheet   the Excel sheet to process
-     * @param pdfDoc  the PDF document to which the sheet's contents will be added
-     */
-    void processSheet(Sheet sheet, Document pdfDoc) {
-        if (sheet.getPhysicalNumberOfRows() == 0) {
-            pdfDoc.add(new Paragraph("(Empty sheet)"));
-            return;
-        }
-        
-        // Determine the maximum number of columns
-        int maxColumns = 0;
-        for (Row row : sheet) {
-            if (row.getLastCellNum() > maxColumns) {
-                maxColumns = row.getLastCellNum();
-            }
-        }
-        
-        if (maxColumns == 0) {
-            pdfDoc.add(new Paragraph("(No data in sheet)"));
-            return;
-        }
-        
-        // Create table with appropriate number of columns
-        Table table = new Table(UnitValue.createPercentArray(maxColumns)).useAllAvailableWidth();
-        
-        // Process each row
-        for (Row row : sheet) {
-            for (int cellIndex = 0; cellIndex < maxColumns; cellIndex++) {
-                org.apache.poi.ss.usermodel.Cell cell = row.getCell(cellIndex);
-                String cellValue = getCellValueAsString(cell);
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(cellValue)));
-            }
-        }
-        
-        pdfDoc.add(table);
-    }
-    
-    /**
-     * Converts the given Excel cell to its string representation.
-     * <p>
-     * Handles the following cell types:
-     * <ul>
-     *   <li><b>STRING</b>: Returns the cell's string value.</li>
-     *   <li><b>NUMERIC</b>: Returns the numeric value as a string. If the cell is date-formatted, returns the date as a string.
-     *       For integer values, returns without decimal point; otherwise, returns the double value as a string.</li>
-     *   <li><b>BOOLEAN</b>: Returns "true" or "false".</li>
-     *   <li><b>FORMULA</b>: Attempts to return the cached formula result as a string, handling STRING, NUMERIC, and BOOLEAN results.
-     *       If unable to evaluate, returns the formula itself as a string.</li>
-     *   <li><b>BLANK</b> or unknown types: Returns an empty string.</li>
-     * </ul>
-     * If the cell is {@code null}, returns an empty string.
-     *
-     * @param cell the Excel cell to convert
-     * @return the string representation of the cell's value, or an empty string if the cell is null or blank
-     */
-    String getCellValueAsString(org.apache.poi.ss.usermodel.Cell cell) {
-        if (cell == null) {
-            return "";
-        }
-        
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                // Check if it's a date
-                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    // Format numeric values to avoid scientific notation for integers
-                    double numValue = cell.getNumericCellValue();
-                    if (numValue == Math.floor(numValue)) {
-                        return String.valueOf((long) numValue);
-                    } else {
-                        return String.valueOf(numValue);
-                    }
-                }
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                try {
-                    // Try to get the cached formula result
-                    switch (cell.getCachedFormulaResultType()) {
-                        case STRING:
-                            return cell.getStringCellValue();
-                        case NUMERIC:
-                            double numValue = cell.getNumericCellValue();
-                            if (numValue == Math.floor(numValue)) {
-                                return String.valueOf((long) numValue);
-                            } else {
-                                return String.valueOf(numValue);
-                            }
-                        case BOOLEAN:
-                            return String.valueOf(cell.getBooleanCellValue());
-                        default:
-                            return cell.getCellFormula();
-                    }
-                } catch (Exception e) {
-                    return cell.getCellFormula();
-                }
-            case BLANK:
-            default:
-                return "";
         }
     }
 }

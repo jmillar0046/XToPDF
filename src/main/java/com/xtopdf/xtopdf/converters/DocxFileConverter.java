@@ -16,8 +16,13 @@ public class DocxFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile docxFile, String outputFile) {
+        convertToPDF(docxFile, outputFile, false);
+    }
+    
+    @Override
+    public void convertToPDF(MultipartFile docxFile, String outputFile, boolean executeMacros) {
         try {
-            docxToPdfService.convertDocxToPdf(docxFile, new File(outputFile));
+            docxToPdfService.convertDocxToPdf(docxFile, new File(outputFile), executeMacros);
         } catch (IOException e) {
             throw new RuntimeException("Error converting DOCX to PDF: " + e.getMessage(), e);
         }

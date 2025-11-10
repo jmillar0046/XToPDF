@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.utils.ExcelUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.MediaType;
@@ -41,7 +42,7 @@ class XlsxToPdfServiceTest {
 
     @Test
     void getCellValueAsString_NullCell_ReturnsEmptyString() {
-        String result = xlsxToPdfService.getCellValueAsString(null);
+        String result = ExcelUtils.getCellValueAsString(null);
         assertEquals("", result);
     }
 }

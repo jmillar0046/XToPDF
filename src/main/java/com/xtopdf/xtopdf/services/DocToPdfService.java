@@ -21,9 +21,16 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class DocToPdfService {
     public void convertDocToPdf(MultipartFile docFile, File pdfFile) throws IOException {
+        convertDocToPdf(docFile, pdfFile, false);
+    }
+    
+    public void convertDocToPdf(MultipartFile docFile, File pdfFile, boolean executeMacros) throws IOException {
         try (var fis = docFile.getInputStream();
              HWPFDocument docDocument = new HWPFDocument(fis);
              PdfWriter writer = new PdfWriter(pdfFile)) {
+            
+            // Note: DOC format has very limited field update capabilities in POI
+            // executeMacros parameter is accepted for API consistency but has minimal effect
             
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document pdfDoc = new Document(pdfDocument);

@@ -118,7 +118,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -131,7 +131,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(jpegFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -144,7 +144,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(pngFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -157,7 +157,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(bmpFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -170,7 +170,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(pptxFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -183,7 +183,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(rtfFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -196,7 +196,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(svgFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -209,7 +209,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(tiffFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -222,7 +222,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(markdownFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @Test
@@ -235,7 +235,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(markdownFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
     }
 
     @ParameterizedTest
@@ -357,7 +357,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, existingPdf, "back");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
         verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("back"));
     }
 
@@ -372,7 +372,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, existingPdf, "front");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
         verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("front"));
     }
 
@@ -386,7 +386,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, null, null);
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
         verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
     }
 
@@ -401,7 +401,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, emptyExistingPdf, "back");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
         verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
     }
 
