@@ -66,34 +66,34 @@ public class FileConversionService {
     }
 
     FileConverterFactory getFactoryForFile(String inputFile) {
-        if(inputFile.toLowerCase().endsWith(".txt")){
-            return txtFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".docx")){
-            return docxFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".html")){
-            return htmlFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".jpeg") || inputFile.toLowerCase().endsWith(".jpg")){
-            return jpegFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".png")){
-            return pngFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".xlsx")){
-            return xlsxFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".bmp")){
-            return bmpFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".pptx")){
-            return pptxFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".rtf")){
-            return rtfFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".svg")){
-            return svgFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".tiff") || inputFile.toLowerCase().endsWith(".tif")){
-            return tiffFileConverterFactory;
-        } else if (inputFile.toLowerCase().endsWith(".md") || inputFile.toLowerCase().endsWith(".markdown")){
-            return markdownFileConverterFactory;
-        } else {
+        String lowerCaseFileName = inputFile.toLowerCase();
+        int dotIndex = lowerCaseFileName.lastIndexOf('.');
+        
+        if (dotIndex == -1) {
             log.error("No converter found for file {}", inputFile);
             return null;
         }
+        
+        String extension = lowerCaseFileName.substring(dotIndex);
+        
+        return switch (extension) {
+            case ".txt" -> txtFileConverterFactory;
+            case ".docx" -> docxFileConverterFactory;
+            case ".html" -> htmlFileConverterFactory;
+            case ".jpeg", ".jpg" -> jpegFileConverterFactory;
+            case ".png" -> pngFileConverterFactory;
+            case ".xlsx" -> xlsxFileConverterFactory;
+            case ".bmp" -> bmpFileConverterFactory;
+            case ".pptx" -> pptxFileConverterFactory;
+            case ".rtf" -> rtfFileConverterFactory;
+            case ".svg" -> svgFileConverterFactory;
+            case ".tiff", ".tif" -> tiffFileConverterFactory;
+            case ".md", ".markdown" -> markdownFileConverterFactory;
+            default -> {
+                log.error("No converter found for file {}", inputFile);
+                yield null;
+            }
+        };
     }
 
 }
