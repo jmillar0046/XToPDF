@@ -2,18 +2,7 @@ package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
-import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
-import com.xtopdf.xtopdf.factories.DocxFileConverterFactory;
-import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
-import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
-import com.xtopdf.xtopdf.factories.MarkdownFileConverterFactory;
-import com.xtopdf.xtopdf.factories.PngFileConverterFactory;
-import com.xtopdf.xtopdf.factories.PptxFileConverterFactory;
-import com.xtopdf.xtopdf.factories.RtfFileConverterFactory;
-import com.xtopdf.xtopdf.factories.SvgFileConverterFactory;
-import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
-import com.xtopdf.xtopdf.factories.TxtFileConverterFactory;
-import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
+import com.xtopdf.xtopdf.factories.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +32,8 @@ class FileConversionServiceTest {
     @Mock
     private DocxFileConverterFactory docxFileConverterFactory;
     @Mock
+    private DocFileConverterFactory docFileConverterFactory;
+    @Mock
     private HtmlFileConverterFactory htmlFileConverterFactory;
     @Mock
     private JpegFileConverterFactory jpegFileConverterFactory;
@@ -51,9 +42,17 @@ class FileConversionServiceTest {
     @Mock
     private XlsxFileConverterFactory xlsxFileConverterFactory;
     @Mock
+    private XlsFileConverterFactory xlsFileConverterFactory;
+    @Mock
+    private CsvFileConverterFactory csvFileConverterFactory;
+    @Mock
     private BmpFileConverterFactory bmpFileConverterFactory;
     @Mock
+    private GifFileConverterFactory gifFileConverterFactory;
+    @Mock
     private PptxFileConverterFactory pptxFileConverterFactory;
+    @Mock
+    private PptFileConverterFactory pptFileConverterFactory;
     @Mock
     private RtfFileConverterFactory rtfFileConverterFactory;
     @Mock
@@ -62,6 +61,22 @@ class FileConversionServiceTest {
     private TiffFileConverterFactory tiffFileConverterFactory;
     @Mock
     private MarkdownFileConverterFactory markdownFileConverterFactory;
+    @Mock
+    private OdtFileConverterFactory odtFileConverterFactory;
+    @Mock
+    private OdsFileConverterFactory odsFileConverterFactory;
+    @Mock
+    private OdpFileConverterFactory odpFileConverterFactory;
+    @Mock
+    private XmlFileConverterFactory xmlFileConverterFactory;
+    @Mock
+    private JsonFileConverterFactory jsonFileConverterFactory;
+    @Mock
+    private EpsFileConverterFactory epsFileConverterFactory;
+    @Mock
+    private EpubFileConverterFactory epubFileConverterFactory;
+    @Mock
+    private XpsFileConverterFactory xpsFileConverterFactory;
     
     @Mock
     private PdfMergeService pdfMergeService;
@@ -74,12 +89,18 @@ class FileConversionServiceTest {
     @BeforeEach
     void setUp() {
         fileConversionService = new FileConversionService(txtFileConverterFactory, docxFileConverterFactory, 
-                                                          htmlFileConverterFactory, jpegFileConverterFactory, 
-                                                          pngFileConverterFactory, xlsxFileConverterFactory,
-                                                          bmpFileConverterFactory, pptxFileConverterFactory,
-                                                          rtfFileConverterFactory, svgFileConverterFactory,
-                                                          tiffFileConverterFactory, markdownFileConverterFactory,
-                                                          pdfMergeService);
+                                                          docFileConverterFactory, htmlFileConverterFactory, 
+                                                          jpegFileConverterFactory, pngFileConverterFactory, 
+                                                          xlsxFileConverterFactory, xlsFileConverterFactory,
+                                                          csvFileConverterFactory, bmpFileConverterFactory,
+                                                          gifFileConverterFactory, pptxFileConverterFactory,
+                                                          pptFileConverterFactory, rtfFileConverterFactory, 
+                                                          svgFileConverterFactory, tiffFileConverterFactory,
+                                                          markdownFileConverterFactory, odtFileConverterFactory,
+                                                          odsFileConverterFactory, odpFileConverterFactory,
+                                                          xmlFileConverterFactory, jsonFileConverterFactory,
+                                                          epsFileConverterFactory, epubFileConverterFactory,
+                                                          xpsFileConverterFactory, pdfMergeService);
     }
 
     @Test
@@ -224,19 +245,32 @@ class FileConversionServiceTest {
     @CsvSource({
             ".txt, true",
             ".docx, true",
+            ".doc, true",
             ".html, true",
             ".jpeg, true",
             ".jpg, true",
             ".png, true",
             ".xlsx, true",
+            ".xls, true",
+            ".csv, true",
             ".bmp, true",
+            ".gif, true",
             ".pptx, true",
+            ".ppt, true",
             ".rtf, true",
             ".svg, true",
             ".tiff, true",
             ".tif, true",
             ".md, true",
-            ".markdown, true"
+            ".markdown, true",
+            ".odt, true",
+            ".ods, true",
+            ".odp, true",
+            ".xml, true",
+            ".json, true",
+            ".eps, true",
+            ".epub, true",
+            ".xps, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
