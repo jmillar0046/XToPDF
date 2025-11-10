@@ -21,8 +21,6 @@ public class MarkdownFileConverter implements FileConverter {
             markdownToPdfService.convertMarkdownToPdf(markdownFile, pdfFile);
         } catch (IOException e) {
             throw new RuntimeException("Error converting Markdown to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
         }
     }
     
