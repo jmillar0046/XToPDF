@@ -13,14 +13,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import com.xtopdf.xtopdf.services.PageNumberService;
 
 class GifFileConverterTest {
 
     @Test
     void testConvertToPDF() throws IOException {
         GifToPdfService gifToPdfService = Mockito.mock(GifToPdfService.class);
-        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService, Mockito.mock(PageNumberService.class));
+        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.gif", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -34,7 +33,7 @@ class GifFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         GifToPdfService gifToPdfService = Mockito.mock(GifToPdfService.class);
-        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService, Mockito.mock(PageNumberService.class));
+        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.gif", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -46,7 +45,7 @@ class GifFileConverterTest {
     @Test
     void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException {
         GifToPdfService gifToPdfService = Mockito.mock(GifToPdfService.class);
-        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService, Mockito.mock(PageNumberService.class));
+        GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.gif", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 

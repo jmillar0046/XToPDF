@@ -13,14 +13,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import com.xtopdf.xtopdf.services.PageNumberService;
 
 class PngFileConverterTest {
 
     @Test
     void testConvertToPDF() throws IOException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
-        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService, Mockito.mock(PageNumberService.class));
+        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());
 
@@ -34,7 +33,7 @@ class PngFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
-        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService, Mockito.mock(PageNumberService.class));
+        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());
 
@@ -46,7 +45,7 @@ class PngFileConverterTest {
     @Test
     void testConvertToPDF_NullInputFile_ThrowsNullPointerException() throws IOException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
-        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService, Mockito.mock(PageNumberService.class));
+        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
 
         assertThrows(NullPointerException.class, () -> pngFileConverter.convertToPDF(null, outputFile));
@@ -55,7 +54,7 @@ class PngFileConverterTest {
     @Test
     void testConvertToPDF_NullOutputFile_ThrowsNullPointerException() throws IOException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
-        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService, Mockito.mock(PageNumberService.class));
+        PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());
 
         assertThrows(NullPointerException.class, () -> pngFileConverter.convertToPDF(inputFile, null));

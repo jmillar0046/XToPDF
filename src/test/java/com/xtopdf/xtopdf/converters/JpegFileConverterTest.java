@@ -15,21 +15,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import com.xtopdf.xtopdf.services.PageNumberService;
 
 @ExtendWith(MockitoExtension.class)
 class JpegFileConverterTest {
 
     @Mock
     private JpegToPdfService jpegToPdfService;
-    @Mock
-    private PageNumberService pageNumberService;
-
     private JpegFileConverter jpegFileConverter;
 
     @BeforeEach
     void setUp() {
-        jpegFileConverter = new JpegFileConverter(jpegToPdfService, pageNumberService);
+        jpegFileConverter = new JpegFileConverter(jpegToPdfService);
     }
 
     @Test

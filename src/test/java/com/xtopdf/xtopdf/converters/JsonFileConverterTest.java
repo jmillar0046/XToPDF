@@ -13,14 +13,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import com.xtopdf.xtopdf.services.PageNumberService;
 
 class JsonFileConverterTest {
 
     @Test
     void testConvertToPDF() throws IOException {
         JsonToPdfService jsonToPdfService = Mockito.mock(JsonToPdfService.class);
-        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService, Mockito.mock(PageNumberService.class));
+        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.json", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -34,7 +33,7 @@ class JsonFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         JsonToPdfService jsonToPdfService = Mockito.mock(JsonToPdfService.class);
-        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService, Mockito.mock(PageNumberService.class));
+        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.json", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -46,7 +45,7 @@ class JsonFileConverterTest {
     @Test
     void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException {
         JsonToPdfService jsonToPdfService = Mockito.mock(JsonToPdfService.class);
-        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService, Mockito.mock(PageNumberService.class));
+        JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService);
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.json", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 

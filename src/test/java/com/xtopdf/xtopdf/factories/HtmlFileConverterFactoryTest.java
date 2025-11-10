@@ -6,14 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import com.xtopdf.xtopdf.services.PageNumberService;
-import org.mockito.Mockito;
 
 class HtmlFileConverterFactoryTest {
     @Mock
     private HtmlToPdfService htmlToPdfService;
 
-    private final HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService, Mockito.mock(PageNumberService.class));
+    private final HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService);
     private final HtmlFileConverterFactory htmlFileConverterFactory = new HtmlFileConverterFactory(htmlFileConverter);
 
     @Test
