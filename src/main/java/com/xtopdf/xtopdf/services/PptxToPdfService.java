@@ -51,8 +51,8 @@ public class PptxToPdfService {
                 
                 // Process shapes in the slide
                 for (XSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof XSLFTextShape) {
-                        processTextShape((XSLFTextShape) shape, pdfDoc);
+                    if (shape instanceof XSLFTextShape textShape) {
+                        processTextShape(textShape, pdfDoc);
                     }
                 }
                 

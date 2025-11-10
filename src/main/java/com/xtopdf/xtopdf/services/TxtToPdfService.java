@@ -18,14 +18,14 @@ import java.io.InputStreamReader;
 public class TxtToPdfService {
      public void convertTxtToPdf(MultipartFile txtFile, File pdfFile) throws IOException {
        // Read the .txt file content
-        BufferedReader br = new BufferedReader(new InputStreamReader(txtFile.getInputStream()));
-        String line;
         StringBuilder textContent = new StringBuilder();
-
-        while ((line = br.readLine()) != null) {
-            textContent.append(line).append("\n");
+        
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(txtFile.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                textContent.append(line).append("\n");
+            }
         }
-        br.close();
 
         // Create a PDF document using iText
         try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {

@@ -33,8 +33,13 @@ public class MarkdownToPdfService {
         String htmlContent = renderer.render(document);
 
         // Add basic HTML structure for better PDF rendering
-        String fullHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>" 
-                        + htmlContent + "</body></html>";
+        String fullHtml = """
+                <!DOCTYPE html>
+                <html>
+                <head><meta charset="UTF-8"></head>
+                <body>%s</body>
+                </html>
+                """.formatted(htmlContent);
 
         // Convert HTML to PDF using iText
         try (FileOutputStream outputStream = new FileOutputStream(pdfFile)) {
