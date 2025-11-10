@@ -13,6 +13,7 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Text;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFontFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class DocxToPdfService {
    public void convertDocxToPdf(MultipartFile docxFile, File pdfFile) throws IOException {
         // Check if the input file is empty
@@ -45,7 +47,7 @@ public class DocxToPdfService {
                 pdfDoc.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error processing DOCX file: {}", e.getMessage(), e);
             throw new IOException("Error processing DOCX file: " + e.getMessage());
         }
     }
