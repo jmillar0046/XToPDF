@@ -60,15 +60,15 @@ public class PageNumberService {
                 TextAlignment textAlignment = getTextAlignment(config.getAlignment());
                 paragraph.setTextAlignment(textAlignment);
                 
-                // Calculate x position based on alignment
-                float xPosition = MARGIN;
+                // Calculate x position and width based on alignment
+                float xPosition;
                 float width = pageSize.getWidth() - (2 * MARGIN);
                 
-                if (config.getAlignment() == PageNumberAlignment.CENTER) {
+                if (config.getAlignment() == PageNumberAlignment.LEFT) {
                     xPosition = MARGIN;
                 } else if (config.getAlignment() == PageNumberAlignment.RIGHT) {
-                    xPosition = MARGIN;
-                } else { // LEFT
+                    xPosition = pageSize.getWidth() - MARGIN;
+                } else { // CENTER
                     xPosition = MARGIN;
                 }
                 

@@ -15,13 +15,18 @@ public class RtfFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile rtfFile, String outputFile) {
+        if (rtfFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
+        }
+        
         var pdfFile = new File(outputFile);
         try {
             rtfToPdfService.convertRtfToPdf(rtfFile, pdfFile);
         } catch (IOException e) {
             throw new RuntimeException("Error converting RTF to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
         }
     }
 }

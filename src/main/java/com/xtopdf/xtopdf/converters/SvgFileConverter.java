@@ -15,13 +15,17 @@ public class SvgFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile svgFile, String outputFile) {
-        var pdfFile = new File(outputFile);
+        if (svgFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
+        }
+
         try {
-            svgToPdfService.convertSvgToPdf(svgFile, pdfFile);
+            svgToPdfService.convertSvgToPdf(svgFile, new File(outputFile));
         } catch (IOException e) {
             throw new RuntimeException("Error converting SVG to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
         }
     }
 }

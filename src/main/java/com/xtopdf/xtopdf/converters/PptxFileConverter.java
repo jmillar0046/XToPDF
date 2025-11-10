@@ -15,13 +15,17 @@ public class PptxFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile pptxFile, String outputFile) {
-        var pdfFile = new File(outputFile);
+        if (pptxFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
+        }
+
         try {
-            pptxToPdfService.convertPptxToPdf(pptxFile, pdfFile);
+            pptxToPdfService.convertPptxToPdf(pptxFile, new File(outputFile));
         } catch (IOException e) {
             throw new RuntimeException("Error converting PPTX to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
         }
     }
 }
