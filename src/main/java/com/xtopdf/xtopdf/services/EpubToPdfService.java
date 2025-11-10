@@ -2,7 +2,6 @@ package com.xtopdf.xtopdf.services;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;

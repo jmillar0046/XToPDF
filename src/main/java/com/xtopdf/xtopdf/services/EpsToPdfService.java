@@ -6,7 +6,6 @@ import java.io.IOException;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Image;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 @Service
