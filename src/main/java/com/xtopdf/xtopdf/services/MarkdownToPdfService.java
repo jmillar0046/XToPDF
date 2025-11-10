@@ -18,14 +18,13 @@ import java.io.InputStreamReader;
 public class MarkdownToPdfService {
     public void convertMarkdownToPdf(MultipartFile markdownFile, File pdfFile) throws IOException {
         // Read the markdown file content
-        BufferedReader br = new BufferedReader(new InputStreamReader(markdownFile.getInputStream()));
-        String line;
         StringBuilder markdownContent = new StringBuilder();
-
-        while ((line = br.readLine()) != null) {
-            markdownContent.append(line).append("\n");
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(markdownFile.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                markdownContent.append(line).append("\n");
+            }
         }
-        br.close();
 
         // Parse markdown to HTML
         Parser parser = Parser.builder().build();
