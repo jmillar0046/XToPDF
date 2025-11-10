@@ -20,8 +20,8 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 
 ## Technologies
 
-- Java 17
-- Spring Boot 3.4.4
+- Java 21
+- Spring Boot 3.5.7
 - Apache POI
 - iText 7
 - PDFBox
@@ -32,7 +32,7 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 
 ### Prerequisites
 
-- Java 17+
+- Java 21+
 - Gradle
 
 ### Build
