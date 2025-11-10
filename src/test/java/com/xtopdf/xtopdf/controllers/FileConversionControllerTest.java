@@ -249,4 +249,63 @@ class FileConversionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Error with conversion"));
     }
+
+    @Test
+    void testConvertMarkdownFile() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test Markdown".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertMarkdownExtensionFile() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.markdown", MediaType.TEXT_MARKDOWN_VALUE, "# Test Markdown".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertMarkdownFileWithExistingPdf() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test Markdown".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "front"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertMarkdownFileFailed() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test".getBytes());
+        String outputFile = "test.pdf";
+
+        doThrow(new FileConversionException("Markdown conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Error with conversion"));
+    }
 }
