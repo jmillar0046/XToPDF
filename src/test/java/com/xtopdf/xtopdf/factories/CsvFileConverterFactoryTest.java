@@ -6,13 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import com.xtopdf.xtopdf.services.PageNumberService;
+import org.mockito.Mockito;
 
 class CsvFileConverterFactoryTest {
 
     @Mock
     private CsvToPdfService csvToPdfService;
 
-    private final CsvFileConverter csvFileConverter = new CsvFileConverter(csvToPdfService);
+    private final CsvFileConverter csvFileConverter = new CsvFileConverter(csvToPdfService, Mockito.mock(PageNumberService.class));
     private final CsvFileConverterFactory csvFileConverterFactory = new CsvFileConverterFactory(csvFileConverter);
 
     @Test

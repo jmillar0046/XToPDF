@@ -7,6 +7,7 @@ import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import com.xtopdf.xtopdf.services.PageNumberService;
 
 class PngFileConverterFactoryTest {
 

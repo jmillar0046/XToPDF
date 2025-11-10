@@ -13,13 +13,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import com.xtopdf.xtopdf.services.PageNumberService;
 
 class TxtFileConverterTest {
 
     @Test
     void testConvertToPDF() throws IOException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
-        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
+        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -33,7 +34,7 @@ class TxtFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
-        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
+        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -45,7 +46,7 @@ class TxtFileConverterTest {
     @Test
     void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
-        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
+        TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 

@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
+import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.CsvFileConverterFactory;
@@ -61,15 +62,19 @@ public class FileConversionService {
     private final PdfMergeService pdfMergeService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        convertFile(inputFile, outputFile, null, null);
+        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled());
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
+        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled());
+    }
+
+    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
             FileConverter converter = factory.createFileConverter();
-            converter.convertToPDF(inputFile, outputFile);
+            converter.convertToPDF(inputFile, outputFile, pageNumberConfig);
             
             // If an existing PDF is provided, merge it with the converted PDF
             if (existingPdf != null && !existingPdf.isEmpty()) {

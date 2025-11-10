@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
+import com.xtopdf.xtopdf.services.PageNumberService;
+import org.mockito.Mockito;
 
 @ExtendWith(MockitoExtension.class)
 class JpegFileConverterFactoryTest {

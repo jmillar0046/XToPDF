@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.converters.FileConverter;
+import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,7 +115,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -127,7 +128,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(jpegFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -140,7 +141,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(pngFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -153,7 +154,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(bmpFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -166,7 +167,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(pptxFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -179,7 +180,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(rtfFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -192,7 +193,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(svgFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -205,7 +206,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(tiffFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -218,7 +219,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(markdownFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @Test
@@ -231,7 +232,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile);
         
         verify(markdownFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
     }
 
     @ParameterizedTest
@@ -353,7 +354,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, existingPdf, "back");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
         verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("back"));
     }
 
@@ -368,7 +369,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, existingPdf, "front");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
         verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("front"));
     }
 
@@ -382,7 +383,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, null, null);
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
         verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
     }
 
@@ -397,7 +398,7 @@ class FileConversionServiceTest {
         fileConversionService.convertFile(inputFile, outputFile, emptyExistingPdf, "back");
         
         verify(txtFileConverterFactory).createFileConverter();
-        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile));
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), any(PageNumberConfig.class));
         verify(pdfMergeService, never()).mergePdfs(any(), any(), any());
     }
 

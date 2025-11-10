@@ -1,18 +1,20 @@
 package com.xtopdf.xtopdf.converters;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.xtopdf.xtopdf.config.PageNumberConfig;
+import com.xtopdf.xtopdf.services.PngToPdfService;
+import com.xtopdf.xtopdf.services.PageNumberService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import com.xtopdf.xtopdf.services.PngToPdfService;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 
 @AllArgsConstructor
 @Component
 public class PngFileConverter implements FileConverter {
     private final PngToPdfService pngToPdfService;
+    private final PageNumberService pageNumberService;
 
     @Override
     public void convertToPDF(MultipartFile pngFile, String outputFile) {
@@ -22,10 +24,28 @@ public class PngFileConverter implements FileConverter {
         if (outputFile == null) {
             throw new NullPointerException("Output file must not be null");
         }
-
+        
         var pdfFile = new File(outputFile);
         try {
             pngToPdfService.convertPngToPdf(pngFile, pdfFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Error converting PNG to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void convertToPDF(MultipartFile pngFile, String outputFile, PageNumberConfig pageNumberConfig) {
+        if (pngFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new NullPointerException("Output file must not be null");
+        }
+        
+        var pdfFile = new File(outputFile);
+        try {
+            pngToPdfService.convertPngToPdf(pngFile, pdfFile);
+            pageNumberService.addPageNumbers(pdfFile, pageNumberConfig);
         } catch (IOException e) {
             throw new RuntimeException("Error converting PNG to PDF: " + e.getMessage(), e);
         }

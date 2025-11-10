@@ -1,6 +1,8 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.services.SvgToPdfService;
+import com.xtopdf.xtopdf.services.PageNumberService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,20 +14,30 @@ import java.io.IOException;
 @Component
 public class SvgFileConverter implements FileConverter {
     private final SvgToPdfService svgToPdfService;
+    private final PageNumberService pageNumberService;
 
     @Override
     public void convertToPDF(MultipartFile svgFile, String outputFile) {
-        if (svgFile == null) {
-            throw new NullPointerException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new NullPointerException("Output file must not be null");
-        }
-
+        var pdfFile = new File(outputFile);
         try {
-            svgToPdfService.convertSvgToPdf(svgFile, new File(outputFile));
+            svgToPdfService.convertSvgToPdf(svgFile, pdfFile);
         } catch (IOException e) {
             throw new RuntimeException("Error converting SVG to PDF: " + e.getMessage(), e);
+        } catch (NullPointerException e) {
+            throw new NullPointerException("Input file or output file must not be null");
+        }
+    }
+
+    @Override
+    public void convertToPDF(MultipartFile svgFile, String outputFile, PageNumberConfig pageNumberConfig) {
+        var pdfFile = new File(outputFile);
+        try {
+            svgToPdfService.convertSvgToPdf(svgFile, pdfFile);
+            pageNumberService.addPageNumbers(pdfFile, pageNumberConfig);
+        } catch (IOException e) {
+            throw new RuntimeException("Error converting SVG to PDF: " + e.getMessage(), e);
+        } catch (NullPointerException e) {
+            throw new NullPointerException("Input file or output file must not be null");
         }
     }
 }

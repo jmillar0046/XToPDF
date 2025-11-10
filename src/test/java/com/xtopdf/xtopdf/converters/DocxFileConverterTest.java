@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import com.xtopdf.xtopdf.services.PageNumberService;
 
 
 class DocxFileConverterTest {
@@ -21,7 +22,7 @@ class DocxFileConverterTest {
     @Test
     void testConvertToPDF() throws IOException {
         DocxToPdfService docxToPdfService = Mockito.mock(DocxToPdfService.class);
-        DocxFileConverter docxFileConverter = new DocxFileConverter(docxToPdfService);
+        DocxFileConverter docxFileConverter = new DocxFileConverter(docxToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -35,7 +36,7 @@ class DocxFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         DocxToPdfService docxToPdfService = Mockito.mock(DocxToPdfService.class);
-        DocxFileConverter docxFileConverter = new DocxFileConverter(docxToPdfService);
+        DocxFileConverter docxFileConverter = new DocxFileConverter(docxToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 

@@ -13,13 +13,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import com.xtopdf.xtopdf.services.PageNumberService;
 
 class MarkdownFileConverterTest {
 
     @Test
     void testConvertToPDF() throws IOException {
         MarkdownToPdfService markdownToPdfService = Mockito.mock(MarkdownToPdfService.class);
-        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService);
+        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# test content".getBytes());
 
@@ -33,7 +34,7 @@ class MarkdownFileConverterTest {
     @Test
     void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
         MarkdownToPdfService markdownToPdfService = Mockito.mock(MarkdownToPdfService.class);
-        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService);
+        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# test content".getBytes());
 
@@ -45,7 +46,7 @@ class MarkdownFileConverterTest {
     @Test
     void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException {
         MarkdownToPdfService markdownToPdfService = Mockito.mock(MarkdownToPdfService.class);
-        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService);
+        MarkdownFileConverter markdownFileConverter = new MarkdownFileConverter(markdownToPdfService, Mockito.mock(PageNumberService.class));
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# test content".getBytes());
 
