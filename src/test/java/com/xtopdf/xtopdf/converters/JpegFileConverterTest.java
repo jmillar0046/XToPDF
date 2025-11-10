@@ -21,7 +21,6 @@ class JpegFileConverterTest {
 
     @Mock
     private JpegToPdfService jpegToPdfService;
-
     private JpegFileConverter jpegFileConverter;
 
     @BeforeEach

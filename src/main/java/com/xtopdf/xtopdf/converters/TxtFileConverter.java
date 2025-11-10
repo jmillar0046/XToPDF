@@ -25,5 +25,4 @@ public class TxtFileConverter implements FileConverter {
             throw new NullPointerException("Input file or output file must not be null");
         }
     }
-    
 }

@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
+import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.CsvFileConverterFactory;
@@ -59,17 +60,33 @@ public class FileConversionService {
     private final XmlFileConverterFactory xmlFileConverterFactory;
     private final JsonFileConverterFactory jsonFileConverterFactory;
     private final PdfMergeService pdfMergeService;
+    private final PageNumberService pageNumberService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        convertFile(inputFile, outputFile, null, null);
+        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled());
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
+        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled());
+    }
+
+    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
             FileConverter converter = factory.createFileConverter();
+            // Convert the file using the basic conversion method
             converter.convertToPDF(inputFile, outputFile);
+            
+            // Add page numbers centrally if enabled
+            if (pageNumberConfig.isEnabled()) {
+                try {
+                    java.io.File outputPdfFile = new java.io.File(outputFile);
+                    pageNumberService.addPageNumbers(outputPdfFile, pageNumberConfig);
+                } catch (java.io.IOException e) {
+                    throw new FileConversionException("Failed to add page numbers: " + e.getMessage());
+                }
+            }
             
             // If an existing PDF is provided, merge it with the converted PDF
             if (existingPdf != null && !existingPdf.isEmpty()) {

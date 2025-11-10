@@ -34,7 +34,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service method for successful conversion
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -49,7 +49,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to handle invalid file type
-        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any(), any(), any());
+        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -64,7 +64,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to throw FileConversionException
-        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any());
+        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -121,7 +121,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "large.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, largeContent);
         String outputFile = "large.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -144,7 +144,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any(), any(), any());
+        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -158,7 +158,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -175,7 +175,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -192,7 +192,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         // Test without position parameter - should default to "back"
         mockMvc.perform(multipart("/api/convert")
@@ -223,7 +223,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         // Test without existingPdf parameter - should work as before
         mockMvc.perform(multipart("/api/convert")
@@ -239,7 +239,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new FileConversionException("Failed to merge PDF files")).when(fileConversionService).convertFile(any(), any(), any(), any());
+        doThrow(new FileConversionException("Failed to merge PDF files")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -255,7 +255,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test Markdown".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -269,7 +269,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.markdown", MediaType.TEXT_MARKDOWN_VALUE, "# Test Markdown".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -284,7 +284,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any());
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -300,12 +300,151 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new FileConversionException("Markdown conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any());
+        doThrow(new FileConversionException("Markdown conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Error with conversion"));
+    }
+
+    @Test
+    void testConvertFileWithPageNumbersEnabled() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "BOTTOM")
+                        .param("pageNumberAlignment", "CENTER")
+                        .param("pageNumberStyle", "ARABIC"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithPageNumbersTopPosition() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "TOP")
+                        .param("pageNumberAlignment", "RIGHT")
+                        .param("pageNumberStyle", "ROMAN_UPPER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithPageNumbersAlphabetic() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "BOTTOM")
+                        .param("pageNumberAlignment", "LEFT")
+                        .param("pageNumberStyle", "ALPHABETIC_LOWER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithInvalidPageNumberPosition() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "MIDDLE")
+                        .param("pageNumberAlignment", "CENTER")
+                        .param("pageNumberStyle", "ARABIC"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Invalid page numbering parameters")));
+    }
+
+    @Test
+    void testConvertFileWithInvalidPageNumberAlignment() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "BOTTOM")
+                        .param("pageNumberAlignment", "MIDDLE")
+                        .param("pageNumberStyle", "ARABIC"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Invalid page numbering parameters")));
+    }
+
+    @Test
+    void testConvertFileWithInvalidPageNumberStyle() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "BOTTOM")
+                        .param("pageNumberAlignment", "CENTER")
+                        .param("pageNumberStyle", "INVALID"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Invalid page numbering parameters")));
+    }
+
+    @Test
+    void testConvertFileWithPageNumbersDisabled() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+
+        // When addPageNumbers is false or not provided, page numbers should not be added
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile)
+                        .param("addPageNumbers", "false"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
+    }
+
+    @Test
+    void testConvertFileWithPageNumbersAndExistingPdf() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .file(existingPdf)
+                        .param("outputFile", outputFile)
+                        .param("position", "back")
+                        .param("addPageNumbers", "true")
+                        .param("pageNumberPosition", "BOTTOM")
+                        .param("pageNumberAlignment", "CENTER")
+                        .param("pageNumberStyle", "ARABIC"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("File converted successfully"));
     }
 }

@@ -22,5 +22,4 @@ public class DocxFileConverter implements FileConverter {
             throw new RuntimeException("Error converting DOCX to PDF: " + e.getMessage(), e);
         }
     }
-    
 }

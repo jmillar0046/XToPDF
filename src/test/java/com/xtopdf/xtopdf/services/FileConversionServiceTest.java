@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.converters.FileConverter;
+import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +77,9 @@ class FileConversionServiceTest {
     private PdfMergeService pdfMergeService;
     
     @Mock
+    private PageNumberService pageNumberService;
+    
+    @Mock
     private FileConverter mockConverter;
 
     private FileConversionService fileConversionService;
@@ -93,7 +97,7 @@ class FileConversionServiceTest {
                                                           markdownFileConverterFactory, odtFileConverterFactory,
                                                           odsFileConverterFactory, odpFileConverterFactory,
                                                           xmlFileConverterFactory, jsonFileConverterFactory,
-                                                          pdfMergeService);
+                                                          pdfMergeService, pageNumberService);
     }
 
     @Test

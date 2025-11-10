@@ -1,13 +1,12 @@
 package com.xtopdf.xtopdf.converters;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.xtopdf.xtopdf.services.TiffToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import com.xtopdf.xtopdf.services.TiffToPdfService;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 
 @AllArgsConstructor
 @Component
@@ -25,5 +24,4 @@ public class TiffFileConverter implements FileConverter {
             throw new NullPointerException("Input file or output file must not be null");
         }
     }
-    
 }

@@ -23,5 +23,4 @@ public class MarkdownFileConverter implements FileConverter {
             throw new RuntimeException("Error converting Markdown to PDF: " + e.getMessage(), e);
         }
     }
-    
 }
