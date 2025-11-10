@@ -5,8 +5,6 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.CsvFileConverterFactory;
 import com.xtopdf.xtopdf.factories.DocFileConverterFactory;
-import com.xtopdf.xtopdf.factories.EpsFileConverterFactory;
-import com.xtopdf.xtopdf.factories.EpubFileConverterFactory;
 import com.xtopdf.xtopdf.factories.GifFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
 import com.xtopdf.xtopdf.factories.JpegFileConverterFactory;
@@ -24,7 +22,6 @@ import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XmlFileConverterFactory;
-import com.xtopdf.xtopdf.factories.XpsFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,9 +58,6 @@ public class FileConversionService {
     private final OdpFileConverterFactory odpFileConverterFactory;
     private final XmlFileConverterFactory xmlFileConverterFactory;
     private final JsonFileConverterFactory jsonFileConverterFactory;
-    private final EpsFileConverterFactory epsFileConverterFactory;
-    private final EpubFileConverterFactory epubFileConverterFactory;
-    private final XpsFileConverterFactory xpsFileConverterFactory;
     private final PdfMergeService pdfMergeService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
@@ -125,9 +119,6 @@ public class FileConversionService {
             case ".odp" -> odpFileConverterFactory;
             case ".xml" -> xmlFileConverterFactory;
             case ".json" -> jsonFileConverterFactory;
-            case ".eps" -> epsFileConverterFactory;
-            case ".epub" -> epubFileConverterFactory;
-            case ".xps" -> xpsFileConverterFactory;
             default -> {
                 log.error("No converter found for file {}", inputFile);
                 yield null;

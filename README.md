@@ -33,11 +33,8 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 - Convert GIF images to PDF
 - Convert TIFF/TIF images to PDF
 - Convert SVG images to PDF
-- Convert EPS files to PDF (basic support)
 
-### Other Formats
-- Convert EPUB files to PDF (basic support)
-- Convert XPS files to PDF (basic support)
+### Other Features
 - REST API endpoints for file conversion
 
 ## Technologies

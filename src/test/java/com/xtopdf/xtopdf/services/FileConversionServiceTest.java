@@ -71,12 +71,6 @@ class FileConversionServiceTest {
     private XmlFileConverterFactory xmlFileConverterFactory;
     @Mock
     private JsonFileConverterFactory jsonFileConverterFactory;
-    @Mock
-    private EpsFileConverterFactory epsFileConverterFactory;
-    @Mock
-    private EpubFileConverterFactory epubFileConverterFactory;
-    @Mock
-    private XpsFileConverterFactory xpsFileConverterFactory;
     
     @Mock
     private PdfMergeService pdfMergeService;
@@ -99,8 +93,7 @@ class FileConversionServiceTest {
                                                           markdownFileConverterFactory, odtFileConverterFactory,
                                                           odsFileConverterFactory, odpFileConverterFactory,
                                                           xmlFileConverterFactory, jsonFileConverterFactory,
-                                                          epsFileConverterFactory, epubFileConverterFactory,
-                                                          xpsFileConverterFactory, pdfMergeService);
+                                                          pdfMergeService);
     }
 
     @Test
@@ -267,10 +260,7 @@ class FileConversionServiceTest {
             ".ods, true",
             ".odp, true",
             ".xml, true",
-            ".json, true",
-            ".eps, true",
-            ".epub, true",
-            ".xps, true"
+            ".json, true"
     })
     void getFactoryForFileTest(String extension, boolean expected) {
         assertEquals(expected, Objects.nonNull(fileConversionService.getFactoryForFile(extension)));
