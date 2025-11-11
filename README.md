@@ -94,7 +94,7 @@ curl -X POST http://localhost:8080/api/convert \
   -F "executeMacros=true"
 ```
 
-**Note:** Apache POI cannot execute VBA macros directly. This feature forces recalculation of all formulas, including those that reference user-defined functions.
+**Note:** Apache POI cannot execute VBA macros or user-defined functions (UDFs). This feature forces recalculation of all formulas, but formulas that depend on VBA user-defined functions cannot be recalculated since Apache POI cannot execute VBA code.
 
 #### Page Numbering
 
