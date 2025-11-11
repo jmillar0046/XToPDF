@@ -1,9 +1,8 @@
-name: Release
+name: Automated Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -32,24 +31,58 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
       
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Get latest tag
+        id: get_latest_tag
+        run: |
+          # Get the latest tag, or use v0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Extract version number without 'v' prefix
+          VERSION=${LATEST_TAG#v}
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Determine next version
+        id: next_version
+        run: |
+          CURRENT_VERSION="${{ steps.get_latest_tag.outputs.current_version }}"
+          
+          # Parse version components
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          # Increment patch version
+          PATCH=$((PATCH + 1))
+          
+          # Create new version
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ steps.next_version.outputs.tag }} -m "Release version ${{ steps.next_version.outputs.version }}"
+          git push origin ${{ steps.next_version.outputs.tag }}
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.next_version.outputs.tag }}
           files: |
             build/libs/*.jar
           body: |
-            ## XToPDF ${{ steps.get_version.outputs.VERSION }}
+            ## XToPDF ${{ steps.next_version.outputs.version }}
             
             ### Installation
             
-            Download the `xtopdf-${{ steps.get_version.outputs.VERSION }}.jar` file and run:
+            Download the `xtopdf-${{ steps.next_version.outputs.version }}.jar` file and run:
             
             ```bash
-            java -jar xtopdf-${{ steps.get_version.outputs.VERSION }}.jar
+            java -jar xtopdf-${{ steps.next_version.outputs.version }}.jar
             ```
             
             ### Changes

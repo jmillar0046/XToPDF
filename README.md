@@ -4,11 +4,12 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 
 ## Releases
 
-This project uses semantic versioning and automated releases:
+This project uses semantic versioning with fully automated releases:
 
-- **Releases**: Created automatically when a version tag (e.g., `v1.0.0`) is pushed to GitHub
-- **Artifacts**: JAR files are attached to each GitHub Release for easy download
-- **Versioning**: Version numbers are automatically derived from git tags
+- **Automatic Versioning**: Patch version is automatically incremented on every merge to main
+- **Automatic Tagging**: Git tags are created automatically by GitHub Actions
+- **Automatic Releases**: GitHub Releases are created with JAR artifacts attached
+- **No Manual Tagging**: Version tags are protected and only created through automated workflows
 
 ### Downloading Releases
 
@@ -149,22 +150,21 @@ curl -X POST http://localhost:8080/api/convert \
 
 ## Development
 
-### Creating a Release
+### Automated Release Process
 
-To create a new release:
+Releases are **fully automated** and happen when pull requests are merged to the `main` branch:
 
-1. Update the version following [semantic versioning](https://semver.org/)
-2. Create and push a git tag:
+1. Create a pull request with your changes
+2. Get the PR reviewed and approved
+3. Merge the PR to `main`
+4. GitHub Actions automatically:
+   - Increments the patch version (e.g., v1.2.3 → v1.2.4)
+   - Creates a git tag
+   - Builds the project
+   - Runs all tests
+   - Creates a GitHub Release with JAR files
 
-```bash
-git tag -a v1.0.0 -m "Release version 1.0.0"
-git push origin v1.0.0
-```
-
-3. GitHub Actions will automatically:
-   - Build the project
-   - Run tests
-   - Create a GitHub Release with the JAR files
+**Important**: Do not manually create or push version tags. The automated workflow handles all versioning.
 
 ### Building Locally
 
