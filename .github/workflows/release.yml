@@ -10,6 +10,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Skip if push was made by github-actions bot (prevents infinite loop)
+    if: github.actor != 'github-actions[bot]'
     
     steps:
       - uses: actions/checkout@v4
