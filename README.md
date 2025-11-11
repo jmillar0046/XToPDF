@@ -2,6 +2,51 @@
 
 XToPDF is a Spring Boot application for converting various file formats to PDF.
 
+## Releases and Packages
+
+This project uses semantic versioning and automated releases:
+
+- **Releases**: Created automatically when a version tag (e.g., `v1.0.0`) is pushed
+- **Packages**: Published to [GitHub Packages](https://github.com/jmillar0046/XToPDF/packages) on every release
+- **Snapshots**: Development versions are published to GitHub Packages on every push to main
+
+### Using Published Packages
+
+To use this package in your Gradle project:
+
+```gradle
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/jmillar0046/XToPDF")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.token") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.xtopdf:xtopdf:VERSION'
+}
+```
+
+For Maven projects, add to your `settings.xml` or `pom.xml`:
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/jmillar0046/XToPDF</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.xtopdf</groupId>
+  <artifactId>xtopdf</artifactId>
+  <version>VERSION</version>
+</dependency>
+```
+
 ## Features
 
 ### Document Formats
@@ -128,6 +173,40 @@ curl -X POST http://localhost:8080/api/convert \
 ```
 
 - `position`: `front` (prepend) or `back` (append)
+
+## Development
+
+### Creating a Release
+
+To create a new release:
+
+1. Update the version following [semantic versioning](https://semver.org/)
+2. Create and push a git tag:
+
+```bash
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+```
+
+3. GitHub Actions will automatically:
+   - Build the project
+   - Run tests
+   - Create a GitHub Release with the JAR files
+   - Publish the package to GitHub Packages
+
+### Building Locally
+
+The version is automatically determined from git tags. If no tag exists, it uses the commit SHA.
+
+```bash
+./gradlew build
+```
+
+To publish to your local Maven repository:
+
+```bash
+./gradlew publishToMavenLocal
+```
 
 ## License
 
