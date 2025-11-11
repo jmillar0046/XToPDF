@@ -38,7 +38,6 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 - REST API endpoints for file conversion
 - Optional page numbering with customizable position, alignment, and style
 - **Formula recalculation for Excel files** - When enabled, all formulas are recalculated before conversion (useful for macro-dependent formulas)
-- **Field updates for Word documents** - When enabled, attempts to update calculated fields before conversion
 
 ## Technologies
 
@@ -84,9 +83,9 @@ curl -X POST http://localhost:8080/api/convert \
 
 ### Advanced Options
 
-#### Formula Recalculation / Field Updates (Macro Execution)
+#### Formula Recalculation (Macro Execution)
 
-For Excel files (XLSX, XLS), this recalculates all formulas before conversion. For Word files (DOCX, DOC), this updates calculated fields:
+For Excel files (XLSX, XLS), this recalculates all formulas before conversion:
 
 ```bash
 curl -X POST http://localhost:8080/api/convert \
@@ -95,9 +94,7 @@ curl -X POST http://localhost:8080/api/convert \
   -F "executeMacros=true"
 ```
 
-**Note:** Apache POI cannot execute VBA macros directly. This feature:
-- For Excel: Forces recalculation of all formulas, including those that reference user-defined functions
-- For Word: Attempts to update calculated fields (limited support in Apache POI)
+**Note:** Apache POI cannot execute VBA macros directly. This feature forces recalculation of all formulas, including those that reference user-defined functions.
 
 #### Page Numbering
 

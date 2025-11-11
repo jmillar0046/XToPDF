@@ -10,7 +10,11 @@ import org.apache.poi.ss.usermodel.*;
  * Utility class for Excel to PDF conversion operations.
  * Provides common functionality for processing Excel workbooks and sheets.
  */
-public class ExcelUtils {
+public final class ExcelUtils {
+    
+    private ExcelUtils() {
+        // Private constructor to prevent instantiation
+    }
     
     /**
      * Processes the given Excel sheet and adds its contents to the provided PDF document.
@@ -28,23 +32,43 @@ public class ExcelUtils {
             return;
         }
         
-        // Determine the maximum number of columns
-        int maxColumns = 0;
-        for (Row row : sheet) {
-            if (row.getLastCellNum() > maxColumns) {
-                maxColumns = row.getLastCellNum();
-            }
-        }
+        int maxColumns = getMaxColumnCount(sheet);
         
         if (maxColumns == 0) {
             pdfDoc.add(new Paragraph("(No data in sheet)"));
             return;
         }
         
-        // Create table with appropriate number of columns
+        Table table = createTable(sheet, maxColumns);
+        pdfDoc.add(table);
+    }
+    
+    /**
+     * Determines the maximum number of columns in a sheet.
+     *
+     * @param sheet the Excel sheet to analyze
+     * @return the maximum number of columns
+     */
+    private static int getMaxColumnCount(Sheet sheet) {
+        int maxColumns = 0;
+        for (Row row : sheet) {
+            if (row.getLastCellNum() > maxColumns) {
+                maxColumns = row.getLastCellNum();
+            }
+        }
+        return maxColumns;
+    }
+    
+    /**
+     * Creates a PDF table from an Excel sheet.
+     *
+     * @param sheet      the Excel sheet to convert
+     * @param maxColumns the number of columns in the table
+     * @return a PDF table containing the sheet data
+     */
+    private static Table createTable(Sheet sheet, int maxColumns) {
         Table table = new Table(UnitValue.createPercentArray(maxColumns)).useAllAvailableWidth();
         
-        // Process each row
         for (Row row : sheet) {
             for (int cellIndex = 0; cellIndex < maxColumns; cellIndex++) {
                 Cell cell = row.getCell(cellIndex);
@@ -53,7 +77,7 @@ public class ExcelUtils {
             }
         }
         
-        pdfDoc.add(table);
+        return table;
     }
     
     /**
@@ -83,44 +107,64 @@ public class ExcelUtils {
             case STRING:
                 return cell.getStringCellValue();
             case NUMERIC:
-                // Check if it's a date
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    // Format numeric values to avoid scientific notation for integers
-                    double numValue = cell.getNumericCellValue();
-                    if (numValue == Math.floor(numValue)) {
-                        return String.valueOf((long) numValue);
-                    } else {
-                        return String.valueOf(numValue);
-                    }
-                }
+                return formatNumericCell(cell);
             case BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
             case FORMULA:
-                try {
-                    // Try to get the cached formula result
-                    switch (cell.getCachedFormulaResultType()) {
-                        case STRING:
-                            return cell.getStringCellValue();
-                        case NUMERIC:
-                            double numValue = cell.getNumericCellValue();
-                            if (numValue == Math.floor(numValue)) {
-                                return String.valueOf((long) numValue);
-                            } else {
-                                return String.valueOf(numValue);
-                            }
-                        case BOOLEAN:
-                            return String.valueOf(cell.getBooleanCellValue());
-                        default:
-                            return cell.getCellFormula();
-                    }
-                } catch (Exception e) {
-                    return cell.getCellFormula();
-                }
+                return getFormulaResult(cell);
             case BLANK:
             default:
                 return "";
+        }
+    }
+    
+    /**
+     * Formats a numeric cell value as a string.
+     * Handles both regular numbers and date-formatted cells.
+     *
+     * @param cell the numeric cell to format
+     * @return the formatted string representation
+     */
+    private static String formatNumericCell(Cell cell) {
+        if (DateUtil.isCellDateFormatted(cell)) {
+            return cell.getDateCellValue().toString();
+        }
+        return formatNumericValue(cell.getNumericCellValue());
+    }
+    
+    /**
+     * Formats a numeric value, avoiding scientific notation for integers.
+     *
+     * @param numValue the numeric value to format
+     * @return the formatted string
+     */
+    private static String formatNumericValue(double numValue) {
+        if (numValue == Math.floor(numValue) && !Double.isInfinite(numValue)) {
+            return String.valueOf((long) numValue);
+        }
+        return String.valueOf(numValue);
+    }
+    
+    /**
+     * Gets the result of a formula cell as a string.
+     *
+     * @param cell the formula cell
+     * @return the formula result or the formula itself if evaluation fails
+     */
+    private static String getFormulaResult(Cell cell) {
+        try {
+            switch (cell.getCachedFormulaResultType()) {
+                case STRING:
+                    return cell.getStringCellValue();
+                case NUMERIC:
+                    return formatNumericValue(cell.getNumericCellValue());
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                default:
+                    return cell.getCellFormula();
+            }
+        } catch (Exception e) {
+            return cell.getCellFormula();
         }
     }
     
