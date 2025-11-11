@@ -168,7 +168,7 @@ Releases are **fully automated** and happen when pull requests are merged to the
 
 ### Building Locally
 
-The version is automatically determined from git tags. If no tag exists, it uses the commit SHA.
+The version is automatically determined from git tags. If no tag exists, it uses v0.0.0.
 
 ```bash
 ./gradlew build
