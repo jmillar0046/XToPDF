@@ -23,11 +23,11 @@ class XlsxFileConverterTest {
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
-        doNothing().when(xlsxToPdfService).convertXlsxToPdf(any(), any());
+        doNothing().when(xlsxToPdfService).convertXlsxToPdf(any(), any(), any(Boolean.class));
 
         xlsxFileConverter.convertToPDF(inputFile, outputFile);
 
-        verify(xlsxToPdfService).convertXlsxToPdf(any(), any());
+        verify(xlsxToPdfService).convertXlsxToPdf(any(), any(), any(Boolean.class));
     }
 
     @Test
@@ -37,7 +37,7 @@ class XlsxFileConverterTest {
         var outputFile = "outputFile.pdf";
         var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
-        doThrow(new IOException("File processing error")).when(xlsxToPdfService).convertXlsxToPdf(any(), any());
+        doThrow(new IOException("File processing error")).when(xlsxToPdfService).convertXlsxToPdf(any(), any(), any(Boolean.class));
 
         assertThrows(RuntimeException.class, () -> xlsxFileConverter.convertToPDF(inputFile, outputFile));
     }

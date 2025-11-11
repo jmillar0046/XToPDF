@@ -7,13 +7,11 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.xtopdf.xtopdf.utils.ExcelUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,9 +20,18 @@ import org.springframework.web.multipart.MultipartFile;
 public class XlsToPdfService {
     
     public void convertXlsToPdf(MultipartFile xlsFile, File pdfFile) throws IOException {
+        convertXlsToPdf(xlsFile, pdfFile, false);
+    }
+    
+    public void convertXlsToPdf(MultipartFile xlsFile, File pdfFile, boolean executeMacros) throws IOException {
         try (var fis = xlsFile.getInputStream();
              Workbook workbook = new HSSFWorkbook(fis);
              PdfWriter writer = new PdfWriter(pdfFile)) {
+            
+            // Recalculate all formulas if macro execution is enabled
+            if (executeMacros) {
+                ExcelUtils.recalculateFormulas(workbook);
+            }
             
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document pdfDoc = new Document(pdfDocument);
@@ -46,96 +53,12 @@ public class XlsToPdfService {
                 }
                 pdfDoc.add(sheetHeader);
                 
-                processSheet(sheet, pdfDoc);
+                ExcelUtils.processSheet(sheet, pdfDoc);
             }
             
             pdfDoc.close();
         } catch (Exception e) {
             throw new IOException("Error processing XLS file: " + e.getMessage(), e);
-        }
-    }
-    
-    void processSheet(Sheet sheet, Document pdfDoc) {
-        if (sheet.getPhysicalNumberOfRows() == 0) {
-            pdfDoc.add(new Paragraph("(Empty sheet)"));
-            return;
-        }
-        
-        // Determine the maximum number of columns
-        int maxColumns = 0;
-        for (Row row : sheet) {
-            if (row.getLastCellNum() > maxColumns) {
-                maxColumns = row.getLastCellNum();
-            }
-        }
-        
-        if (maxColumns == 0) {
-            pdfDoc.add(new Paragraph("(No data in sheet)"));
-            return;
-        }
-        
-        // Create table with appropriate number of columns
-        Table table = new Table(UnitValue.createPercentArray(maxColumns)).useAllAvailableWidth();
-        
-        // Process each row
-        for (Row row : sheet) {
-            for (int cellIndex = 0; cellIndex < maxColumns; cellIndex++) {
-                org.apache.poi.ss.usermodel.Cell cell = row.getCell(cellIndex);
-                String cellValue = getCellValueAsString(cell);
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(cellValue)));
-            }
-        }
-        
-        pdfDoc.add(table);
-    }
-    
-    String getCellValueAsString(org.apache.poi.ss.usermodel.Cell cell) {
-        if (cell == null) {
-            return "";
-        }
-        
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                // Check if it's a date
-                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    // Format numeric values to avoid scientific notation for integers
-                    double numValue = cell.getNumericCellValue();
-                    if (numValue == Math.floor(numValue)) {
-                        return String.valueOf((long) numValue);
-                    } else {
-                        return String.valueOf(numValue);
-                    }
-                }
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                try {
-                    // Try to get the cached formula result
-                    switch (cell.getCachedFormulaResultType()) {
-                        case STRING:
-                            return cell.getStringCellValue();
-                        case NUMERIC:
-                            double numValue = cell.getNumericCellValue();
-                            if (numValue == Math.floor(numValue)) {
-                                return String.valueOf((long) numValue);
-                            } else {
-                                return String.valueOf(numValue);
-                            }
-                        case BOOLEAN:
-                            return String.valueOf(cell.getBooleanCellValue());
-                        default:
-                            return cell.getCellFormula();
-                    }
-                } catch (Exception e) {
-                    return cell.getCellFormula();
-                }
-            case BLANK:
-            default:
-                return "";
         }
     }
 }

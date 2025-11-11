@@ -15,9 +15,14 @@ public class XlsxFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile xlsxFile, String outputFile) {
+        convertToPDF(xlsxFile, outputFile, false);
+    }
+    
+    @Override
+    public void convertToPDF(MultipartFile xlsxFile, String outputFile, boolean executeMacros) {
         var pdfFile = new File(outputFile);
         try {
-            xlsxToPdfService.convertXlsxToPdf(xlsxFile, pdfFile);
+            xlsxToPdfService.convertXlsxToPdf(xlsxFile, pdfFile, executeMacros);
         } catch (IOException e) {
             throw new RuntimeException("Error converting XLSX to PDF: " + e.getMessage(), e);
         } catch (NullPointerException e) {

@@ -33,7 +33,8 @@ public class FileConversionController {
              @RequestParam(value = "addPageNumbers", required = false, defaultValue = "false") boolean addPageNumbers,
              @RequestParam(value = "pageNumberPosition", required = false, defaultValue = "BOTTOM") String pageNumberPosition,
              @RequestParam(value = "pageNumberAlignment", required = false, defaultValue = "CENTER") String pageNumberAlignment,
-             @RequestParam(value = "pageNumberStyle", required = false, defaultValue = "ARABIC") String pageNumberStyle) {
+             @RequestParam(value = "pageNumberStyle", required = false, defaultValue = "ARABIC") String pageNumberStyle,
+             @RequestParam(value = "executeMacros", required = false, defaultValue = "false") boolean executeMacros) {
          var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
          var sanitizedOutputPath = baseDirectory.resolve(outputFile).normalize().toAbsolutePath();
          if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
@@ -70,7 +71,7 @@ public class FileConversionController {
          }
 
          try {
-            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, position, pageNumberConfig);
+            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, position, pageNumberConfig, executeMacros);
             return ResponseEntity.ok("File converted successfully");
          } catch (FileConversionException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");

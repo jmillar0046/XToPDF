@@ -37,6 +37,7 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 ### Other Features
 - REST API endpoints for file conversion
 - Optional page numbering with customizable position, alignment, and style
+- **Formula recalculation for Excel files** - When enabled, all formulas are recalculated before conversion (useful for macro-dependent formulas)
 
 ## Technologies
 
@@ -60,3 +61,75 @@ XToPDF is a Spring Boot application for converting various file formats to PDF.
 
 ```sh
 ./gradlew build
+```
+
+### Run
+
+```sh
+./gradlew bootRun
+```
+
+## API Usage
+
+### Basic File Conversion
+
+Convert a file to PDF using the REST API:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@document.xlsx" \
+  -F "outputFile=output.pdf"
+```
+
+### Advanced Options
+
+#### Formula Recalculation (Macro Execution)
+
+For Excel files (XLSX, XLS), this recalculates all formulas before conversion:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@spreadsheet.xlsx" \
+  -F "outputFile=output.pdf" \
+  -F "executeMacros=true"
+```
+
+**Note:** Apache POI cannot execute VBA macros or user-defined functions (UDFs). This feature forces recalculation of all formulas, but formulas that depend on VBA user-defined functions cannot be recalculated since Apache POI cannot execute VBA code.
+
+#### Page Numbering
+
+Add page numbers to the converted PDF:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@document.docx" \
+  -F "outputFile=output.pdf" \
+  -F "addPageNumbers=true" \
+  -F "pageNumberPosition=BOTTOM" \
+  -F "pageNumberAlignment=CENTER" \
+  -F "pageNumberStyle=ARABIC"
+```
+
+Page numbering options:
+- `pageNumberPosition`: `TOP` or `BOTTOM`
+- `pageNumberAlignment`: `LEFT`, `CENTER`, or `RIGHT`
+- `pageNumberStyle`: `ARABIC`, `ROMAN_UPPER`, `ROMAN_LOWER`, `ALPHABETIC_UPPER`, or `ALPHABETIC_LOWER`
+
+#### Merge with Existing PDF
+
+Merge the converted file with an existing PDF:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@newcontent.txt" \
+  -F "outputFile=output.pdf" \
+  -F "existingPdf=@existing.pdf" \
+  -F "position=back"
+```
+
+- `position`: `front` (prepend) or `back` (append)
+
+## License
+
+This project is provided as-is for educational and commercial purposes.
+

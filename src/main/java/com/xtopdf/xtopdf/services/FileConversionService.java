@@ -63,20 +63,24 @@ public class FileConversionService {
     private final PageNumberService pageNumberService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled());
+        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled(), false);
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
-        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled());
+        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled(), false);
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig) throws FileConversionException {
+        convertFile(inputFile, outputFile, existingPdf, position, pageNumberConfig, false);
+    }
+
+    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, boolean executeMacros) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
             FileConverter converter = factory.createFileConverter();
-            // Convert the file using the basic conversion method
-            converter.convertToPDF(inputFile, outputFile);
+            // Convert the file using the conversion method with macro support
+            converter.convertToPDF(inputFile, outputFile, executeMacros);
             
             // Add page numbers centrally if enabled
             if (pageNumberConfig.isEnabled()) {

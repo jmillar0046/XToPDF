@@ -49,7 +49,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to handle invalid file type
-        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+        doThrow(new FileConversionException("Invalid file type")).when(fileConversionService).convertFile(any(), any(), any(), any(), any(), any(Boolean.class));
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -64,7 +64,7 @@ class FileConversionControllerTest {
         String outputFile = "test.pdf";
 
         // Mock service to throw FileConversionException
-        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any(), any(Boolean.class));
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -144,7 +144,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+        doThrow(new RuntimeException("Unexpected error")).when(fileConversionService).convertFile(any(), any(), any(), any(), any(), any(Boolean.class));
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -239,7 +239,7 @@ class FileConversionControllerTest {
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf", MediaType.APPLICATION_PDF_VALUE, "existing pdf content".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new FileConversionException("Failed to merge PDF files")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any(), any(Boolean.class));
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
@@ -300,7 +300,7 @@ class FileConversionControllerTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.md", MediaType.TEXT_MARKDOWN_VALUE, "# Test".getBytes());
         String outputFile = "test.pdf";
 
-        doThrow(new FileConversionException("Markdown conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any());
+        doThrow(new FileConversionException("Conversion failed")).when(fileConversionService).convertFile(any(), any(), any(), any(), any(), any(Boolean.class));
 
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
