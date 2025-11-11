@@ -140,10 +140,9 @@ class ExcelUtilsTest {
         );
         com.itextpdf.layout.Document pdfDoc = new com.itextpdf.layout.Document(pdfDocument);
 
-        ExcelUtils.processSheet(sheet, pdfDoc);
-
-        pdfDoc.close();
-        // Test passes if no exception is thrown
-        assertTrue(true);
+        assertDoesNotThrow(() -> {
+            ExcelUtils.processSheet(sheet, pdfDoc);
+            pdfDoc.close();
+        });
     }
 }
