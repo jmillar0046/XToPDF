@@ -6,7 +6,11 @@ plugins {
 }
 
 group = 'com.xtopdf'
-version = '0.0.1-SNAPSHOT'
+
+// Dynamic versioning based on git tags
+version = providers.exec {
+	commandLine('git', 'describe', '--tags', '--always', '--dirty')
+}.standardOutput.asText.getOrElse('0.0.1-SNAPSHOT').trim().replace('v', '')
 
 java {
 	toolchain {

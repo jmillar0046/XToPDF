@@ -2,6 +2,25 @@
 
 XToPDF is a Spring Boot application for converting various file formats to PDF.
 
+## Releases
+
+This project uses semantic versioning with fully automated releases:
+
+- **Automatic Versioning**: Patch version is automatically incremented on every merge to main
+- **Automatic Tagging**: Git tags are created automatically by GitHub Actions
+- **Automatic Releases**: GitHub Releases are created with JAR artifacts attached
+- **No Manual Tagging**: Version tags are protected and only created through automated workflows
+
+### Downloading Releases
+
+1. Go to the [Releases page](https://github.com/jmillar0046/XToPDF/releases)
+2. Download the latest `xtopdf-VERSION.jar` file
+3. Run it with Java 21+:
+
+```bash
+java -jar xtopdf-VERSION.jar
+```
+
 ## Features
 
 ### Document Formats
@@ -128,6 +147,34 @@ curl -X POST http://localhost:8080/api/convert \
 ```
 
 - `position`: `front` (prepend) or `back` (append)
+
+## Development
+
+### Automated Release Process
+
+Releases are **fully automated** and happen when pull requests are merged to the `main` branch:
+
+1. Create a pull request with your changes
+2. Get the PR reviewed and approved
+3. Merge the PR to `main`
+4. GitHub Actions automatically:
+   - Increments the patch version (e.g., v1.2.3 → v1.2.4)
+   - Creates a git tag
+   - Builds the project
+   - Runs all tests
+   - Creates a GitHub Release with JAR files
+
+**Important**: Do not manually create or push version tags. The automated workflow handles all versioning.
+
+### Building Locally
+
+The version is automatically determined from git tags. If no tag exists, it uses v0.0.0.
+
+```bash
+./gradlew build
+```
+
+The built JAR files will be in `build/libs/`.
 
 ## License
 
