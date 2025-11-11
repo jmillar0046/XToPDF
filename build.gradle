@@ -3,7 +3,6 @@ plugins {
 	id 'org.springframework.boot' version '3.5.7'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'jacoco'
-	id 'maven-publish'
 }
 
 group = 'com.xtopdf'
@@ -73,50 +72,4 @@ tasks.named('test') {
 
 jacocoTestReport {
 	dependsOn test
-}
-
-publishing {
-	publications {
-		maven(MavenPublication) {
-			from components.java
-			artifact bootJar
-			
-			pom {
-				name = 'XToPDF'
-				description = 'Spring Boot application for converting various file formats to PDF'
-				url = 'https://github.com/jmillar0046/XToPDF'
-				
-				licenses {
-					license {
-						name = 'The MIT License'
-						url = 'https://opensource.org/licenses/MIT'
-					}
-				}
-				
-				developers {
-					developer {
-						id = 'jmillar0046'
-						name = 'jmillar0046'
-					}
-				}
-				
-				scm {
-					connection = 'scm:git:git://github.com/jmillar0046/XToPDF.git'
-					developerConnection = 'scm:git:ssh://github.com/jmillar0046/XToPDF.git'
-					url = 'https://github.com/jmillar0046/XToPDF'
-				}
-			}
-		}
-	}
-	
-	repositories {
-		maven {
-			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/jmillar0046/XToPDF")
-			credentials {
-				username = System.getenv("GITHUB_ACTOR")
-				password = System.getenv("GITHUB_TOKEN")
-			}
-		}
-	}
 }

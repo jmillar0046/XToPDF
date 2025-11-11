@@ -2,49 +2,22 @@
 
 XToPDF is a Spring Boot application for converting various file formats to PDF.
 
-## Releases and Packages
+## Releases
 
 This project uses semantic versioning and automated releases:
 
-- **Releases**: Created automatically when a version tag (e.g., `v1.0.0`) is pushed
-- **Packages**: Published to [GitHub Packages](https://github.com/jmillar0046/XToPDF/packages) on every release
-- **Snapshots**: Development versions are published to GitHub Packages on every push to main
+- **Releases**: Created automatically when a version tag (e.g., `v1.0.0`) is pushed to GitHub
+- **Artifacts**: JAR files are attached to each GitHub Release for easy download
+- **Versioning**: Version numbers are automatically derived from git tags
 
-### Using Published Packages
+### Downloading Releases
 
-To use this package in your Gradle project:
+1. Go to the [Releases page](https://github.com/jmillar0046/XToPDF/releases)
+2. Download the latest `xtopdf-VERSION.jar` file
+3. Run it with Java 21+:
 
-```gradle
-repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/jmillar0046/XToPDF")
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
-            password = project.findProperty("gpr.token") ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
-}
-
-dependencies {
-    implementation 'com.xtopdf:xtopdf:VERSION'
-}
-```
-
-For Maven projects, add to your `settings.xml` or `pom.xml`:
-
-```xml
-<repositories>
-  <repository>
-    <id>github</id>
-    <url>https://maven.pkg.github.com/jmillar0046/XToPDF</url>
-  </repository>
-</repositories>
-
-<dependency>
-  <groupId>com.xtopdf</groupId>
-  <artifactId>xtopdf</artifactId>
-  <version>VERSION</version>
-</dependency>
+```bash
+java -jar xtopdf-VERSION.jar
 ```
 
 ## Features
@@ -192,7 +165,6 @@ git push origin v1.0.0
    - Build the project
    - Run tests
    - Create a GitHub Release with the JAR files
-   - Publish the package to GitHub Packages
 
 ### Building Locally
 
@@ -202,11 +174,7 @@ The version is automatically determined from git tags. If no tag exists, it uses
 ./gradlew build
 ```
 
-To publish to your local Maven repository:
-
-```bash
-./gradlew publishToMavenLocal
-```
+The built JAR files will be in `build/libs/`.
 
 ## License
 
