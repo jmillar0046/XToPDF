@@ -243,7 +243,7 @@ class FileConversionJsonControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark text must be provided when watermark configuration is specified"));
+                .andExpect(content().string("Watermark text must be provided when addWatermark is true"));
 
         verify(fileConversionService, never()).convertFile(any(), any(), any(), any(), any(), any(), any(Boolean.class));
     }

@@ -2,12 +2,16 @@ package com.xtopdf.xtopdf.controllers;
 
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
+import com.xtopdf.xtopdf.dto.MergeRequest;
+import com.xtopdf.xtopdf.dto.PageNumberRequest;
+import com.xtopdf.xtopdf.dto.WatermarkRequest;
 import com.xtopdf.xtopdf.enums.PageNumberAlignment;
 import com.xtopdf.xtopdf.enums.PageNumberPosition;
 import com.xtopdf.xtopdf.enums.PageNumberStyle;
 import com.xtopdf.xtopdf.enums.WatermarkLayer;
 import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
 import lombok.AllArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -49,75 +53,56 @@ public class FileConversionController {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
          }
 
-         // Validate position parameter
-         if (existingPdf != null && !position.equalsIgnoreCase("front") && !position.equalsIgnoreCase("back")) {
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid position. Must be 'front' or 'back'");
-         }
-
-         // Parse and validate page numbering parameters
-         PageNumberConfig pageNumberConfig;
-         if (addPageNumbers) {
-             try {
-                 PageNumberPosition pnPosition = PageNumberPosition.valueOf(pageNumberPosition.toUpperCase());
-                 PageNumberAlignment pnAlignment = PageNumberAlignment.valueOf(pageNumberAlignment.toUpperCase());
-                 PageNumberStyle pnStyle = PageNumberStyle.valueOf(pageNumberStyle.toUpperCase());
-                 
-                 pageNumberConfig = PageNumberConfig.builder()
-                         .enabled(true)
-                         .position(pnPosition)
-                         .alignment(pnAlignment)
-                         .style(pnStyle)
-                         .build();
-             } catch (IllegalArgumentException e) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Invalid page numbering parameters. Position must be TOP or BOTTOM, " +
-                               "Alignment must be LEFT, CENTER, or RIGHT, " +
-                               "Style must be ARABIC, ROMAN_UPPER, ROMAN_LOWER, ALPHABETIC_UPPER, or ALPHABETIC_LOWER");
-             }
-         } else {
-             pageNumberConfig = PageNumberConfig.disabled();
-         }
-
-         // Parse and validate watermark parameters
-         WatermarkConfig watermarkConfig;
-         if (addWatermark) {
-             // Validate watermark text is provided
-             if (watermarkText == null || watermarkText.trim().isEmpty()) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Watermark text must be provided when addWatermark is true");
-             }
-             
-             // Validate font size
-             if (watermarkFontSize <= 0 || watermarkFontSize > 200) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Watermark font size must be greater than 0 and up to 200");
-             }
-             
-             try {
-                 WatermarkLayer wmLayer = WatermarkLayer.valueOf(watermarkLayer.toUpperCase());
-                 WatermarkOrientation wmOrientation = WatermarkOrientation.valueOf(watermarkOrientation.toUpperCase());
-                 
-                 watermarkConfig = WatermarkConfig.builder()
-                         .enabled(true)
-                         .text(watermarkText)
-                         .fontSize(watermarkFontSize)
-                         .layer(wmLayer)
-                         .orientation(wmOrientation)
-                         .build();
-             } catch (IllegalArgumentException e) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Invalid watermark parameters. Layer must be FOREGROUND or BACKGROUND, " +
-                               "Orientation must be HORIZONTAL, VERTICAL, DIAGONAL_UP, or DIAGONAL_DOWN");
-             }
-         } else {
-             watermarkConfig = WatermarkConfig.disabled();
-         }
-
          try {
-            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, position, pageNumberConfig, watermarkConfig, executeMacros);
-            return ResponseEntity.ok("File converted successfully");
+             // Convert individual parameters to DTO objects for cleaner processing
+             MergeRequest mergeRequest = existingPdf != null ? 
+                     ConversionConfigHelper.createMergeRequest(position) : null;
+             
+             PageNumberRequest pageNumberRequest = null;
+             if (addPageNumbers) {
+                 try {
+                     pageNumberRequest = ConversionConfigHelper.createPageNumberRequest(
+                             PageNumberPosition.valueOf(pageNumberPosition.toUpperCase()),
+                             PageNumberAlignment.valueOf(pageNumberAlignment.toUpperCase()),
+                             PageNumberStyle.valueOf(pageNumberStyle.toUpperCase())
+                     );
+                 } catch (IllegalArgumentException e) {
+                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body("Invalid page numbering parameters. Position must be TOP or BOTTOM, " +
+                                   "Alignment must be LEFT, CENTER, or RIGHT, " +
+                                   "Style must be ARABIC, ROMAN_UPPER, ROMAN_LOWER, ALPHABETIC_UPPER, or ALPHABETIC_LOWER");
+                 }
+             }
+             
+             WatermarkRequest watermarkRequest = null;
+             if (addWatermark) {
+                 try {
+                     watermarkRequest = ConversionConfigHelper.createWatermarkRequest(
+                             watermarkText,
+                             watermarkFontSize,
+                             WatermarkLayer.valueOf(watermarkLayer.toUpperCase()),
+                             WatermarkOrientation.valueOf(watermarkOrientation.toUpperCase())
+                     );
+                 } catch (IllegalArgumentException e) {
+                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body("Invalid watermark parameters. Layer must be FOREGROUND or BACKGROUND, " +
+                                   "Orientation must be HORIZONTAL, VERTICAL, DIAGONAL_UP, or DIAGONAL_DOWN");
+                 }
+             }
+             
+             // Validate and convert to config objects
+             String validatedPosition = ConversionConfigHelper.extractMergePosition(mergeRequest);
+             PageNumberConfig pageNumberConfig = ConversionConfigHelper.toPageNumberConfig(pageNumberRequest);
+             WatermarkConfig watermarkConfig = ConversionConfigHelper.toWatermarkConfig(watermarkRequest);
+             
+             fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, 
+                     validatedPosition, pageNumberConfig, watermarkConfig, executeMacros);
+             return ResponseEntity.ok("File converted successfully");
+             
+         } catch (IllegalArgumentException e) {
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
          } catch (FileConversionException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
          }
      }
 }
