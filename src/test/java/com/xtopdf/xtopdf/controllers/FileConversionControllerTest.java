@@ -228,7 +228,7 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "middle"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid position. Must be 'front' or 'back'"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -491,7 +491,7 @@ class FileConversionControllerTest {
                         .param("addWatermark", "true")
                         .param("watermarkFontSize", "48"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark text must be provided when addWatermark is true"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -506,7 +506,7 @@ class FileConversionControllerTest {
                         .param("watermarkText", "   ")
                         .param("watermarkFontSize", "48"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark text must be provided when addWatermark is true"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -521,7 +521,7 @@ class FileConversionControllerTest {
                         .param("watermarkText", "TEST")
                         .param("watermarkFontSize", "0"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark font size must be greater than 0 and up to 200"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -536,7 +536,7 @@ class FileConversionControllerTest {
                         .param("watermarkText", "TEST")
                         .param("watermarkFontSize", "250"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark font size must be greater than 0 and up to 200"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -867,7 +867,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid position. Must be 'front' or 'back'"));
+                .andExpect(content().string("Invalid request parameters"));
 
         verify(fileConversionService, never()).convertFile(any(), any(), any(), any(), any(), any(), any(Boolean.class));
     }
@@ -891,7 +891,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark text must be provided when addWatermark is true"));
+                .andExpect(content().string("Invalid request parameters"));
 
         verify(fileConversionService, never()).convertFile(any(), any(), any(), any(), any(), any(), any(Boolean.class));
     }
@@ -916,7 +916,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark font size must be greater than 0 and up to 200"));
+                .andExpect(content().string("Invalid request parameters"));
 
         verify(fileConversionService, never()).convertFile(any(), any(), any(), any(), any(), any(), any(Boolean.class));
     }
