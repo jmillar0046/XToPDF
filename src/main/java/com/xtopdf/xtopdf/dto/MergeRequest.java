@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
  * 
  * Example usage:
  * <pre>
- * curl -X POST http://localhost:8080/api/convert-json \
+ * curl -X POST http://localhost:8080/api/convert/json \
  *   -F "inputFile=@document.docx" \
  *   -F "existingPdf=@existing.pdf" \
  *   -F 'request={"outputFile":"output.pdf","merge":{"position":"back"}}'

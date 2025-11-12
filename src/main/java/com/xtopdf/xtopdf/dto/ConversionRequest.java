@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 /**
  * Request object for file conversion with optional PDF operations.
  * 
- * This is used with the /api/convert-json endpoint which accepts:
+ * This is used with the /api/convert/json endpoint which accepts:
  * - inputFile: The file to convert (multipart parameter)
  * - existingPdf: (Optional) PDF to merge with (multipart parameter, required if merge is specified)
  * - request: This JSON configuration object (multipart parameter)

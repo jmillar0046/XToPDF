@@ -42,14 +42,12 @@ public class PdfOperationsController {
         }
 
         File tempPdf1 = null;
-        File tempPdf2 = null;
         
         try {
-            // Create temporary files for the PDFs
+            // Create temporary file for pdf1
             tempPdf1 = Files.createTempFile("pdf1_", ".pdf").toFile();
-            tempPdf2 = Files.createTempFile("pdf2_", ".pdf").toFile();
             
-            // Save uploaded files to temp files
+            // Save uploaded file to temp file
             try (FileOutputStream fos = new FileOutputStream(tempPdf1)) {
                 fos.write(pdf1.getBytes());
             }
@@ -76,12 +74,9 @@ public class PdfOperationsController {
             log.error("Error merging PDFs: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {
-            // Clean up temporary files
+            // Clean up temporary file
             if (tempPdf1 != null && tempPdf1.exists()) {
                 tempPdf1.delete();
-            }
-            if (tempPdf2 != null && tempPdf2.exists()) {
-                tempPdf2.delete();
             }
         }
     }
