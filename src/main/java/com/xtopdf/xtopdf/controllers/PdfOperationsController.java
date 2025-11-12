@@ -7,6 +7,7 @@ import com.xtopdf.xtopdf.dto.WatermarkRequest;
 import com.xtopdf.xtopdf.services.PageNumberService;
 import com.xtopdf.xtopdf.services.PdfMergeService;
 import com.xtopdf.xtopdf.services.WatermarkService;
+import com.xtopdf.xtopdf.utils.PdfFileHelper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/api/pdf")
@@ -44,33 +40,25 @@ public class PdfOperationsController {
         File tempPdf1 = null;
         
         try {
-            // Create temporary file for pdf1
-            tempPdf1 = Files.createTempFile("pdf1_", ".pdf").toFile();
-            
-            // Save uploaded file to temp file
-            try (FileOutputStream fos = new FileOutputStream(tempPdf1)) {
-                fos.write(pdf1.getBytes());
-            }
+            // Create temporary file and write pdf1 to it
+            tempPdf1 = PdfFileHelper.writeToTempFile(pdf1, "pdf1_");
             
             // Merge PDFs based on position
             if ("front".equalsIgnoreCase(position)) {
-                // If position is front, we want pdf2 first, then pdf1
-                // So we merge pdf1 with pdf2 positioned at front
                 pdfMergeService.mergePdfs(tempPdf1, pdf2, "front");
             } else {
-                // If position is back (default), pdf1 first, then pdf2
                 pdfMergeService.mergePdfs(tempPdf1, pdf2, "back");
             }
             
             // Read the merged PDF
-            byte[] mergedPdfBytes = Files.readAllBytes(tempPdf1.toPath());
+            byte[] mergedPdfBytes = java.nio.file.Files.readAllBytes(tempPdf1.toPath());
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
                     .header("Content-Disposition", "attachment; filename=\"merged.pdf\"")
                     .body(mergedPdfBytes);
             
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Error merging PDFs: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {
@@ -88,8 +76,6 @@ public class PdfOperationsController {
             @RequestParam(value = "alignment", required = false, defaultValue = "CENTER") String alignment,
             @RequestParam(value = "style", required = false, defaultValue = "ARABIC") String style) {
         
-        File tempPdf = null;
-        
         try {
             // Parse and validate parameters
             PageNumberConfig config = PageNumberConfig.builder()
@@ -99,36 +85,15 @@ public class PdfOperationsController {
                     .style(com.xtopdf.xtopdf.enums.PageNumberStyle.valueOf(style.toUpperCase()))
                     .build();
             
-            // Create temporary file for the PDF
-            tempPdf = Files.createTempFile("pdf_", ".pdf").toFile();
-            
-            // Save uploaded file to temp file
-            try (FileOutputStream fos = new FileOutputStream(tempPdf)) {
-                fos.write(pdfFile.getBytes());
-            }
-            
-            // Add page numbers
-            pageNumberService.addPageNumbers(tempPdf, config);
-            
-            // Read the modified PDF
-            byte[] modifiedPdfBytes = Files.readAllBytes(tempPdf.toPath());
-            
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/pdf")
-                    .header("Content-Disposition", "attachment; filename=\"numbered.pdf\"")
-                    .body(modifiedPdfBytes);
-            
+            // Use helper to process PDF with page numbers
+            return PdfFileHelper.processPdfFile(
+                    pdfFile,
+                    tempPdf -> pageNumberService.addPageNumbers(tempPdf, config),
+                    "numbered.pdf"
+            );
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameter: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        } catch (IOException e) {
-            log.error("Error adding page numbers: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        } finally {
-            // Clean up temporary file
-            if (tempPdf != null && tempPdf.exists()) {
-                tempPdf.delete();
-            }
         }
     }
 
@@ -150,8 +115,6 @@ public class PdfOperationsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         
-        File tempPdf = null;
-        
         try {
             // Parse and validate parameters
             WatermarkConfig config = WatermarkConfig.builder()
@@ -162,36 +125,15 @@ public class PdfOperationsController {
                     .orientation(com.xtopdf.xtopdf.enums.WatermarkOrientation.valueOf(orientation.toUpperCase()))
                     .build();
             
-            // Create temporary file for the PDF
-            tempPdf = Files.createTempFile("pdf_", ".pdf").toFile();
-            
-            // Save uploaded file to temp file
-            try (FileOutputStream fos = new FileOutputStream(tempPdf)) {
-                fos.write(pdfFile.getBytes());
-            }
-            
-            // Add watermark
-            watermarkService.addWatermark(tempPdf, config);
-            
-            // Read the modified PDF
-            byte[] modifiedPdfBytes = Files.readAllBytes(tempPdf.toPath());
-            
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/pdf")
-                    .header("Content-Disposition", "attachment; filename=\"watermarked.pdf\"")
-                    .body(modifiedPdfBytes);
-            
+            // Use helper to process PDF with watermark
+            return PdfFileHelper.processPdfFile(
+                    pdfFile,
+                    tempPdf -> watermarkService.addWatermark(tempPdf, config),
+                    "watermarked.pdf"
+            );
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameter: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        } catch (IOException e) {
-            log.error("Error adding watermark: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        } finally {
-            // Clean up temporary file
-            if (tempPdf != null && tempPdf.exists()) {
-                tempPdf.delete();
-            }
         }
     }
 }
