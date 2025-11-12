@@ -68,21 +68,10 @@ public class WatermarkService {
                 // Apply rotation based on orientation
                 float rotationAngle = getRotationAngle(config.getOrientation(), pageSize);
                 
-                // Position and rotate the watermark
-                paragraph.setFixedPosition(0, 0, pageSize.getWidth());
-                paragraph.setRotationAngle(Math.toRadians(rotationAngle));
-                
-                // Adjust position based on orientation
-                if (config.getOrientation() == WatermarkOrientation.VERTICAL) {
-                    // For vertical text, we need to adjust positioning
-                    canvas.showTextAligned(paragraph, centerX, centerY, i, 
-                            TextAlignment.CENTER, com.itextpdf.layout.properties.VerticalAlignment.MIDDLE, 
-                            (float) Math.toRadians(rotationAngle));
-                } else {
-                    canvas.showTextAligned(paragraph, centerX, centerY, i, 
-                            TextAlignment.CENTER, com.itextpdf.layout.properties.VerticalAlignment.MIDDLE, 
-                            (float) Math.toRadians(rotationAngle));
-                }
+                // Position and rotate the watermark at the center of the page
+                canvas.showTextAligned(paragraph, centerX, centerY, i, 
+                        TextAlignment.CENTER, com.itextpdf.layout.properties.VerticalAlignment.MIDDLE, 
+                        (float) Math.toRadians(rotationAngle));
                 
                 canvas.close();
             }
@@ -104,14 +93,16 @@ public class WatermarkService {
             case HORIZONTAL -> 0f;
             case VERTICAL -> 90f;
             case DIAGONAL_UP -> {
-                // Calculate angle from upper-left to bottom-right
+                // Calculate angle for diagonal from upper-left to bottom-right (negative slope)
+                // Using negative height creates a clockwise rotation from horizontal
                 float angle = (float) Math.toDegrees(Math.atan2(
                     -pageSize.getHeight(), pageSize.getWidth()
                 ));
                 yield angle;
             }
             case DIAGONAL_DOWN -> {
-                // Calculate angle from bottom-left to top-right
+                // Calculate angle for diagonal from bottom-left to top-right (positive slope)
+                // Using positive height creates a counter-clockwise rotation from horizontal
                 float angle = (float) Math.toDegrees(Math.atan2(
                     pageSize.getHeight(), pageSize.getWidth()
                 ));

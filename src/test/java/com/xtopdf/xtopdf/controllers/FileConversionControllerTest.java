@@ -508,7 +508,7 @@ class FileConversionControllerTest {
                         .param("watermarkText", "TEST")
                         .param("watermarkFontSize", "0"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark font size must be between 0 and 200"));
+                .andExpect(content().string("Watermark font size must be greater than 0 and up to 200"));
     }
 
     @Test
@@ -523,7 +523,7 @@ class FileConversionControllerTest {
                         .param("watermarkText", "TEST")
                         .param("watermarkFontSize", "250"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Watermark font size must be between 0 and 200"));
+                .andExpect(content().string("Watermark font size must be greater than 0 and up to 200"));
     }
 
     @Test

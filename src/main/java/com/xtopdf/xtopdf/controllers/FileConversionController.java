@@ -90,7 +90,7 @@ public class FileConversionController {
              // Validate font size
              if (watermarkFontSize <= 0 || watermarkFontSize > 200) {
                  return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Watermark font size must be between 0 and 200");
+                         .body("Watermark font size must be greater than 0 and up to 200");
              }
              
              try {
