@@ -2,19 +2,27 @@ package com.xtopdf.xtopdf.controllers;
 
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
+import com.xtopdf.xtopdf.dto.ConversionRequest;
+import com.xtopdf.xtopdf.dto.MergeRequest;
+import com.xtopdf.xtopdf.dto.PageNumberRequest;
+import com.xtopdf.xtopdf.dto.WatermarkRequest;
 import com.xtopdf.xtopdf.enums.PageNumberAlignment;
 import com.xtopdf.xtopdf.enums.PageNumberPosition;
 import com.xtopdf.xtopdf.enums.PageNumberStyle;
 import com.xtopdf.xtopdf.enums.WatermarkLayer;
 import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.xtopdf.xtopdf.services.FileConversionService;
@@ -24,8 +32,10 @@ import java.nio.file.Paths;
 @RestController
 @RequestMapping("/api/convert")
 @AllArgsConstructor
+@Slf4j
 public class FileConversionController {
      private final FileConversionService fileConversionService;
+     private final ObjectMapper objectMapper;
 
      @PostMapping
      public ResponseEntity<String> convertFile(
@@ -49,75 +59,99 @@ public class FileConversionController {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
          }
 
-         // Validate position parameter
-         if (existingPdf != null && !position.equalsIgnoreCase("front") && !position.equalsIgnoreCase("back")) {
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid position. Must be 'front' or 'back'");
-         }
-
-         // Parse and validate page numbering parameters
-         PageNumberConfig pageNumberConfig;
-         if (addPageNumbers) {
-             try {
-                 PageNumberPosition pnPosition = PageNumberPosition.valueOf(pageNumberPosition.toUpperCase());
-                 PageNumberAlignment pnAlignment = PageNumberAlignment.valueOf(pageNumberAlignment.toUpperCase());
-                 PageNumberStyle pnStyle = PageNumberStyle.valueOf(pageNumberStyle.toUpperCase());
-                 
-                 pageNumberConfig = PageNumberConfig.builder()
-                         .enabled(true)
-                         .position(pnPosition)
-                         .alignment(pnAlignment)
-                         .style(pnStyle)
-                         .build();
-             } catch (IllegalArgumentException e) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Invalid page numbering parameters. Position must be TOP or BOTTOM, " +
-                               "Alignment must be LEFT, CENTER, or RIGHT, " +
-                               "Style must be ARABIC, ROMAN_UPPER, ROMAN_LOWER, ALPHABETIC_UPPER, or ALPHABETIC_LOWER");
-             }
-         } else {
-             pageNumberConfig = PageNumberConfig.disabled();
-         }
-
-         // Parse and validate watermark parameters
-         WatermarkConfig watermarkConfig;
-         if (addWatermark) {
-             // Validate watermark text is provided
-             if (watermarkText == null || watermarkText.trim().isEmpty()) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Watermark text must be provided when addWatermark is true");
-             }
-             
-             // Validate font size
-             if (watermarkFontSize <= 0 || watermarkFontSize > 200) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Watermark font size must be greater than 0 and up to 200");
-             }
-             
-             try {
-                 WatermarkLayer wmLayer = WatermarkLayer.valueOf(watermarkLayer.toUpperCase());
-                 WatermarkOrientation wmOrientation = WatermarkOrientation.valueOf(watermarkOrientation.toUpperCase());
-                 
-                 watermarkConfig = WatermarkConfig.builder()
-                         .enabled(true)
-                         .text(watermarkText)
-                         .fontSize(watermarkFontSize)
-                         .layer(wmLayer)
-                         .orientation(wmOrientation)
-                         .build();
-             } catch (IllegalArgumentException e) {
-                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                         .body("Invalid watermark parameters. Layer must be FOREGROUND or BACKGROUND, " +
-                               "Orientation must be HORIZONTAL, VERTICAL, DIAGONAL_UP, or DIAGONAL_DOWN");
-             }
-         } else {
-             watermarkConfig = WatermarkConfig.disabled();
-         }
-
          try {
-            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, position, pageNumberConfig, watermarkConfig, executeMacros);
-            return ResponseEntity.ok("File converted successfully");
+             // Convert individual parameters to DTO objects for cleaner processing
+             MergeRequest mergeRequest = existingPdf != null ? 
+                     ConversionConfigHelper.createMergeRequest(position) : null;
+             
+             PageNumberRequest pageNumberRequest = null;
+             if (addPageNumbers) {
+                 try {
+                     pageNumberRequest = ConversionConfigHelper.createPageNumberRequest(
+                             PageNumberPosition.valueOf(pageNumberPosition.toUpperCase()),
+                             PageNumberAlignment.valueOf(pageNumberAlignment.toUpperCase()),
+                             PageNumberStyle.valueOf(pageNumberStyle.toUpperCase())
+                     );
+                 } catch (IllegalArgumentException e) {
+                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body("Invalid page numbering parameters. Position must be TOP or BOTTOM, " +
+                                   "Alignment must be LEFT, CENTER, or RIGHT, " +
+                                   "Style must be ARABIC, ROMAN_UPPER, ROMAN_LOWER, ALPHABETIC_UPPER, or ALPHABETIC_LOWER");
+                 }
+             }
+             
+             WatermarkRequest watermarkRequest = null;
+             if (addWatermark) {
+                 try {
+                     watermarkRequest = ConversionConfigHelper.createWatermarkRequest(
+                             watermarkText,
+                             watermarkFontSize,
+                             WatermarkLayer.valueOf(watermarkLayer.toUpperCase()),
+                             WatermarkOrientation.valueOf(watermarkOrientation.toUpperCase())
+                     );
+                 } catch (IllegalArgumentException e) {
+                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body("Invalid watermark parameters. Layer must be FOREGROUND or BACKGROUND, " +
+                                   "Orientation must be HORIZONTAL, VERTICAL, DIAGONAL_UP, or DIAGONAL_DOWN");
+                 }
+             }
+             
+             // Validate and convert to config objects
+             String validatedPosition = ConversionConfigHelper.extractMergePosition(mergeRequest);
+             PageNumberConfig pageNumberConfig = ConversionConfigHelper.toPageNumberConfig(pageNumberRequest);
+             WatermarkConfig watermarkConfig = ConversionConfigHelper.toWatermarkConfig(watermarkRequest);
+             
+             fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, 
+                     validatedPosition, pageNumberConfig, watermarkConfig, executeMacros);
+             return ResponseEntity.ok("File converted successfully");
+             
+         } catch (IllegalArgumentException e) {
+             log.error("Validation error: {}", e.getMessage());
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
          } catch (FileConversionException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
+             log.error("Conversion error: {}", e.getMessage());
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
          }
      }
+
+    /**
+     * JSON-based conversion endpoint that accepts structured request object.
+     * Supports the same features as the main endpoint but with a cleaner JSON structure.
+     */
+    @PostMapping(value = "/json", consumes = "multipart/form-data")
+    public ResponseEntity<String> convertFileWithJson(
+            @RequestPart("inputFile") MultipartFile inputFile,
+            @RequestPart(value = "existingPdf", required = false) MultipartFile existingPdf,
+            @RequestPart("request") String requestJson) {
+        
+        try {
+            // Parse JSON request
+            ConversionRequest request = objectMapper.readValue(requestJson, ConversionRequest.class);
+            
+            var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
+            var sanitizedOutputPath = baseDirectory.resolve(request.getOutputFile()).normalize().toAbsolutePath();
+            if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
+            }
+
+            // Use helper methods to convert DTOs to configs with validation
+            String position = ConversionConfigHelper.extractMergePosition(request.getMerge());
+            PageNumberConfig pageNumberConfig = ConversionConfigHelper.toPageNumberConfig(request.getPageNumbers());
+            WatermarkConfig watermarkConfig = ConversionConfigHelper.toWatermarkConfig(request.getWatermark());
+            boolean executeMacros = request.getExecuteMacros() != null && request.getExecuteMacros();
+
+            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, 
+                    position, pageNumberConfig, watermarkConfig, executeMacros);
+            
+            return ResponseEntity.ok("File converted successfully");
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
+        } catch (Exception e) {
+            log.error("Error converting file: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error with conversion");
+        }
+    }
 }
