@@ -24,6 +24,8 @@ import com.xtopdf.xtopdf.factories.TiffFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XlsxFileConverterFactory;
 import com.xtopdf.xtopdf.factories.XmlFileConverterFactory;
+import com.xtopdf.xtopdf.factories.DxfFileConverterFactory;
+import com.xtopdf.xtopdf.factories.DwgFileConverterFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -60,6 +62,8 @@ public class FileConversionService {
     private final OdpFileConverterFactory odpFileConverterFactory;
     private final XmlFileConverterFactory xmlFileConverterFactory;
     private final JsonFileConverterFactory jsonFileConverterFactory;
+    private final DxfFileConverterFactory dxfFileConverterFactory;
+    private final DwgFileConverterFactory dwgFileConverterFactory;
     private final PdfMergeService pdfMergeService;
     private final PageNumberService pageNumberService;
     private final WatermarkService watermarkService;
@@ -156,6 +160,8 @@ public class FileConversionService {
             case ".odp" -> odpFileConverterFactory;
             case ".xml" -> xmlFileConverterFactory;
             case ".json" -> jsonFileConverterFactory;
+            case ".dxf" -> dxfFileConverterFactory;
+            case ".dwg" -> dwgFileConverterFactory;
             default -> {
                 log.error("No converter found for file {}", inputFile);
                 yield null;

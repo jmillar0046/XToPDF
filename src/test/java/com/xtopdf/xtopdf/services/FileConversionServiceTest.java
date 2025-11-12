@@ -72,6 +72,10 @@ class FileConversionServiceTest {
     private XmlFileConverterFactory xmlFileConverterFactory;
     @Mock
     private JsonFileConverterFactory jsonFileConverterFactory;
+    @Mock
+    private DxfFileConverterFactory dxfFileConverterFactory;
+    @Mock
+    private DwgFileConverterFactory dwgFileConverterFactory;
     
     @Mock
     private PdfMergeService pdfMergeService;
@@ -100,6 +104,7 @@ class FileConversionServiceTest {
                                                           markdownFileConverterFactory, odtFileConverterFactory,
                                                           odsFileConverterFactory, odpFileConverterFactory,
                                                           xmlFileConverterFactory, jsonFileConverterFactory,
+                                                          dxfFileConverterFactory, dwgFileConverterFactory,
                                                           pdfMergeService, pageNumberService, watermarkService);
     }
 
@@ -420,5 +425,55 @@ class FileConversionServiceTest {
         assertThrows(FileConversionException.class, () -> 
             fileConversionService.convertFile(inputFile, outputFile, existingPdf, "back")
         );
+    }
+
+    @Test
+    void convertFile_DxfFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.dxf", "application/dxf", "DXF content".getBytes());
+        
+        when(dxfFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(dxfFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
+    }
+
+    @Test
+    void convertFile_DwgFile_SuccessfulConversion() throws FileConversionException {
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.dwg", "application/dwg", "DWG content".getBytes());
+        
+        when(dwgFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, outputFile);
+        
+        verify(dwgFileConverterFactory).createFileConverter();
+        verify(mockConverter).convertToPDF(eq(inputFile), eq(outputFile), eq(false));
+    }
+
+    @Test
+    void getFactoryForFile_DxfExtension_ReturnsDxfFactory() {
+        var factory = fileConversionService.getFactoryForFile("test.dxf");
+        assertEquals(dxfFileConverterFactory, factory);
+    }
+
+    @Test
+    void getFactoryForFile_DwgExtension_ReturnsDwgFactory() {
+        var factory = fileConversionService.getFactoryForFile("test.dwg");
+        assertEquals(dwgFileConverterFactory, factory);
+    }
+
+    @Test
+    void getFactoryForFile_DxfUpperCase_ReturnsDxfFactory() {
+        var factory = fileConversionService.getFactoryForFile("test.DXF");
+        assertEquals(dxfFileConverterFactory, factory);
+    }
+
+    @Test
+    void getFactoryForFile_DwgUpperCase_ReturnsDwgFactory() {
+        var factory = fileConversionService.getFactoryForFile("test.DWG");
+        assertEquals(dwgFileConverterFactory, factory);
     }
 }
