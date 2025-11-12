@@ -56,6 +56,7 @@ java -jar xtopdf-VERSION.jar
 ### Other Features
 - REST API endpoints for file conversion
 - Optional page numbering with customizable position, alignment, and style
+- **Watermark support** - Add customizable watermarks to PDFs with control over text, font size, layer (foreground/background), and orientation (horizontal, vertical, diagonal)
 - **Formula recalculation for Excel files** - When enabled, all formulas are recalculated before conversion (useful for macro-dependent formulas)
 
 ## Technologies
@@ -133,6 +134,31 @@ Page numbering options:
 - `pageNumberPosition`: `TOP` or `BOTTOM`
 - `pageNumberAlignment`: `LEFT`, `CENTER`, or `RIGHT`
 - `pageNumberStyle`: `ARABIC`, `ROMAN_UPPER`, `ROMAN_LOWER`, `ALPHABETIC_UPPER`, or `ALPHABETIC_LOWER`
+
+#### Watermark
+
+Add a watermark to the converted PDF:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@document.docx" \
+  -F "outputFile=output.pdf" \
+  -F "addWatermark=true" \
+  -F "watermarkText=CONFIDENTIAL" \
+  -F "watermarkFontSize=48" \
+  -F "watermarkLayer=FOREGROUND" \
+  -F "watermarkOrientation=DIAGONAL_UP"
+```
+
+Watermark options:
+- `watermarkText`: The text to display as a watermark (required when `addWatermark=true`)
+- `watermarkFontSize`: Font size for the watermark text (default: `48`, range: `0-200`)
+- `watermarkLayer`: `FOREGROUND` (in front of content) or `BACKGROUND` (behind content) (default: `FOREGROUND`)
+- `watermarkOrientation`: 
+  - `HORIZONTAL` - Standard horizontal text
+  - `VERTICAL` - Text rotated 90 degrees (bottom to top)
+  - `DIAGONAL_UP` - Diagonal from upper-left to bottom-right (default)
+  - `DIAGONAL_DOWN` - Diagonal from bottom-left to top-right
 
 #### Merge with Existing PDF
 
