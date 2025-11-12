@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.services;
 
 import java.util.Objects;
 import com.xtopdf.xtopdf.config.PageNumberConfig;
+import com.xtopdf.xtopdf.config.WatermarkConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.CsvFileConverterFactory;
@@ -61,20 +62,25 @@ public class FileConversionService {
     private final JsonFileConverterFactory jsonFileConverterFactory;
     private final PdfMergeService pdfMergeService;
     private final PageNumberService pageNumberService;
+    private final WatermarkService watermarkService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled(), false);
+        convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
-        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled(), false);
+        convertFile(inputFile, outputFile, existingPdf, position, PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig) throws FileConversionException {
-        convertFile(inputFile, outputFile, existingPdf, position, pageNumberConfig, false);
+        convertFile(inputFile, outputFile, existingPdf, position, pageNumberConfig, WatermarkConfig.disabled(), false);
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, boolean executeMacros) throws FileConversionException {
+        convertFile(inputFile, outputFile, existingPdf, position, pageNumberConfig, WatermarkConfig.disabled(), executeMacros);
+    }
+
+    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, WatermarkConfig watermarkConfig, boolean executeMacros) throws FileConversionException {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
@@ -89,6 +95,16 @@ public class FileConversionService {
                     pageNumberService.addPageNumbers(outputPdfFile, pageNumberConfig);
                 } catch (java.io.IOException e) {
                     throw new FileConversionException("Failed to add page numbers: " + e.getMessage());
+                }
+            }
+            
+            // Add watermark if enabled
+            if (watermarkConfig.isEnabled()) {
+                try {
+                    java.io.File outputPdfFile = new java.io.File(outputFile);
+                    watermarkService.addWatermark(outputPdfFile, watermarkConfig);
+                } catch (java.io.IOException e) {
+                    throw new FileConversionException("Failed to add watermark: " + e.getMessage());
                 }
             }
             

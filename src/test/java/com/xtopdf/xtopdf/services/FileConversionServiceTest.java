@@ -80,6 +80,9 @@ class FileConversionServiceTest {
     private PageNumberService pageNumberService;
     
     @Mock
+    private WatermarkService watermarkService;
+    
+    @Mock
     private FileConverter mockConverter;
 
     private FileConversionService fileConversionService;
@@ -97,7 +100,7 @@ class FileConversionServiceTest {
                                                           markdownFileConverterFactory, odtFileConverterFactory,
                                                           odsFileConverterFactory, odpFileConverterFactory,
                                                           xmlFileConverterFactory, jsonFileConverterFactory,
-                                                          pdfMergeService, pageNumberService);
+                                                          pdfMergeService, pageNumberService, watermarkService);
     }
 
     @Test
