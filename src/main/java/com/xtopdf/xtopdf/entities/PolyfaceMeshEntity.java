@@ -1,5 +1,9 @@
 package com.xtopdf.xtopdf.entities;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,11 +14,12 @@ import java.util.List;
  * 
  * For PDF rendering, we project to 2D by ignoring Z coordinates and render as wireframe.
  */
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class PolyfaceMeshEntity extends DxfEntity {
     private List<Double> vertices = new ArrayList<>(); // x1, y1, z1, x2, y2, z2, ...
     private List<Integer> faceIndices = new ArrayList<>(); // indices into vertices list
-    
-    public PolyfaceMeshEntity() {}
     
     public void addVertex(double x, double y, double z) {
         vertices.add(x);
@@ -26,11 +31,7 @@ public class PolyfaceMeshEntity extends DxfEntity {
         faceIndices.add(index);
     }
     
-    public List<Double> getVertices() { return vertices; }
-    public void setVertices(List<Double> vertices) { this.vertices = vertices; }
-    
-    public List<Integer> getFaceIndices() { return faceIndices; }
-    public void setFaceIndices(List<Integer> faceIndices) { this.faceIndices = faceIndices; }
-    
-    public int getVertexCount() { return vertices.size() / 3; }
+    public int getVertexCount() { 
+        return vertices.size() / 3; 
+    }
 }

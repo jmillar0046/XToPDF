@@ -1,5 +1,9 @@
 package com.xtopdf.xtopdf.entities;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 /**
  * BODY entity - ACIS solid model data.
  * DWG format: type=24, dataLength, acisData...
@@ -9,15 +13,10 @@ package com.xtopdf.xtopdf.entities;
  * a full geometric modeling kernel to interpret and render.
  * For PDF rendering, we display a placeholder.
  */
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class BodyEntity extends DxfEntity {
     private String acisData = "";
     private int version = 1;
-    
-    public BodyEntity() {}
-    
-    public String getAcisData() { return acisData; }
-    public void setAcisData(String acisData) { this.acisData = acisData; }
-    
-    public int getVersion() { return version; }
-    public void setVersion(int version) { this.version = version; }
 }

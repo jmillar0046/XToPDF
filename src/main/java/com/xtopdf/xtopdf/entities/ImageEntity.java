@@ -1,5 +1,9 @@
 package com.xtopdf.xtopdf.entities;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 /**
  * IMAGE entity - Embedded raster image.
  * DWG format: type=27, x, y, width, height, pathLength, imagePath (variable)
@@ -8,6 +12,9 @@ package com.xtopdf.xtopdf.entities;
  * For PDF rendering, we display a placeholder rectangle with the image filename.
  * Full image rendering would require loading and embedding the actual image file.
  */
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class ImageEntity extends DxfEntity {
     private double insertX;
     private double insertY;
@@ -19,8 +26,6 @@ public class ImageEntity extends DxfEntity {
     private double vVectorX = 0.0;
     private double vVectorY = 1.0;
     
-    public ImageEntity() {}
-    
     public ImageEntity(double insertX, double insertY, double width, double height, String imagePath) {
         this.insertX = insertX;
         this.insertY = insertY;
@@ -28,31 +33,4 @@ public class ImageEntity extends DxfEntity {
         this.height = height;
         this.imagePath = imagePath;
     }
-    
-    public double getInsertX() { return insertX; }
-    public void setInsertX(double insertX) { this.insertX = insertX; }
-    
-    public double getInsertY() { return insertY; }
-    public void setInsertY(double insertY) { this.insertY = insertY; }
-    
-    public double getWidth() { return width; }
-    public void setWidth(double width) { this.width = width; }
-    
-    public double getHeight() { return height; }
-    public void setHeight(double height) { this.height = height; }
-    
-    public String getImagePath() { return imagePath; }
-    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
-    
-    public double getUVectorX() { return uVectorX; }
-    public void setUVectorX(double uVectorX) { this.uVectorX = uVectorX; }
-    
-    public double getUVectorY() { return uVectorY; }
-    public void setUVectorY(double uVectorY) { this.uVectorY = uVectorY; }
-    
-    public double getVVectorX() { return vVectorX; }
-    public void setVVectorX(double vVectorX) { this.vVectorX = vVectorX; }
-    
-    public double getVVectorY() { return vVectorY; }
-    public void setVVectorY(double vVectorY) { this.vVectorY = vVectorY; }
 }
