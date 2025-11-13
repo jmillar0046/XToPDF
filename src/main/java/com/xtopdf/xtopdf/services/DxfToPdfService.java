@@ -40,9 +40,17 @@ public class DxfToPdfService {
     private static final String ENTITY_LWPOLYLINE = "LWPOLYLINE";
     private static final String ENTITY_SOLID = "SOLID";
     private static final String ENTITY_TRACE = "TRACE";
+    private static final String ENTITY_TEXT = "TEXT";
+    private static final String ENTITY_MTEXT = "MTEXT";
+    private static final String ENTITY_DIMENSION = "DIMENSION";
+    private static final String ENTITY_LEADER = "LEADER";
+    private static final String ENTITY_MULTILEADER = "MULTILEADER";
+    private static final String ENTITY_TOLERANCE = "TOLERANCE";
+    private static final String ENTITY_TABLE = "ACAD_TABLE";
     
     // DXF group codes
     private static final int GROUP_CODE_ENTITY_TYPE = 0;
+    private static final int GROUP_CODE_TEXT_VALUE = 1;
     private static final int GROUP_CODE_LAYER = 8;
     private static final int GROUP_CODE_X_START = 10;
     private static final int GROUP_CODE_Y_START = 20;
@@ -92,7 +100,7 @@ public class DxfToPdfService {
     /**
      * Render a single entity on the PDF canvas.
      */
-    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY) {
+    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY) throws IOException {
         if (entity instanceof LineEntity) {
             LineEntity line = (LineEntity) entity;
             canvas.moveTo(offsetX + line.getX1() * scale, offsetY + line.getY1() * scale);
@@ -162,6 +170,145 @@ public class DxfToPdfService {
             }
             canvas.closePath();
             canvas.fillStroke();
+            
+        } else if (entity instanceof TextEntity) {
+            TextEntity text = (TextEntity) entity;
+            double x = offsetX + text.getX() * scale;
+            double y = offsetY + text.getY() * scale;
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(text.getHeight() * scale));
+            canvas.moveText(x, y);
+            if (text.getRotationAngle() != 0) {
+                double radians = Math.toRadians(text.getRotationAngle());
+                canvas.setTextMatrix((float)Math.cos(radians), (float)Math.sin(radians),
+                                    (float)-Math.sin(radians), (float)Math.cos(radians), (float)x, (float)y);
+            }
+            canvas.showText(text.getText());
+            canvas.endText();
+            
+        } else if (entity instanceof MTextEntity) {
+            MTextEntity mtext = (MTextEntity) entity;
+            double x = offsetX + mtext.getX() * scale;
+            double y = offsetY + mtext.getY() * scale;
+            // Draw box outline
+            canvas.rectangle(x, y, mtext.getWidth() * scale, mtext.getHeight() * scale);
+            canvas.stroke();
+            // Draw text
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(mtext.getHeight() * scale));
+            canvas.moveText(x + 2, y + mtext.getHeight() * scale - 2);
+            canvas.showText(mtext.getText());
+            canvas.endText();
+            
+        } else if (entity instanceof DimensionEntity) {
+            DimensionEntity dim = (DimensionEntity) entity;
+            double x1 = offsetX + dim.getX1() * scale;
+            double y1 = offsetY + dim.getY1() * scale;
+            double x2 = offsetX + dim.getX2() * scale;
+            double y2 = offsetY + dim.getY2() * scale;
+            double textX = offsetX + dim.getTextX() * scale;
+            double textY = offsetY + dim.getTextY() * scale;
+            
+            // Draw dimension line
+            canvas.moveTo(x1, y1);
+            canvas.lineTo(x2, y2);
+            canvas.stroke();
+            
+            // Draw arrows at endpoints (simplified as small triangles)
+            double arrowSize = 3;
+            canvas.moveTo(x1, y1);
+            canvas.lineTo(x1 + arrowSize, y1 + arrowSize);
+            canvas.lineTo(x1 + arrowSize, y1 - arrowSize);
+            canvas.fill();
+            
+            // Draw measurement text
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(textX, textY);
+            canvas.showText(String.format("%.2f", dim.getMeasurement()));
+            canvas.endText();
+            
+        } else if (entity instanceof LeaderEntity) {
+            LeaderEntity leader = (LeaderEntity) entity;
+            List<Double> vertices = leader.getVertices();
+            if (vertices.size() >= 4) {
+                // Draw leader line
+                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                for (int i = 2; i < vertices.size(); i += 2) {
+                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                }
+                canvas.stroke();
+                
+                // Draw arrow at start
+                double x1 = offsetX + vertices.get(0) * scale;
+                double y1 = offsetY + vertices.get(1) * scale;
+                double arrowSize = 3;
+                canvas.moveTo(x1, y1);
+                canvas.lineTo(x1 + arrowSize, y1 + arrowSize);
+                canvas.lineTo(x1 + arrowSize, y1 - arrowSize);
+                canvas.fill();
+                
+                // Draw text
+                canvas.beginText();
+                canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                    com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+                canvas.moveText(offsetX + leader.getTextX() * scale, offsetY + leader.getTextY() * scale);
+                canvas.showText(leader.getText());
+                canvas.endText();
+            }
+            
+        } else if (entity instanceof ToleranceEntity) {
+            ToleranceEntity tolerance = (ToleranceEntity) entity;
+            double x = offsetX + tolerance.getX() * scale;
+            double y = offsetY + tolerance.getY() * scale;
+            double height = tolerance.getHeight() * scale;
+            
+            // Draw tolerance frame (box)
+            canvas.rectangle(x, y, height * 4, height);
+            canvas.stroke();
+            
+            // Draw tolerance text
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)height * 0.8f);
+            canvas.moveText(x + 2, y + height * 0.2);
+            canvas.showText(tolerance.getToleranceString());
+            canvas.endText();
+            
+        } else if (entity instanceof TableEntity) {
+            TableEntity table = (TableEntity) entity;
+            double x = offsetX + table.getX() * scale;
+            double y = offsetY + table.getY() * scale;
+            double cellWidth = table.getCellWidth() * scale;
+            double cellHeight = table.getCellHeight() * scale;
+            
+            // Draw table grid
+            for (int row = 0; row <= table.getRows(); row++) {
+                canvas.moveTo(x, y + row * cellHeight);
+                canvas.lineTo(x + table.getColumns() * cellWidth, y + row * cellHeight);
+            }
+            for (int col = 0; col <= table.getColumns(); col++) {
+                canvas.moveTo(x + col * cellWidth, y);
+                canvas.lineTo(x + col * cellWidth, y + table.getRows() * cellHeight);
+            }
+            canvas.stroke();
+            
+            // Draw cell text
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(cellHeight * 0.6));
+            List<String> cells = table.getCellValues();
+            for (int i = 0; i < cells.size() && i < table.getRows() * table.getColumns(); i++) {
+                int row = i / table.getColumns();
+                int col = i % table.getColumns();
+                canvas.moveText(x + col * cellWidth + 2, 
+                              y + (table.getRows() - row - 1) * cellHeight + cellHeight * 0.3);
+                canvas.showText(cells.get(i));
+            }
+            canvas.endText();
         }
     }
     
@@ -222,11 +369,34 @@ public class DxfToPdfService {
             case ENTITY_LWPOLYLINE: return new PolylineEntity();
             case ENTITY_SOLID:
             case ENTITY_TRACE: return new SolidEntity();
+            case ENTITY_TEXT: return new TextEntity();
+            case ENTITY_MTEXT: return new MTextEntity();
+            case ENTITY_DIMENSION: return new DimensionEntity();
+            case ENTITY_LEADER:
+            case ENTITY_MULTILEADER: return new LeaderEntity();
+            case ENTITY_TOLERANCE: return new ToleranceEntity();
+            case ENTITY_TABLE: return new TableEntity();
             default: return null;
         }
     }
     
     private void parseEntityProperty(DxfEntity entity, int groupCode, String value) {
+        // Handle text values first (group code 1)
+        if (groupCode == GROUP_CODE_TEXT_VALUE) {
+            if (entity instanceof TextEntity) {
+                ((TextEntity) entity).setText(value);
+            } else if (entity instanceof MTextEntity) {
+                ((MTextEntity) entity).setText(value);
+            } else if (entity instanceof LeaderEntity) {
+                ((LeaderEntity) entity).setText(value);
+            } else if (entity instanceof ToleranceEntity) {
+                ((ToleranceEntity) entity).setToleranceString(value);
+            } else if (entity instanceof TableEntity) {
+                ((TableEntity) entity).addCellValue(value);
+            }
+            return;
+        }
+        
         try {
             double doubleValue = Double.parseDouble(value);
             
@@ -288,6 +458,63 @@ public class DxfToPdfService {
                     case GROUP_CODE_Y2: solid.setY3(doubleValue); break;
                     case GROUP_CODE_X3: solid.setX4(doubleValue); break;
                     case GROUP_CODE_Y3: solid.setY4(doubleValue); break;
+                }
+            } else if (entity instanceof TextEntity) {
+                TextEntity text = (TextEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: text.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: text.setY(doubleValue); break;
+                    case 40: text.setHeight(doubleValue); break; // Text height
+                    case 50: text.setRotationAngle(doubleValue); break; // Rotation angle
+                }
+            } else if (entity instanceof MTextEntity) {
+                MTextEntity mtext = (MTextEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: mtext.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: mtext.setY(doubleValue); break;
+                    case 40: mtext.setHeight(doubleValue); break; // Initial text height
+                    case 41: mtext.setWidth(doubleValue); break; // Reference column width
+                }
+            } else if (entity instanceof DimensionEntity) {
+                DimensionEntity dim = (DimensionEntity) entity;
+                switch (groupCode) {
+                    case 70: dim.setDimensionType((int)doubleValue); break;
+                    case GROUP_CODE_X_START: dim.setX1(doubleValue); break;
+                    case GROUP_CODE_Y_START: dim.setY1(doubleValue); break;
+                    case GROUP_CODE_X_END: dim.setX2(doubleValue); break;
+                    case GROUP_CODE_Y_END: dim.setY2(doubleValue); break;
+                    case 13: dim.setTextX(doubleValue); break;
+                    case 23: dim.setTextY(doubleValue); break;
+                    case 42: dim.setMeasurement(doubleValue); break;
+                }
+            } else if (entity instanceof LeaderEntity) {
+                LeaderEntity leader = (LeaderEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    leader.addVertex(doubleValue, 0);
+                } else if (groupCode == GROUP_CODE_Y_START && leader.getVertexCount() > 0) {
+                    List<Double> vertices = leader.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                } else if (groupCode == 13) {
+                    leader.setTextX(doubleValue);
+                } else if (groupCode == 23) {
+                    leader.setTextY(doubleValue);
+                }
+            } else if (entity instanceof ToleranceEntity) {
+                ToleranceEntity tolerance = (ToleranceEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: tolerance.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: tolerance.setY(doubleValue); break;
+                    case 40: tolerance.setHeight(doubleValue); break;
+                }
+            } else if (entity instanceof TableEntity) {
+                TableEntity table = (TableEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: table.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: table.setY(doubleValue); break;
+                    case 90: table.setRows((int)doubleValue); break;
+                    case 91: table.setColumns((int)doubleValue); break;
+                    case 40: table.setCellHeight(doubleValue); break;
+                    case 41: table.setCellWidth(doubleValue); break;
                 }
             }
         } catch (NumberFormatException e) {

@@ -41,6 +41,12 @@ public class DwgToDxfService {
     private static final byte TYPE_POLYLINE = 5;
     private static final byte TYPE_ELLIPSE = 6;
     private static final byte TYPE_SOLID = 7;
+    private static final byte TYPE_TEXT = 8;
+    private static final byte TYPE_MTEXT = 9;
+    private static final byte TYPE_DIMENSION = 10;
+    private static final byte TYPE_LEADER = 11;
+    private static final byte TYPE_TOLERANCE = 12;
+    private static final byte TYPE_TABLE = 13;
     
     public void convertDwgToDxf(MultipartFile dwgFile, File dxfFile) throws IOException {
         // Parse DWG binary format
@@ -136,6 +142,87 @@ public class DwgToDxfService {
                     double x4 = dis.readDouble();
                     double y4 = dis.readDouble();
                     entities.add(new SolidEntity(x1, y1, x2, y2, x3, y3, x4, y4));
+                    
+                } else if (entityType == TYPE_TEXT) {
+                    // TEXT: x, y, height, textLength, text (3 doubles + text)
+                    double x = dis.readDouble();
+                    double y = dis.readDouble();
+                    double height = dis.readDouble();
+                    int textLength = dis.readInt();
+                    byte[] textBytes = new byte[textLength];
+                    dis.readFully(textBytes);
+                    String text = new String(textBytes, "UTF-8");
+                    entities.add(new TextEntity(x, y, height, text));
+                    
+                } else if (entityType == TYPE_MTEXT) {
+                    // MTEXT: x, y, width, height, textLength, text (4 doubles + text)
+                    double x = dis.readDouble();
+                    double y = dis.readDouble();
+                    double width = dis.readDouble();
+                    double height = dis.readDouble();
+                    int textLength = dis.readInt();
+                    byte[] textBytes = new byte[textLength];
+                    dis.readFully(textBytes);
+                    String text = new String(textBytes, "UTF-8");
+                    entities.add(new MTextEntity(x, y, width, height, text));
+                    
+                } else if (entityType == TYPE_DIMENSION) {
+                    // DIMENSION: dimType (byte), x1, y1, x2, y2, textX, textY, measurement (7 doubles)
+                    byte dimType = dis.readByte();
+                    double x1 = dis.readDouble();
+                    double y1 = dis.readDouble();
+                    double x2 = dis.readDouble();
+                    double y2 = dis.readDouble();
+                    double textX = dis.readDouble();
+                    double textY = dis.readDouble();
+                    double measurement = dis.readDouble();
+                    entities.add(new DimensionEntity(dimType, x1, y1, x2, y2, textX, textY, measurement));
+                    
+                } else if (entityType == TYPE_LEADER) {
+                    // LEADER: numVertices (int), vertices, textX, textY, textLength, text
+                    int numVertices = dis.readInt();
+                    LeaderEntity leader = new LeaderEntity();
+                    for (int i = 0; i < numVertices; i++) {
+                        double x = dis.readDouble();
+                        double y = dis.readDouble();
+                        leader.addVertex(x, y);
+                    }
+                    leader.setTextX(dis.readDouble());
+                    leader.setTextY(dis.readDouble());
+                    int textLength = dis.readInt();
+                    byte[] textBytes = new byte[textLength];
+                    dis.readFully(textBytes);
+                    leader.setText(new String(textBytes, "UTF-8"));
+                    entities.add(leader);
+                    
+                } else if (entityType == TYPE_TOLERANCE) {
+                    // TOLERANCE: x, y, height, textLength, text (3 doubles + text)
+                    double x = dis.readDouble();
+                    double y = dis.readDouble();
+                    double height = dis.readDouble();
+                    int textLength = dis.readInt();
+                    byte[] textBytes = new byte[textLength];
+                    dis.readFully(textBytes);
+                    String text = new String(textBytes, "UTF-8");
+                    entities.add(new ToleranceEntity(x, y, height, text));
+                    
+                } else if (entityType == TYPE_TABLE) {
+                    // TABLE: x, y, rows (int), cols (int), cellHeight, cellWidth, then cell texts
+                    double x = dis.readDouble();
+                    double y = dis.readDouble();
+                    int rows = dis.readInt();
+                    int columns = dis.readInt();
+                    double cellHeight = dis.readDouble();
+                    double cellWidth = dis.readDouble();
+                    TableEntity table = new TableEntity(x, y, rows, columns, cellHeight, cellWidth);
+                    int cellCount = rows * columns;
+                    for (int i = 0; i < cellCount; i++) {
+                        int cellTextLength = dis.readInt();
+                        byte[] cellTextBytes = new byte[cellTextLength];
+                        dis.readFully(cellTextBytes);
+                        table.addCellValue(new String(cellTextBytes, "UTF-8"));
+                    }
+                    entities.add(table);
                 }
             }
         }
@@ -218,6 +305,59 @@ public class DwgToDxfService {
             writer.write(String.format("11\n%.6f\n21\n%.6f\n", solid.getX2(), solid.getY2()));
             writer.write(String.format("12\n%.6f\n22\n%.6f\n", solid.getX3(), solid.getY3()));
             writer.write(String.format("13\n%.6f\n23\n%.6f\n", solid.getX4(), solid.getY4()));
+            
+        } else if (entity instanceof TextEntity) {
+            TextEntity text = (TextEntity) entity;
+            writer.write("0\nTEXT\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n", text.getX(), text.getY()));
+            writer.write(String.format("40\n%.6f\n", text.getHeight()));
+            writer.write(String.format("1\n%s\n", text.getText()));
+            if (text.getRotationAngle() != 0) {
+                writer.write(String.format("50\n%.6f\n", text.getRotationAngle()));
+            }
+            
+        } else if (entity instanceof MTextEntity) {
+            MTextEntity mtext = (MTextEntity) entity;
+            writer.write("0\nMTEXT\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n", mtext.getX(), mtext.getY()));
+            writer.write(String.format("40\n%.6f\n", mtext.getHeight()));
+            writer.write(String.format("41\n%.6f\n", mtext.getWidth()));
+            writer.write(String.format("1\n%s\n", mtext.getText()));
+            
+        } else if (entity instanceof DimensionEntity) {
+            DimensionEntity dim = (DimensionEntity) entity;
+            writer.write("0\nDIMENSION\n8\n0\n");
+            writer.write(String.format("70\n%d\n", dim.getDimensionType()));
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n", dim.getX1(), dim.getY1()));
+            writer.write(String.format("11\n%.6f\n21\n%.6f\n", dim.getX2(), dim.getY2()));
+            writer.write(String.format("13\n%.6f\n23\n%.6f\n", dim.getTextX(), dim.getTextY()));
+            writer.write(String.format("42\n%.6f\n", dim.getMeasurement()));
+            
+        } else if (entity instanceof LeaderEntity) {
+            LeaderEntity leader = (LeaderEntity) entity;
+            writer.write("0\nLEADER\n8\n0\n");
+            writer.write(String.format("3\n%s\n", leader.getText()));
+            List<Double> vertices = leader.getVertices();
+            for (int i = 0; i < vertices.size(); i += 2) {
+                writer.write(String.format("10\n%.6f\n20\n%.6f\n", vertices.get(i), vertices.get(i + 1)));
+            }
+            
+        } else if (entity instanceof ToleranceEntity) {
+            ToleranceEntity tolerance = (ToleranceEntity) entity;
+            writer.write("0\nTOLERANCE\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n", tolerance.getX(), tolerance.getY()));
+            writer.write(String.format("40\n%.6f\n", tolerance.getHeight()));
+            writer.write(String.format("1\n%s\n", tolerance.getToleranceString()));
+            
+        } else if (entity instanceof TableEntity) {
+            TableEntity table = (TableEntity) entity;
+            writer.write("0\nACDBTABLE\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n", table.getX(), table.getY()));
+            writer.write(String.format("90\n%d\n91\n%d\n", table.getRows(), table.getColumns()));
+            writer.write(String.format("40\n%.6f\n41\n%.6f\n", table.getCellHeight(), table.getCellWidth()));
+            for (String cellValue : table.getCellValues()) {
+                writer.write(String.format("1\n%s\n", cellValue));
+            }
         }
     }
 }
