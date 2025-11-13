@@ -47,10 +47,18 @@ public class DxfToPdfService {
     private static final String ENTITY_MULTILEADER = "MULTILEADER";
     private static final String ENTITY_TOLERANCE = "TOLERANCE";
     private static final String ENTITY_TABLE = "ACAD_TABLE";
+    private static final String ENTITY_BLOCK = "BLOCK";
+    private static final String ENTITY_ENDBLK = "ENDBLK";
+    private static final String ENTITY_INSERT = "INSERT";
+    private static final String ENTITY_ATTDEF = "ATTDEF";
+    private static final String ENTITY_ATTRIB = "ATTRIB";
+    private static final String ENTITY_XREF = "XREF";
+    private static final String ENTITY_WIPEOUT = "WIPEOUT";
     
     // DXF group codes
     private static final int GROUP_CODE_ENTITY_TYPE = 0;
     private static final int GROUP_CODE_TEXT_VALUE = 1;
+    private static final int GROUP_CODE_BLOCK_NAME = 2;
     private static final int GROUP_CODE_LAYER = 8;
     private static final int GROUP_CODE_X_START = 10;
     private static final int GROUP_CODE_Y_START = 20;
@@ -66,8 +74,12 @@ public class DxfToPdfService {
     private static final int GROUP_CODE_RATIO = 40; // Also used for ellipse ratio
     private static final int GROUP_CODE_VERTEX_COUNT = 90;
     
+    // Block registry for storing block definitions (supports recursive blocks)
+    private java.util.Map<String, BlockEntity> blockRegistry = new java.util.HashMap<>();
+    
     public void convertDxfToPdf(MultipartFile dxfFile, File pdfFile) throws IOException {
-        // Parse DXF entities
+        // Parse DXF entities and blocks
+        blockRegistry.clear(); // Reset block registry
         List<DxfEntity> entities = parseDxfEntities(dxfFile);
         
         // Create a PDF document using iText
@@ -86,9 +98,11 @@ public class DxfToPdfService {
             double offsetX = 50; // Left margin
             double offsetY = 50; // Bottom margin
             
-            // Render each entity
+            // Render each entity (blocks are stored in registry, not rendered directly)
             for (DxfEntity entity : entities) {
-                renderEntity(canvas, entity, scale, offsetX, offsetY);
+                if (!(entity instanceof BlockEntity)) {
+                    renderEntity(canvas, entity, scale, offsetX, offsetY, 1.0, 1.0, 0.0);
+                }
             }
             
             pdfDocument.close();
@@ -98,9 +112,20 @@ public class DxfToPdfService {
     }
     
     /**
-     * Render a single entity on the PDF canvas.
+     * Render a single entity on the PDF canvas with optional transformations.
+     * Supports recursive rendering for blocks.
+     * 
+     * @param canvas PDF canvas
+     * @param entity Entity to render
+     * @param scale Global scale factor
+     * @param offsetX Global X offset
+     * @param offsetY Global Y offset
+     * @param localScaleX Local X scale (for block insertions)
+     * @param localScaleY Local Y scale (for block insertions)
+     * @param localRotation Local rotation in degrees (for block insertions)
      */
-    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY) throws IOException {
+    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY,
+                             double localScaleX, double localScaleY, double localRotation) throws IOException {
         if (entity instanceof LineEntity) {
             LineEntity line = (LineEntity) entity;
             canvas.moveTo(offsetX + line.getX1() * scale, offsetY + line.getY1() * scale);
@@ -309,6 +334,87 @@ public class DxfToPdfService {
                 canvas.showText(cells.get(i));
             }
             canvas.endText();
+            
+        } else if (entity instanceof InsertEntity) {
+            // INSERT - Render a block with transformations (recursive)
+            InsertEntity insert = (InsertEntity) entity;
+            BlockEntity block = blockRegistry.get(insert.getBlockName());
+            
+            if (block != null) {
+                // Save canvas state for transformations
+                canvas.saveState();
+                
+                // Calculate transformed position
+                double insertX = offsetX + insert.getInsertX() * scale;
+                double insertY = offsetY + insert.getInsertY() * scale;
+                
+                // Apply transformations: translate, rotate, scale
+                double radians = Math.toRadians(insert.getRotation());
+                canvas.concatMatrix(
+                    Math.cos(radians) * insert.getScaleX(), Math.sin(radians) * insert.getScaleX(),
+                    -Math.sin(radians) * insert.getScaleY(), Math.cos(radians) * insert.getScaleY(),
+                    insertX, insertY
+                );
+                
+                // Recursively render block contents
+                for (DxfEntity blockEntity : block.getEntities()) {
+                    renderEntity(canvas, blockEntity, scale * insert.getScaleX(), 
+                               -block.getBaseX() * scale, -block.getBaseY() * scale,
+                               insert.getScaleX(), insert.getScaleY(), insert.getRotation());
+                }
+                
+                // Restore canvas state
+                canvas.restoreState();
+            }
+            
+        } else if (entity instanceof AttributeEntity) {
+            // ATTRIB - Render attribute text
+            AttributeEntity attr = (AttributeEntity) entity;
+            double x = offsetX + attr.getX() * scale * localScaleX;
+            double y = offsetY + attr.getY() * scale * localScaleY;
+            
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(attr.getHeight() * scale));
+            canvas.moveText(x, y);
+            canvas.showText(attr.getValue());
+            canvas.endText();
+            
+        } else if (entity instanceof XRefEntity) {
+            // XREF - Render placeholder (external references not automatically loaded for security)
+            XRefEntity xref = (XRefEntity) entity;
+            double x = offsetX + xref.getInsertX() * scale;
+            double y = offsetY + xref.getInsertY() * scale;
+            
+            // Draw a reference marker
+            canvas.rectangle(x, y, 50, 20);
+            canvas.stroke();
+            
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x + 2, y + 5);
+            canvas.showText("XREF: " + new java.io.File(xref.getFilePath()).getName());
+            canvas.endText();
+            
+        } else if (entity instanceof WipeoutEntity) {
+            // WIPEOUT - Render filled white polygon as mask
+            WipeoutEntity wipeout = (WipeoutEntity) entity;
+            List<Double> vertices = wipeout.getVertices();
+            
+            if (vertices.size() >= 6) {
+                canvas.saveState();
+                canvas.setFillColor(ColorConstants.WHITE);
+                
+                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                for (int i = 2; i < vertices.size(); i += 2) {
+                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                }
+                canvas.closePath();
+                canvas.fill();
+                
+                canvas.restoreState();
+            }
         }
     }
     
@@ -316,8 +422,14 @@ public class DxfToPdfService {
      * Parse DXF entities from the input file.
      * DXF format uses group codes (integers) followed by values.
      */
+    /**
+     * Parse DXF entities from the input file.
+     * DXF format uses group codes (integers) followed by values.
+     * Handles BLOCK definitions separately and stores them in blockRegistry.
+     */
     private List<DxfEntity> parseDxfEntities(MultipartFile dxfFile) throws IOException {
         List<DxfEntity> entities = new ArrayList<>();
+        BlockEntity currentBlock = null;
         
         try (BufferedReader br = new BufferedReader(new InputStreamReader(dxfFile.getInputStream()))) {
             String line;
@@ -336,22 +448,66 @@ public class DxfToPdfService {
                     }
                 } else {
                     if (currentGroupCode == GROUP_CODE_ENTITY_TYPE) {
-                        // Save previous entity if complete
-                        if (currentEntity != null) {
-                            entities.add(currentEntity);
+                        // Handle ENDBLK - end of block definition
+                        if (ENTITY_ENDBLK.equals(line)) {
+                            if (currentBlock != null) {
+                                // Store block in registry
+                                blockRegistry.put(currentBlock.getName(), currentBlock);
+                                currentBlock = null;
+                            }
+                            currentEntity = null;
+                            currentEntityType = null;
+                        } else {
+                            // Save previous entity
+                            if (currentEntity != null) {
+                                if (currentBlock != null) {
+                                    // Entity belongs to current block
+                                    currentBlock.addEntity(currentEntity);
+                                } else {
+                                    // Regular entity
+                                    entities.add(currentEntity);
+                                }
+                            }
+                            
+                            currentEntityType = line;
+                            currentEntity = createEntity(currentEntityType);
+                            
+                            // Start a new block definition
+                            if (ENTITY_BLOCK.equals(line) && currentEntity instanceof BlockEntity) {
+                                currentBlock = (BlockEntity) currentEntity;
+                                currentEntity = null; // Block itself is not added to entities
+                            }
                         }
-                        currentEntityType = line;
-                        currentEntity = createEntity(currentEntityType);
                     } else if (currentEntity != null) {
                         parseEntityProperty(currentEntity, currentGroupCode, line);
+                    } else if (currentBlock != null) {
+                        // Parsing block properties (name, base point)
+                        if (currentGroupCode == GROUP_CODE_BLOCK_NAME) {
+                            currentBlock.setName(line);
+                        } else {
+                            try {
+                                double doubleValue = Double.parseDouble(line);
+                                if (currentGroupCode == GROUP_CODE_X_START) {
+                                    currentBlock.setBaseX(doubleValue);
+                                } else if (currentGroupCode == GROUP_CODE_Y_START) {
+                                    currentBlock.setBaseY(doubleValue);
+                                }
+                            } catch (NumberFormatException e) {
+                                // Skip invalid values
+                            }
+                        }
                     }
                     currentGroupCode = null;
                 }
             }
             
-            // Add the last entity
+            // Add the last entity (if not in a block)
             if (currentEntity != null) {
-                entities.add(currentEntity);
+                if (currentBlock != null) {
+                    currentBlock.addEntity(currentEntity);
+                } else {
+                    entities.add(currentEntity);
+                }
             }
         }
         
@@ -376,6 +532,12 @@ public class DxfToPdfService {
             case ENTITY_MULTILEADER: return new LeaderEntity();
             case ENTITY_TOLERANCE: return new ToleranceEntity();
             case ENTITY_TABLE: return new TableEntity();
+            case ENTITY_BLOCK: return new BlockEntity();
+            case ENTITY_INSERT: return new InsertEntity();
+            case ENTITY_ATTDEF:
+            case ENTITY_ATTRIB: return new AttributeEntity();
+            case ENTITY_XREF: return new XRefEntity();
+            case ENTITY_WIPEOUT: return new WipeoutEntity();
             default: return null;
         }
     }
@@ -516,9 +678,72 @@ public class DxfToPdfService {
                     case 40: table.setCellHeight(doubleValue); break;
                     case 41: table.setCellWidth(doubleValue); break;
                 }
+            } else if (entity instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) entity;
+                if (groupCode == GROUP_CODE_BLOCK_NAME) {
+                    // Block name is handled as string, not double
+                } else {
+                    switch (groupCode) {
+                        case GROUP_CODE_X_START: block.setBaseX(doubleValue); break;
+                        case GROUP_CODE_Y_START: block.setBaseY(doubleValue); break;
+                    }
+                }
+            } else if (entity instanceof InsertEntity) {
+                InsertEntity insert = (InsertEntity) entity;
+                if (groupCode == GROUP_CODE_BLOCK_NAME) {
+                    // Block name handled as string
+                } else {
+                    switch (groupCode) {
+                        case GROUP_CODE_X_START: insert.setInsertX(doubleValue); break;
+                        case GROUP_CODE_Y_START: insert.setInsertY(doubleValue); break;
+                        case 41: insert.setScaleX(doubleValue); break;
+                        case 42: insert.setScaleY(doubleValue); break;
+                        case 50: insert.setRotation(doubleValue); break;
+                    }
+                }
+            } else if (entity instanceof AttributeEntity) {
+                AttributeEntity attr = (AttributeEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: attr.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: attr.setY(doubleValue); break;
+                    case 40: attr.setHeight(doubleValue); break;
+                }
+            } else if (entity instanceof XRefEntity) {
+                XRefEntity xref = (XRefEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: xref.setInsertX(doubleValue); break;
+                    case GROUP_CODE_Y_START: xref.setInsertY(doubleValue); break;
+                }
+            } else if (entity instanceof WipeoutEntity) {
+                WipeoutEntity wipeout = (WipeoutEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    wipeout.addVertex(doubleValue, 0);
+                } else if (groupCode == GROUP_CODE_Y_START && wipeout.getVertexCount() > 0) {
+                    List<Double> vertices = wipeout.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                }
             }
         } catch (NumberFormatException e) {
             // Skip invalid numeric values
+        }
+        
+        // Handle string values (block names, attribute tags, etc.)
+        if (groupCode == GROUP_CODE_BLOCK_NAME) {
+            if (entity instanceof BlockEntity) {
+                ((BlockEntity) entity).setName(value);
+            } else if (entity instanceof InsertEntity) {
+                ((InsertEntity) entity).setBlockName(value);
+            } else if (entity instanceof AttributeEntity) {
+                ((AttributeEntity) entity).setTag(value);
+            }
+        } else if (groupCode == 3) { // Prompt for attributes
+            if (entity instanceof AttributeEntity) {
+                ((AttributeEntity) entity).setPrompt(value);
+            }
+        } else if (groupCode == GROUP_CODE_TEXT_VALUE) {
+            if (entity instanceof XRefEntity) {
+                ((XRefEntity) entity).setFilePath(value);
+            }
         }
     }
     
