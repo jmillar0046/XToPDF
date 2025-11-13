@@ -52,6 +52,13 @@ public class DwgToDxfService {
     private static final byte TYPE_ATTRIB = 16;
     private static final byte TYPE_XREF = 17;
     private static final byte TYPE_WIPEOUT = 18;
+    private static final byte TYPE_3DFACE = 19;
+    private static final byte TYPE_POLYFACE_MESH = 20;
+    private static final byte TYPE_MESH = 21;
+    private static final byte TYPE_3DSOLID = 22;
+    private static final byte TYPE_SURFACE = 23;
+    private static final byte TYPE_BODY = 24;
+    private static final byte TYPE_REGION = 25;
     
     public void convertDwgToDxf(MultipartFile dwgFile, File dxfFile) throws IOException {
         // Parse DWG binary format
@@ -315,6 +322,112 @@ public class DwgToDxfService {
                         wipeout.addVertex(x, y);
                     }
                     entities.add(wipeout);
+                    
+                } else if (entityType == TYPE_3DFACE) {
+                    // 3DFACE: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 (12 doubles)
+                    double x1 = dis.readDouble();
+                    double y1 = dis.readDouble();
+                    double z1 = dis.readDouble();
+                    double x2 = dis.readDouble();
+                    double y2 = dis.readDouble();
+                    double z2 = dis.readDouble();
+                    double x3 = dis.readDouble();
+                    double y3 = dis.readDouble();
+                    double z3 = dis.readDouble();
+                    double x4 = dis.readDouble();
+                    double y4 = dis.readDouble();
+                    double z4 = dis.readDouble();
+                    entities.add(new Face3DEntity(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4));
+                    
+                } else if (entityType == TYPE_POLYFACE_MESH) {
+                    // POLYFACE MESH: numVertices (int), vertices (x,y,z triplets)
+                    int numVertices = dis.readInt();
+                    PolyfaceMeshEntity mesh = new PolyfaceMeshEntity();
+                    for (int i = 0; i < numVertices; i++) {
+                        double x = dis.readDouble();
+                        double y = dis.readDouble();
+                        double z = dis.readDouble();
+                        mesh.addVertex(x, y, z);
+                    }
+                    entities.add(mesh);
+                    
+                } else if (entityType == TYPE_MESH) {
+                    // MESH: numVertices (int), subdivisionLevel (int), vertices
+                    int numVertices = dis.readInt();
+                    int subdivisionLevel = dis.readInt();
+                    MeshEntity mesh = new MeshEntity();
+                    mesh.setSubdivisionLevel(subdivisionLevel);
+                    for (int i = 0; i < numVertices; i++) {
+                        double x = dis.readDouble();
+                        double y = dis.readDouble();
+                        double z = dis.readDouble();
+                        mesh.addVertex(x, y, z);
+                    }
+                    entities.add(mesh);
+                    
+                } else if (entityType == TYPE_3DSOLID) {
+                    // 3DSOLID: bounding box (6 doubles), dataLength (int), data
+                    double minX = dis.readDouble();
+                    double minY = dis.readDouble();
+                    double minZ = dis.readDouble();
+                    double maxX = dis.readDouble();
+                    double maxY = dis.readDouble();
+                    double maxZ = dis.readDouble();
+                    int dataLength = dis.readInt();
+                    byte[] data = new byte[dataLength];
+                    dis.readFully(data);
+                    
+                    Solid3DEntity solid = new Solid3DEntity();
+                    solid.setBoundingBoxMinX(minX);
+                    solid.setBoundingBoxMinY(minY);
+                    solid.setBoundingBoxMinZ(minZ);
+                    solid.setBoundingBoxMaxX(maxX);
+                    solid.setBoundingBoxMaxY(maxY);
+                    solid.setBoundingBoxMaxZ(maxZ);
+                    solid.setProprietaryData(new String(data, "UTF-8"));
+                    entities.add(solid);
+                    
+                } else if (entityType == TYPE_SURFACE) {
+                    // SURFACE: uDegree, vDegree, numU, numV (4 ints), dataLength, data
+                    int uDegree = dis.readInt();
+                    int vDegree = dis.readInt();
+                    int numU = dis.readInt();
+                    int numV = dis.readInt();
+                    int dataLength = dis.readInt();
+                    byte[] data = new byte[dataLength];
+                    dis.readFully(data);
+                    
+                    SurfaceEntity surface = new SurfaceEntity();
+                    surface.setUDegree(uDegree);
+                    surface.setVDegree(vDegree);
+                    surface.setNumUControlPoints(numU);
+                    surface.setNumVControlPoints(numV);
+                    surface.setSurfaceData(new String(data, "UTF-8"));
+                    entities.add(surface);
+                    
+                } else if (entityType == TYPE_BODY) {
+                    // BODY: version (int), dataLength (int), ACIS data
+                    int version = dis.readInt();
+                    int dataLength = dis.readInt();
+                    byte[] data = new byte[dataLength];
+                    dis.readFully(data);
+                    
+                    BodyEntity body = new BodyEntity();
+                    body.setVersion(version);
+                    body.setAcisData(new String(data, "UTF-8"));
+                    entities.add(body);
+                    
+                } else if (entityType == TYPE_REGION) {
+                    // REGION: numVertices (int), vertices (x,y pairs), filled (boolean)
+                    int numVertices = dis.readInt();
+                    RegionEntity region = new RegionEntity();
+                    for (int i = 0; i < numVertices; i++) {
+                        double x = dis.readDouble();
+                        double y = dis.readDouble();
+                        region.addVertex(x, y);
+                    }
+                    region.setFilled(dis.readBoolean());
+                    entities.add(region);
                 }
             }
         }
@@ -493,6 +606,70 @@ public class DwgToDxfService {
             writer.write("0\nWIPEOUT\n8\n0\n");
             writer.write(String.format("90\n%d\n", wipeout.getVertexCount()));
             List<Double> vertices = wipeout.getVertices();
+            for (int i = 0; i < vertices.size(); i += 2) {
+                writer.write(String.format("10\n%.6f\n20\n%.6f\n", vertices.get(i), vertices.get(i + 1)));
+            }
+            
+        } else if (entity instanceof Face3DEntity) {
+            Face3DEntity face = (Face3DEntity) entity;
+            writer.write("0\n3DFACE\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n30\n%.6f\n", face.getX1(), face.getY1(), face.getZ1()));
+            writer.write(String.format("11\n%.6f\n21\n%.6f\n31\n%.6f\n", face.getX2(), face.getY2(), face.getZ2()));
+            writer.write(String.format("12\n%.6f\n22\n%.6f\n32\n%.6f\n", face.getX3(), face.getY3(), face.getZ3()));
+            writer.write(String.format("13\n%.6f\n23\n%.6f\n33\n%.6f\n", face.getX4(), face.getY4(), face.getZ4()));
+            
+        } else if (entity instanceof PolyfaceMeshEntity) {
+            PolyfaceMeshEntity mesh = (PolyfaceMeshEntity) entity;
+            writer.write("0\nPOLYLINE\n8\n0\n");
+            writer.write("70\n64\n"); // Polyface mesh flag
+            writer.write(String.format("71\n%d\n", mesh.getVertexCount()));
+            List<Double> vertices = mesh.getVertices();
+            for (int i = 0; i < vertices.size(); i += 3) {
+                writer.write("0\nVERTEX\n8\n0\n");
+                writer.write(String.format("10\n%.6f\n20\n%.6f\n30\n%.6f\n", 
+                    vertices.get(i), vertices.get(i + 1), vertices.get(i + 2)));
+            }
+            writer.write("0\nSEQEND\n8\n0\n");
+            
+        } else if (entity instanceof MeshEntity) {
+            MeshEntity mesh = (MeshEntity) entity;
+            writer.write("0\nMESH\n8\n0\n");
+            writer.write(String.format("91\n%d\n", mesh.getVertexCount()));
+            writer.write(String.format("92\n%d\n", mesh.getSubdivisionLevel()));
+            List<Double> vertices = mesh.getVertices();
+            for (int i = 0; i < vertices.size(); i += 3) {
+                writer.write(String.format("10\n%.6f\n20\n%.6f\n30\n%.6f\n", 
+                    vertices.get(i), vertices.get(i + 1), vertices.get(i + 2)));
+            }
+            
+        } else if (entity instanceof Solid3DEntity) {
+            Solid3DEntity solid = (Solid3DEntity) entity;
+            writer.write("0\n3DSOLID\n8\n0\n");
+            writer.write(String.format("10\n%.6f\n20\n%.6f\n30\n%.6f\n", 
+                solid.getBoundingBoxMinX(), solid.getBoundingBoxMinY(), solid.getBoundingBoxMinZ()));
+            writer.write(String.format("11\n%.6f\n21\n%.6f\n31\n%.6f\n", 
+                solid.getBoundingBoxMaxX(), solid.getBoundingBoxMaxY(), solid.getBoundingBoxMaxZ()));
+            writer.write(String.format("1\n%s\n", solid.getProprietaryData()));
+            
+        } else if (entity instanceof SurfaceEntity) {
+            SurfaceEntity surface = (SurfaceEntity) entity;
+            writer.write("0\nSURFACE\n8\n0\n");
+            writer.write(String.format("71\n%d\n72\n%d\n", surface.getUDegree(), surface.getVDegree()));
+            writer.write(String.format("73\n%d\n74\n%d\n", 
+                surface.getNumUControlPoints(), surface.getNumVControlPoints()));
+            writer.write(String.format("1\n%s\n", surface.getSurfaceData()));
+            
+        } else if (entity instanceof BodyEntity) {
+            BodyEntity body = (BodyEntity) entity;
+            writer.write("0\nBODY\n8\n0\n");
+            writer.write(String.format("70\n%d\n", body.getVersion()));
+            writer.write(String.format("1\n%s\n", body.getAcisData()));
+            
+        } else if (entity instanceof RegionEntity) {
+            RegionEntity region = (RegionEntity) entity;
+            writer.write("0\nREGION\n8\n0\n");
+            writer.write(String.format("90\n%d\n", region.getVertexCount()));
+            List<Double> vertices = region.getVertices();
             for (int i = 0; i < vertices.size(); i += 2) {
                 writer.write(String.format("10\n%.6f\n20\n%.6f\n", vertices.get(i), vertices.get(i + 1)));
             }

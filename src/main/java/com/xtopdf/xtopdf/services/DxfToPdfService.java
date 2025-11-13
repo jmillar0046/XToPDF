@@ -54,6 +54,13 @@ public class DxfToPdfService {
     private static final String ENTITY_ATTRIB = "ATTRIB";
     private static final String ENTITY_XREF = "XREF";
     private static final String ENTITY_WIPEOUT = "WIPEOUT";
+    private static final String ENTITY_3DFACE = "3DFACE";
+    private static final String ENTITY_3DSOLID = "3DSOLID";
+    private static final String ENTITY_POLYFACE_MESH = "POLYLINE"; // POLYFACE variant
+    private static final String ENTITY_MESH = "MESH";
+    private static final String ENTITY_SURFACE = "SURFACE";
+    private static final String ENTITY_BODY = "BODY";
+    private static final String ENTITY_REGION = "REGION";
     
     // DXF group codes
     private static final int GROUP_CODE_ENTITY_TYPE = 0;
@@ -415,6 +422,164 @@ public class DxfToPdfService {
                 
                 canvas.restoreState();
             }
+            
+        } else if (entity instanceof Face3DEntity) {
+            // 3DFACE - Render as filled polygon (project Z coordinate)
+            Face3DEntity face3d = (Face3DEntity) entity;
+            canvas.saveState();
+            canvas.setFillColor(ColorConstants.LIGHT_GRAY);
+            
+            canvas.moveTo(offsetX + face3d.getX1() * scale, offsetY + face3d.getY1() * scale);
+            canvas.lineTo(offsetX + face3d.getX2() * scale, offsetY + face3d.getY2() * scale);
+            canvas.lineTo(offsetX + face3d.getX3() * scale, offsetY + face3d.getY3() * scale);
+            if (!face3d.isTriangle()) {
+                canvas.lineTo(offsetX + face3d.getX4() * scale, offsetY + face3d.getY4() * scale);
+            }
+            canvas.closePath();
+            canvas.fillStroke();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof PolyfaceMeshEntity) {
+            // POLYFACE MESH - Render as wireframe (connect vertices)
+            PolyfaceMeshEntity mesh = (PolyfaceMeshEntity) entity;
+            List<Double> vertices = mesh.getVertices();
+            
+            if (vertices.size() >= 9) { // At least 3 vertices (x,y,z each)
+                canvas.saveState();
+                canvas.setStrokeColor(ColorConstants.DARK_GRAY);
+                
+                // Draw wireframe by connecting vertices
+                for (int i = 0; i < vertices.size() - 3; i += 3) {
+                    double x1 = offsetX + vertices.get(i) * scale;
+                    double y1 = offsetY + vertices.get(i + 1) * scale;
+                    double x2 = offsetX + vertices.get(i + 3) * scale;
+                    double y2 = offsetY + vertices.get(i + 4) * scale;
+                    
+                    canvas.moveTo(x1, y1);
+                    canvas.lineTo(x2, y2);
+                }
+                canvas.stroke();
+                
+                canvas.restoreState();
+            }
+            
+        } else if (entity instanceof MeshEntity) {
+            // MESH - Render as point cloud or wireframe
+            MeshEntity mesh = (MeshEntity) entity;
+            List<Double> vertices = mesh.getVertices();
+            
+            if (vertices.size() >= 3) {
+                canvas.saveState();
+                canvas.setFillColor(ColorConstants.BLUE);
+                
+                // Render as point cloud
+                for (int i = 0; i < vertices.size(); i += 3) {
+                    double x = offsetX + vertices.get(i) * scale;
+                    double y = offsetY + vertices.get(i + 1) * scale;
+                    // Draw small circle for each vertex
+                    canvas.circle(x, y, 1);
+                }
+                canvas.fill();
+                
+                canvas.restoreState();
+            }
+            
+        } else if (entity instanceof Solid3DEntity) {
+            // 3DSOLID - Render bounding box placeholder (requires 3D engine)
+            Solid3DEntity solid = (Solid3DEntity) entity;
+            double x1 = offsetX + solid.getBoundingBoxMinX() * scale;
+            double y1 = offsetY + solid.getBoundingBoxMinY() * scale;
+            double x2 = offsetX + solid.getBoundingBoxMaxX() * scale;
+            double y2 = offsetY + solid.getBoundingBoxMaxY() * scale;
+            
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.RED);
+            canvas.setLineDash(3, 3);
+            canvas.rectangle(x1, y1, x2 - x1, y2 - y1);
+            canvas.stroke();
+            
+            // Add label
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x1 + 2, y1 + 2);
+            canvas.showText("3DSOLID");
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof SurfaceEntity) {
+            // SURFACE - Render placeholder (requires NURBS renderer)
+            SurfaceEntity surface = (SurfaceEntity) entity;
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.GREEN);
+            
+            // Draw a grid pattern as placeholder
+            double gridSize = 50 * scale;
+            for (int i = 0; i < 5; i++) {
+                double x = offsetX + i * gridSize;
+                canvas.moveTo(x, offsetY);
+                canvas.lineTo(x, offsetY + 4 * gridSize);
+            }
+            for (int i = 0; i < 5; i++) {
+                double y = offsetY + i * gridSize;
+                canvas.moveTo(offsetX, y);
+                canvas.lineTo(offsetX + 4 * gridSize, y);
+            }
+            canvas.stroke();
+            
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(offsetX + 2, offsetY + 2);
+            canvas.showText("NURBS SURFACE");
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof BodyEntity) {
+            // BODY - Render placeholder (requires ACIS kernel)
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.ORANGE);
+            canvas.rectangle(offsetX, offsetY, 100 * scale, 50 * scale);
+            canvas.stroke();
+            
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(offsetX + 2, offsetY + 2);
+            canvas.showText("ACIS BODY");
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof RegionEntity) {
+            // REGION - Render as filled polygon
+            RegionEntity region = (RegionEntity) entity;
+            List<Double> vertices = region.getVertices();
+            
+            if (vertices.size() >= 6) {
+                canvas.saveState();
+                
+                if (region.isFilled()) {
+                    canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(200, 220, 255));
+                }
+                
+                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                for (int i = 2; i < vertices.size(); i += 2) {
+                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                }
+                canvas.closePath();
+                
+                if (region.isFilled()) {
+                    canvas.fillStroke();
+                } else {
+                    canvas.stroke();
+                }
+                
+                canvas.restoreState();
+            }
         }
     }
     
@@ -538,6 +703,12 @@ public class DxfToPdfService {
             case ENTITY_ATTRIB: return new AttributeEntity();
             case ENTITY_XREF: return new XRefEntity();
             case ENTITY_WIPEOUT: return new WipeoutEntity();
+            case ENTITY_3DFACE: return new Face3DEntity();
+            case ENTITY_3DSOLID: return new Solid3DEntity();
+            case ENTITY_MESH: return new MeshEntity();
+            case ENTITY_SURFACE: return new SurfaceEntity();
+            case ENTITY_BODY: return new BodyEntity();
+            case ENTITY_REGION: return new RegionEntity();
             default: return null;
         }
     }
@@ -722,6 +893,77 @@ public class DxfToPdfService {
                     List<Double> vertices = wipeout.getVertices();
                     vertices.set(vertices.size() - 1, doubleValue);
                 }
+            } else if (entity instanceof Face3DEntity) {
+                Face3DEntity face3d = (Face3DEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: face3d.setX1(doubleValue); break;
+                    case GROUP_CODE_Y_START: face3d.setY1(doubleValue); break;
+                    case 30: face3d.setZ1(doubleValue); break; // Z coordinate
+                    case GROUP_CODE_X_END: face3d.setX2(doubleValue); break;
+                    case GROUP_CODE_Y_END: face3d.setY2(doubleValue); break;
+                    case 31: face3d.setZ2(doubleValue); break;
+                    case GROUP_CODE_X2: face3d.setX3(doubleValue); break;
+                    case GROUP_CODE_Y2: face3d.setY3(doubleValue); break;
+                    case 32: face3d.setZ3(doubleValue); break;
+                    case GROUP_CODE_X3: face3d.setX4(doubleValue); break;
+                    case GROUP_CODE_Y3: face3d.setY4(doubleValue); break;
+                    case 33: face3d.setZ4(doubleValue); break;
+                }
+            } else if (entity instanceof PolyfaceMeshEntity) {
+                PolyfaceMeshEntity mesh = (PolyfaceMeshEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    mesh.addVertex(doubleValue, 0, 0);
+                } else if (groupCode == GROUP_CODE_Y_START && mesh.getVertexCount() > 0) {
+                    List<Double> vertices = mesh.getVertices();
+                    vertices.set(vertices.size() - 2, doubleValue);
+                } else if (groupCode == 30 && mesh.getVertexCount() > 0) { // Z coordinate
+                    List<Double> vertices = mesh.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                }
+            } else if (entity instanceof MeshEntity) {
+                MeshEntity mesh = (MeshEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    mesh.addVertex(doubleValue, 0, 0);
+                } else if (groupCode == GROUP_CODE_Y_START && mesh.getVertexCount() > 0) {
+                    List<Double> vertices = mesh.getVertices();
+                    vertices.set(vertices.size() - 2, doubleValue);
+                } else if (groupCode == 30 && mesh.getVertexCount() > 0) {
+                    List<Double> vertices = mesh.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                } else if (groupCode == 92) {
+                    mesh.setSubdivisionLevel((int)doubleValue);
+                }
+            } else if (entity instanceof Solid3DEntity) {
+                Solid3DEntity solid = (Solid3DEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: solid.setBoundingBoxMinX(doubleValue); break;
+                    case GROUP_CODE_Y_START: solid.setBoundingBoxMinY(doubleValue); break;
+                    case 30: solid.setBoundingBoxMinZ(doubleValue); break;
+                    case GROUP_CODE_X_END: solid.setBoundingBoxMaxX(doubleValue); break;
+                    case GROUP_CODE_Y_END: solid.setBoundingBoxMaxY(doubleValue); break;
+                    case 31: solid.setBoundingBoxMaxZ(doubleValue); break;
+                }
+            } else if (entity instanceof SurfaceEntity) {
+                SurfaceEntity surface = (SurfaceEntity) entity;
+                switch (groupCode) {
+                    case 71: surface.setUDegree((int)doubleValue); break;
+                    case 72: surface.setVDegree((int)doubleValue); break;
+                    case 73: surface.setNumUControlPoints((int)doubleValue); break;
+                    case 74: surface.setNumVControlPoints((int)doubleValue); break;
+                }
+            } else if (entity instanceof BodyEntity) {
+                BodyEntity body = (BodyEntity) entity;
+                if (groupCode == 70) {
+                    body.setVersion((int)doubleValue);
+                }
+            } else if (entity instanceof RegionEntity) {
+                RegionEntity region = (RegionEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    region.addVertex(doubleValue, 0);
+                } else if (groupCode == GROUP_CODE_Y_START && region.getVertexCount() > 0) {
+                    List<Double> vertices = region.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                }
             }
         } catch (NumberFormatException e) {
             // Skip invalid numeric values
@@ -743,6 +985,12 @@ public class DxfToPdfService {
         } else if (groupCode == GROUP_CODE_TEXT_VALUE) {
             if (entity instanceof XRefEntity) {
                 ((XRefEntity) entity).setFilePath(value);
+            } else if (entity instanceof Solid3DEntity) {
+                ((Solid3DEntity) entity).setProprietaryData(value);
+            } else if (entity instanceof SurfaceEntity) {
+                ((SurfaceEntity) entity).setSurfaceData(value);
+            } else if (entity instanceof BodyEntity) {
+                ((BodyEntity) entity).setAcisData(value);
             }
         }
     }
