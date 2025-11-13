@@ -61,6 +61,13 @@ public class DxfToPdfService {
     private static final String ENTITY_SURFACE = "SURFACE";
     private static final String ENTITY_BODY = "BODY";
     private static final String ENTITY_REGION = "REGION";
+    private static final String ENTITY_VIEWPORT = "VIEWPORT";
+    private static final String ENTITY_IMAGE = "IMAGE";
+    private static final String ENTITY_PDFUNDERLAY = "PDFUNDERLAY";
+    private static final String ENTITY_DGNUNDERLAY = "DGNUNDERLAY";
+    private static final String ENTITY_DWFUNDERLAY = "DWFUNDERLAY";
+    private static final String ENTITY_OLEFRAME = "OLEFRAME";
+    private static final String ENTITY_OLE2FRAME = "OLE2FRAME";
     
     // DXF group codes
     private static final int GROUP_CODE_ENTITY_TYPE = 0;
@@ -580,6 +587,117 @@ public class DxfToPdfService {
                 
                 canvas.restoreState();
             }
+            
+        } else if (entity instanceof ViewportEntity) {
+            // VIEWPORT - Render as clipping rectangle outline
+            ViewportEntity viewport = (ViewportEntity) entity;
+            double x = offsetX + (viewport.getCenterX() - viewport.getWidth() / 2) * scale;
+            double y = offsetY + (viewport.getCenterY() - viewport.getHeight() / 2) * scale;
+            double width = viewport.getWidth() * scale;
+            double height = viewport.getHeight() * scale;
+            
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.MAGENTA);
+            canvas.setLineDash(5, 5);
+            canvas.setLineWidth(2);
+            canvas.rectangle(x, y, width, height);
+            canvas.stroke();
+            
+            // Add label
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x + 2, y + height - 10);
+            canvas.showText(String.format("VIEWPORT (scale:%.2f)", viewport.getScale()));
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof ImageEntity) {
+            // IMAGE - Render placeholder for embedded raster image
+            ImageEntity image = (ImageEntity) entity;
+            double x = offsetX + image.getInsertX() * scale;
+            double y = offsetY + image.getInsertY() * scale;
+            double width = image.getWidth() * scale;
+            double height = image.getHeight() * scale;
+            
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.CYAN);
+            canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(240, 248, 255));
+            
+            // Draw filled rectangle
+            canvas.rectangle(x, y, width, height);
+            canvas.fillStroke();
+            
+            // Draw diagonal lines to indicate image
+            canvas.moveTo(x, y);
+            canvas.lineTo(x + width, y + height);
+            canvas.moveTo(x + width, y);
+            canvas.lineTo(x, y + height);
+            canvas.stroke();
+            
+            // Add label
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x + 2, y + height / 2);
+            String filename = new java.io.File(image.getImagePath()).getName();
+            canvas.showText("IMAGE: " + (filename.isEmpty() ? "[embedded]" : filename));
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof UnderlayEntity) {
+            // UNDERLAY - Render placeholder for PDF/DGN/DWF reference
+            UnderlayEntity underlay = (UnderlayEntity) entity;
+            double x = offsetX + underlay.getInsertX() * scale;
+            double y = offsetY + underlay.getInsertY() * scale;
+            double width = 150 * scale * underlay.getScaleX();
+            double height = 100 * scale * underlay.getScaleY();
+            
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.BLUE);
+            canvas.setLineDash(3, 3);
+            canvas.rectangle(x, y, width, height);
+            canvas.stroke();
+            
+            // Add label
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x + 2, y + height - 10);
+            String filename = new java.io.File(underlay.getUnderlayPath()).getName();
+            canvas.showText(underlay.getUnderlayType() + " UNDERLAY: " + filename);
+            canvas.endText();
+            
+            canvas.restoreState();
+            
+        } else if (entity instanceof OleFrameEntity) {
+            // OLEFRAME - Render placeholder for linked OLE content
+            OleFrameEntity ole = (OleFrameEntity) entity;
+            double x = offsetX + ole.getInsertX() * scale;
+            double y = offsetY + ole.getInsertY() * scale;
+            double width = ole.getWidth() * scale;
+            double height = ole.getHeight() * scale;
+            
+            canvas.saveState();
+            canvas.setStrokeColor(ColorConstants.DARK_GRAY);
+            canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(220, 220, 220));
+            
+            // Draw filled rectangle
+            canvas.rectangle(x, y, width, height);
+            canvas.fillStroke();
+            
+            // Add label
+            canvas.beginText();
+            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
+                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
+            canvas.moveText(x + 2, y + height / 2);
+            String oleLabel = ole.getOleVersion() == 2 ? "OLE2FRAME" : "OLEFRAME";
+            canvas.showText(oleLabel + (ole.getOleType().isEmpty() ? "" : ": " + ole.getOleType()));
+            canvas.endText();
+            
+            canvas.restoreState();
         }
     }
     
@@ -709,6 +827,13 @@ public class DxfToPdfService {
             case ENTITY_SURFACE: return new SurfaceEntity();
             case ENTITY_BODY: return new BodyEntity();
             case ENTITY_REGION: return new RegionEntity();
+            case ENTITY_VIEWPORT: return new ViewportEntity();
+            case ENTITY_IMAGE: return new ImageEntity();
+            case ENTITY_PDFUNDERLAY:
+            case ENTITY_DGNUNDERLAY:
+            case ENTITY_DWFUNDERLAY: return new UnderlayEntity();
+            case ENTITY_OLEFRAME:
+            case ENTITY_OLE2FRAME: return new OleFrameEntity();
             default: return null;
         }
     }

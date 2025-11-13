@@ -59,6 +59,10 @@ public class DwgToDxfService {
     private static final byte TYPE_SURFACE = 23;
     private static final byte TYPE_BODY = 24;
     private static final byte TYPE_REGION = 25;
+    private static final byte TYPE_VIEWPORT = 26;
+    private static final byte TYPE_IMAGE = 27;
+    private static final byte TYPE_UNDERLAY = 28;
+    private static final byte TYPE_OLEFRAME = 29;
     
     public void convertDwgToDxf(MultipartFile dwgFile, File dxfFile) throws IOException {
         // Parse DWG binary format
