@@ -9,6 +9,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.xtopdf.xtopdf.entities.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -21,8 +22,10 @@ import java.util.List;
 /**
  * Service to convert DXF (Drawing Exchange Format) files to PDF.
  * 
- * This implementation parses DXF entities (LINE, CIRCLE, etc.) and renders them
- * as actual graphics in the PDF using iText's canvas API.
+ * This implementation parses DXF entities and renders them as actual graphics
+ * in the PDF using iText's canvas API.
+ * 
+ * Supported entities: LINE, CIRCLE, ARC, ELLIPSE, POINT, POLYLINE, SOLID/TRACE
  */
 @Service
 public class DxfToPdfService {
@@ -30,14 +33,30 @@ public class DxfToPdfService {
     // DXF entity types
     private static final String ENTITY_LINE = "LINE";
     private static final String ENTITY_CIRCLE = "CIRCLE";
+    private static final String ENTITY_ARC = "ARC";
+    private static final String ENTITY_ELLIPSE = "ELLIPSE";
+    private static final String ENTITY_POINT = "POINT";
+    private static final String ENTITY_POLYLINE = "POLYLINE";
+    private static final String ENTITY_LWPOLYLINE = "LWPOLYLINE";
+    private static final String ENTITY_SOLID = "SOLID";
+    private static final String ENTITY_TRACE = "TRACE";
     
     // DXF group codes
     private static final int GROUP_CODE_ENTITY_TYPE = 0;
+    private static final int GROUP_CODE_LAYER = 8;
     private static final int GROUP_CODE_X_START = 10;
     private static final int GROUP_CODE_Y_START = 20;
     private static final int GROUP_CODE_X_END = 11;
     private static final int GROUP_CODE_Y_END = 21;
+    private static final int GROUP_CODE_X2 = 12;
+    private static final int GROUP_CODE_Y2 = 22;
+    private static final int GROUP_CODE_X3 = 13;
+    private static final int GROUP_CODE_Y3 = 23;
     private static final int GROUP_CODE_RADIUS = 40;
+    private static final int GROUP_CODE_START_ANGLE = 50;
+    private static final int GROUP_CODE_END_ANGLE = 51;
+    private static final int GROUP_CODE_RATIO = 40; // Also used for ellipse ratio
+    private static final int GROUP_CODE_VERTEX_COUNT = 90;
     
     public void convertDxfToPdf(MultipartFile dxfFile, File pdfFile) throws IOException {
         // Parse DXF entities
@@ -51,6 +70,7 @@ public class DxfToPdfService {
             
             // Set up drawing parameters
             canvas.setStrokeColor(ColorConstants.BLACK);
+            canvas.setFillColor(ColorConstants.LIGHT_GRAY);
             canvas.setLineWidth(1);
             
             // Calculate scale factor to fit drawing on page
@@ -60,31 +80,88 @@ public class DxfToPdfService {
             
             // Render each entity
             for (DxfEntity entity : entities) {
-                if (entity instanceof LineEntity) {
-                    LineEntity line = (LineEntity) entity;
-                    canvas.moveTo(
-                        offsetX + line.x1 * scale,
-                        offsetY + line.y1 * scale
-                    );
-                    canvas.lineTo(
-                        offsetX + line.x2 * scale,
-                        offsetY + line.y2 * scale
-                    );
-                    canvas.stroke();
-                } else if (entity instanceof CircleEntity) {
-                    CircleEntity circle = (CircleEntity) entity;
-                    canvas.circle(
-                        offsetX + circle.centerX * scale,
-                        offsetY + circle.centerY * scale,
-                        circle.radius * scale
-                    );
-                    canvas.stroke();
-                }
+                renderEntity(canvas, entity, scale, offsetX, offsetY);
             }
             
             pdfDocument.close();
         } catch (Exception e) {
             throw new IOException("Error creating PDF from DXF: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Render a single entity on the PDF canvas.
+     */
+    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY) {
+        if (entity instanceof LineEntity) {
+            LineEntity line = (LineEntity) entity;
+            canvas.moveTo(offsetX + line.getX1() * scale, offsetY + line.getY1() * scale);
+            canvas.lineTo(offsetX + line.getX2() * scale, offsetY + line.getY2() * scale);
+            canvas.stroke();
+            
+        } else if (entity instanceof CircleEntity) {
+            CircleEntity circle = (CircleEntity) entity;
+            canvas.circle(offsetX + circle.getCenterX() * scale, offsetY + circle.getCenterY() * scale, 
+                         circle.getRadius() * scale);
+            canvas.stroke();
+            
+        } else if (entity instanceof ArcEntity) {
+            ArcEntity arc = (ArcEntity) entity;
+            double centerX = offsetX + arc.getCenterX() * scale;
+            double centerY = offsetY + arc.getCenterY() * scale;
+            double radius = arc.getRadius() * scale;
+            // Draw arc using iText's arc method (angles in degrees)
+            canvas.arc(centerX - radius, centerY - radius, centerX + radius, centerY + radius,
+                      arc.getStartAngle(), arc.getEndAngle() - arc.getStartAngle());
+            canvas.stroke();
+            
+        } else if (entity instanceof PointEntity) {
+            PointEntity point = (PointEntity) entity;
+            double x = offsetX + point.getX() * scale;
+            double y = offsetY + point.getY() * scale;
+            double size = 2; // Small cross size
+            canvas.moveTo(x - size, y);
+            canvas.lineTo(x + size, y);
+            canvas.moveTo(x, y - size);
+            canvas.lineTo(x, y + size);
+            canvas.stroke();
+            
+        } else if (entity instanceof PolylineEntity) {
+            PolylineEntity polyline = (PolylineEntity) entity;
+            List<Double> vertices = polyline.getVertices();
+            if (vertices.size() >= 4) {
+                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                for (int i = 2; i < vertices.size(); i += 2) {
+                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                }
+                if (polyline.isClosed()) {
+                    canvas.closePath();
+                }
+                canvas.stroke();
+            }
+            
+        } else if (entity instanceof EllipseEntity) {
+            EllipseEntity ellipse = (EllipseEntity) entity;
+            double centerX = offsetX + ellipse.getCenterX() * scale;
+            double centerY = offsetY + ellipse.getCenterY() * scale;
+            double majorRadius = Math.sqrt(ellipse.getMajorAxisX() * ellipse.getMajorAxisX() + 
+                                          ellipse.getMajorAxisY() * ellipse.getMajorAxisY()) * scale;
+            double minorRadius = majorRadius * ellipse.getRatio();
+            // Simplified ellipse rendering as circle for now
+            canvas.ellipse(centerX - majorRadius, centerY - minorRadius, 
+                          centerX + majorRadius, centerY + minorRadius);
+            canvas.stroke();
+            
+        } else if (entity instanceof SolidEntity) {
+            SolidEntity solid = (SolidEntity) entity;
+            canvas.moveTo(offsetX + solid.getX1() * scale, offsetY + solid.getY1() * scale);
+            canvas.lineTo(offsetX + solid.getX2() * scale, offsetY + solid.getY2() * scale);
+            canvas.lineTo(offsetX + solid.getX3() * scale, offsetY + solid.getY3() * scale);
+            if (!solid.isTriangle()) {
+                canvas.lineTo(offsetX + solid.getX4() * scale, offsetY + solid.getY4() * scale);
+            }
+            canvas.closePath();
+            canvas.fillStroke();
         }
     }
     
@@ -99,76 +176,122 @@ public class DxfToPdfService {
             String line;
             Integer currentGroupCode = null;
             String currentEntityType = null;
-            
-            // Temporary storage for entity properties
-            Double x1 = null, y1 = null, x2 = null, y2 = null, radius = null;
+            DxfEntity currentEntity = null;
             
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 
                 if (currentGroupCode == null) {
-                    // This line should be a group code
                     try {
                         currentGroupCode = Integer.parseInt(line);
                     } catch (NumberFormatException e) {
-                        // Skip invalid lines
                         continue;
                     }
                 } else {
-                    // This line is the value for the previous group code
                     if (currentGroupCode == GROUP_CODE_ENTITY_TYPE) {
                         // Save previous entity if complete
-                        if (currentEntityType != null) {
-                            addEntityIfComplete(entities, currentEntityType, x1, y1, x2, y2, radius);
-                            // Reset values
-                            x1 = y1 = x2 = y2 = radius = null;
+                        if (currentEntity != null) {
+                            entities.add(currentEntity);
                         }
                         currentEntityType = line;
-                    } else if (currentEntityType != null) {
-                        // Parse coordinate values
-                        try {
-                            double value = Double.parseDouble(line);
-                            switch (currentGroupCode) {
-                                case GROUP_CODE_X_START:
-                                    x1 = value;
-                                    break;
-                                case GROUP_CODE_Y_START:
-                                    y1 = value;
-                                    break;
-                                case GROUP_CODE_X_END:
-                                    x2 = value;
-                                    break;
-                                case GROUP_CODE_Y_END:
-                                    y2 = value;
-                                    break;
-                                case GROUP_CODE_RADIUS:
-                                    radius = value;
-                                    break;
-                            }
-                        } catch (NumberFormatException e) {
-                            // Skip invalid numeric values
-                        }
+                        currentEntity = createEntity(currentEntityType);
+                    } else if (currentEntity != null) {
+                        parseEntityProperty(currentEntity, currentGroupCode, line);
                     }
-                    
                     currentGroupCode = null;
                 }
             }
             
-            // Add the last entity if present
-            if (currentEntityType != null) {
-                addEntityIfComplete(entities, currentEntityType, x1, y1, x2, y2, radius);
+            // Add the last entity
+            if (currentEntity != null) {
+                entities.add(currentEntity);
             }
         }
         
         return entities;
     }
     
-    private void addEntityIfComplete(List<DxfEntity> entities, String entityType, 
-                                     Double x1, Double y1, Double x2, Double y2, Double radius) {
-        if (ENTITY_LINE.equals(entityType) && x1 != null && y1 != null && x2 != null && y2 != null) {
-            entities.add(new LineEntity(x1, y1, x2, y2));
-        } else if (ENTITY_CIRCLE.equals(entityType) && x1 != null && y1 != null && radius != null) {
-            entities.add(new CircleEntity(x1, y1, radius));
+    private DxfEntity createEntity(String entityType) {
+        switch (entityType) {
+            case ENTITY_LINE: return new LineEntity();
+            case ENTITY_CIRCLE: return new CircleEntity();
+            case ENTITY_ARC: return new ArcEntity();
+            case ENTITY_ELLIPSE: return new EllipseEntity();
+            case ENTITY_POINT: return new PointEntity();
+            case ENTITY_POLYLINE:
+            case ENTITY_LWPOLYLINE: return new PolylineEntity();
+            case ENTITY_SOLID:
+            case ENTITY_TRACE: return new SolidEntity();
+            default: return null;
+        }
+    }
+    
+    private void parseEntityProperty(DxfEntity entity, int groupCode, String value) {
+        try {
+            double doubleValue = Double.parseDouble(value);
+            
+            if (entity instanceof LineEntity) {
+                LineEntity line = (LineEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: line.setX1(doubleValue); break;
+                    case GROUP_CODE_Y_START: line.setY1(doubleValue); break;
+                    case GROUP_CODE_X_END: line.setX2(doubleValue); break;
+                    case GROUP_CODE_Y_END: line.setY2(doubleValue); break;
+                }
+            } else if (entity instanceof CircleEntity) {
+                CircleEntity circle = (CircleEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: circle.setCenterX(doubleValue); break;
+                    case GROUP_CODE_Y_START: circle.setCenterY(doubleValue); break;
+                    case GROUP_CODE_RADIUS: circle.setRadius(doubleValue); break;
+                }
+            } else if (entity instanceof ArcEntity) {
+                ArcEntity arc = (ArcEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: arc.setCenterX(doubleValue); break;
+                    case GROUP_CODE_Y_START: arc.setCenterY(doubleValue); break;
+                    case GROUP_CODE_RADIUS: arc.setRadius(doubleValue); break;
+                    case GROUP_CODE_START_ANGLE: arc.setStartAngle(doubleValue); break;
+                    case GROUP_CODE_END_ANGLE: arc.setEndAngle(doubleValue); break;
+                }
+            } else if (entity instanceof PointEntity) {
+                PointEntity point = (PointEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: point.setX(doubleValue); break;
+                    case GROUP_CODE_Y_START: point.setY(doubleValue); break;
+                }
+            } else if (entity instanceof PolylineEntity) {
+                PolylineEntity polyline = (PolylineEntity) entity;
+                if (groupCode == GROUP_CODE_X_START) {
+                    polyline.addVertex(doubleValue, 0); // Will be updated with Y
+                } else if (groupCode == GROUP_CODE_Y_START && polyline.getVertexCount() > 0) {
+                    List<Double> vertices = polyline.getVertices();
+                    vertices.set(vertices.size() - 1, doubleValue);
+                }
+            } else if (entity instanceof EllipseEntity) {
+                EllipseEntity ellipse = (EllipseEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: ellipse.setCenterX(doubleValue); break;
+                    case GROUP_CODE_Y_START: ellipse.setCenterY(doubleValue); break;
+                    case GROUP_CODE_X_END: ellipse.setMajorAxisX(doubleValue); break;
+                    case GROUP_CODE_Y_END: ellipse.setMajorAxisY(doubleValue); break;
+                    case GROUP_CODE_RADIUS: ellipse.setRatio(doubleValue); break;
+                }
+            } else if (entity instanceof SolidEntity) {
+                SolidEntity solid = (SolidEntity) entity;
+                switch (groupCode) {
+                    case GROUP_CODE_X_START: solid.setX1(doubleValue); break;
+                    case GROUP_CODE_Y_START: solid.setY1(doubleValue); break;
+                    case GROUP_CODE_X_END: solid.setX2(doubleValue); break;
+                    case GROUP_CODE_Y_END: solid.setY2(doubleValue); break;
+                    case GROUP_CODE_X2: solid.setX3(doubleValue); break;
+                    case GROUP_CODE_Y2: solid.setY3(doubleValue); break;
+                    case GROUP_CODE_X3: solid.setX4(doubleValue); break;
+                    case GROUP_CODE_Y3: solid.setY4(doubleValue); break;
+                }
+            }
+        } catch (NumberFormatException e) {
+            // Skip invalid numeric values
         }
     }
     
@@ -184,17 +307,30 @@ public class DxfToPdfService {
         for (DxfEntity entity : entities) {
             if (entity instanceof LineEntity) {
                 LineEntity line = (LineEntity) entity;
-                minX = Math.min(minX, Math.min(line.x1, line.x2));
-                minY = Math.min(minY, Math.min(line.y1, line.y2));
-                maxX = Math.max(maxX, Math.max(line.x1, line.x2));
-                maxY = Math.max(maxY, Math.max(line.y1, line.y2));
+                minX = Math.min(minX, Math.min(line.getX1(), line.getX2()));
+                minY = Math.min(minY, Math.min(line.getY1(), line.getY2()));
+                maxX = Math.max(maxX, Math.max(line.getX1(), line.getX2()));
+                maxY = Math.max(maxY, Math.max(line.getY1(), line.getY2()));
             } else if (entity instanceof CircleEntity) {
                 CircleEntity circle = (CircleEntity) entity;
-                minX = Math.min(minX, circle.centerX - circle.radius);
-                minY = Math.min(minY, circle.centerY - circle.radius);
-                maxX = Math.max(maxX, circle.centerX + circle.radius);
-                maxY = Math.max(maxY, circle.centerY + circle.radius);
+                minX = Math.min(minX, circle.getCenterX() - circle.getRadius());
+                minY = Math.min(minY, circle.getCenterY() - circle.getRadius());
+                maxX = Math.max(maxX, circle.getCenterX() + circle.getRadius());
+                maxY = Math.max(maxY, circle.getCenterY() + circle.getRadius());
+            } else if (entity instanceof ArcEntity) {
+                ArcEntity arc = (ArcEntity) entity;
+                minX = Math.min(minX, arc.getCenterX() - arc.getRadius());
+                minY = Math.min(minY, arc.getCenterY() - arc.getRadius());
+                maxX = Math.max(maxX, arc.getCenterX() + arc.getRadius());
+                maxY = Math.max(maxY, arc.getCenterY() + arc.getRadius());
+            } else if (entity instanceof PointEntity) {
+                PointEntity point = (PointEntity) entity;
+                minX = Math.min(minX, point.getX());
+                minY = Math.min(minY, point.getY());
+                maxX = Math.max(maxX, point.getX());
+                maxY = Math.max(maxY, point.getY());
             }
+            // Add other entity types for bounding box calculation
         }
         
         double width = maxX - minX;
@@ -212,29 +348,5 @@ public class DxfToPdfService {
         double scaleY = availableHeight / height;
         
         return Math.min(scaleX, scaleY);
-    }
-    
-    // Inner classes for DXF entities
-    private abstract static class DxfEntity {}
-    
-    private static class LineEntity extends DxfEntity {
-        double x1, y1, x2, y2;
-        
-        LineEntity(double x1, double y1, double x2, double y2) {
-            this.x1 = x1;
-            this.y1 = y1;
-            this.x2 = x2;
-            this.y2 = y2;
-        }
-    }
-    
-    private static class CircleEntity extends DxfEntity {
-        double centerX, centerY, radius;
-        
-        CircleEntity(double centerX, double centerY, double radius) {
-            this.centerX = centerX;
-            this.centerY = centerY;
-            this.radius = radius;
-        }
     }
 }
