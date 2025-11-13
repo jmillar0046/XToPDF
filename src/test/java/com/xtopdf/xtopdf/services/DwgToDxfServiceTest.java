@@ -93,4 +93,145 @@ class DwgToDxfServiceTest {
         
         assertThrows(NullPointerException.class, () -> dwgToDxfService.convertDwgToDxf(null, dxfFile));
     }
+
+    @Test
+    void testConvertDwgToDxf_WithArcEntity() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        
+        // ARC entity: type=3
+        dos.writeByte(3); // ARC type
+        dos.writeDouble(50.0); // centerX
+        dos.writeDouble(50.0); // centerY
+        dos.writeDouble(25.0); // radius
+        dos.writeDouble(0.0); // startAngle
+        dos.writeDouble(90.0); // endAngle
+        
+        var dwgFile = new MockMultipartFile("file", "arc.dwg", 
+            MediaType.APPLICATION_OCTET_STREAM_VALUE, baos.toByteArray());
+
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/arcDwgToDxfOutput.dxf");
+
+        dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+
+        assertTrue(dxfFile.exists());
+        String dxfContent = Files.readString(dxfFile.toPath());
+        assertTrue(dxfContent.contains("ARC"));
+        
+        dxfFile.delete();
+    }
+
+    @Test
+    void testConvertDwgToDxf_WithPointEntity() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        
+        // POINT entity: type=4
+        dos.writeByte(4);
+        dos.writeDouble(10.0); // x
+        dos.writeDouble(20.0); // y
+        
+        var dwgFile = new MockMultipartFile("file", "point.dwg", 
+            MediaType.APPLICATION_OCTET_STREAM_VALUE, baos.toByteArray());
+
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/pointDwgToDxfOutput.dxf");
+
+        dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+
+        assertTrue(dxfFile.exists());
+        String dxfContent = Files.readString(dxfFile.toPath());
+        assertTrue(dxfContent.contains("POINT"));
+        
+        dxfFile.delete();
+    }
+
+    @Test
+    void testConvertDwgToDxf_WithPolylineEntity() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        
+        // POLYLINE entity: type=5
+        dos.writeByte(5);
+        dos.writeInt(3); // numVertices
+        dos.writeDouble(0.0);
+        dos.writeDouble(0.0);
+        dos.writeDouble(10.0);
+        dos.writeDouble(0.0);
+        dos.writeDouble(10.0);
+        dos.writeDouble(10.0);
+        
+        var dwgFile = new MockMultipartFile("file", "polyline.dwg", 
+            MediaType.APPLICATION_OCTET_STREAM_VALUE, baos.toByteArray());
+
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/polylineDwgToDxfOutput.dxf");
+
+        dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+
+        assertTrue(dxfFile.exists());
+        String dxfContent = Files.readString(dxfFile.toPath());
+        assertTrue(dxfContent.contains("POLYLINE") || dxfContent.contains("LWPOLYLINE"));
+        
+        dxfFile.delete();
+    }
+
+    @Test
+    void testConvertDwgToDxf_WithTextEntity() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        
+        // TEXT entity: type=8
+        dos.writeByte(8);
+        dos.writeDouble(10.0); // x
+        dos.writeDouble(20.0); // y
+        dos.writeDouble(5.0); // height
+        String text = "Hello";
+        dos.writeInt(text.length());
+        dos.writeBytes(text);
+        
+        var dwgFile = new MockMultipartFile("file", "text.dwg", 
+            MediaType.APPLICATION_OCTET_STREAM_VALUE, baos.toByteArray());
+
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/textDwgToDxfOutput.dxf");
+
+        dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+
+        assertTrue(dxfFile.exists());
+        String dxfContent = Files.readString(dxfFile.toPath());
+        assertTrue(dxfContent.contains("TEXT"));
+        
+        dxfFile.delete();
+    }
+
+    @Test
+    void testConvertDwgToDxf_WithMultipleEntities() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        
+        // LINE
+        dos.writeByte(1);
+        dos.writeDouble(0.0);
+        dos.writeDouble(0.0);
+        dos.writeDouble(10.0);
+        dos.writeDouble(10.0);
+        
+        // CIRCLE
+        dos.writeByte(2);
+        dos.writeDouble(5.0);
+        dos.writeDouble(5.0);
+        dos.writeDouble(2.0);
+        
+        var dwgFile = new MockMultipartFile("file", "multiple.dwg", 
+            MediaType.APPLICATION_OCTET_STREAM_VALUE, baos.toByteArray());
+
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/multipleDwgToDxfOutput.dxf");
+
+        dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+
+        assertTrue(dxfFile.exists());
+        String dxfContent = Files.readString(dxfFile.toPath());
+        assertTrue(dxfContent.contains("LINE"));
+        assertTrue(dxfContent.contains("CIRCLE"));
+        
+        dxfFile.delete();
+    }
 }
