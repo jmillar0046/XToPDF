@@ -91,6 +91,53 @@ public class DxfToPdfService {
     // Block registry for storing block definitions (supports recursive blocks)
     private java.util.Map<String, BlockEntity> blockRegistry = new java.util.HashMap<>();
     
+    /**
+     * Safely parse an integer from user-controlled string input.
+     * Prevents numeric cast vulnerabilities by validating the range.
+     * 
+     * @param value The string value to parse
+     * @return The parsed integer value
+     * @throws NumberFormatException if the value is not a valid integer or out of range
+     */
+    private int safeParseInt(String value) throws NumberFormatException {
+        if (value == null || value.trim().isEmpty()) {
+            throw new NumberFormatException("Cannot parse null or empty string");
+        }
+        
+        // First parse as long to check range before casting to int
+        long longValue = Long.parseLong(value.trim());
+        
+        // Validate the value is within int range
+        if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
+            throw new NumberFormatException("Value out of int range: " + longValue);
+        }
+        
+        return (int) longValue;
+    }
+    
+    /**
+     * Safely parse a double from user-controlled string input.
+     * Prevents numeric issues by validating the value is finite.
+     * 
+     * @param value The string value to parse
+     * @return The parsed double value
+     * @throws NumberFormatException if the value is not a valid double or infinite/NaN
+     */
+    private double safeParseDouble(String value) throws NumberFormatException {
+        if (value == null || value.trim().isEmpty()) {
+            throw new NumberFormatException("Cannot parse null or empty string");
+        }
+        
+        double doubleValue = Double.parseDouble(value.trim());
+        
+        // Reject infinite and NaN values for security
+        if (!Double.isFinite(doubleValue)) {
+            throw new NumberFormatException("Value is not finite: " + value);
+        }
+        
+        return doubleValue;
+    }
+    
     public void convertDxfToPdf(MultipartFile dxfFile, File pdfFile) throws IOException {
         // Parse DXF entities and blocks
         blockRegistry.clear(); // Reset block registry
@@ -725,7 +772,7 @@ public class DxfToPdfService {
                 
                 if (currentGroupCode == null) {
                     try {
-                        currentGroupCode = Integer.parseInt(line);
+                        currentGroupCode = safeParseInt(line);
                     } catch (NumberFormatException e) {
                         continue;
                     }
@@ -769,7 +816,7 @@ public class DxfToPdfService {
                             currentBlock.setName(line);
                         } else {
                             try {
-                                double doubleValue = Double.parseDouble(line);
+                                double doubleValue = safeParseDouble(line);
                                 if (currentGroupCode == GROUP_CODE_X_START) {
                                     currentBlock.setBaseX(doubleValue);
                                 } else if (currentGroupCode == GROUP_CODE_Y_START) {
@@ -856,7 +903,7 @@ public class DxfToPdfService {
         }
         
         try {
-            double doubleValue = Double.parseDouble(value);
+            double doubleValue = safeParseDouble(value);
             
             if (entity instanceof LineEntity) {
                 LineEntity line = (LineEntity) entity;

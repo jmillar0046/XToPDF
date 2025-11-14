@@ -446,4 +446,172 @@ class DxfToPdfServiceTest {
         assertTrue(pdfFile.exists());
         pdfFile.delete();
     }
+    
+    @Test
+    void testConvertDxfToPdf_InvalidGroupCodeOutOfRange() throws Exception {
+        // Test with group code that would exceed Integer.MAX_VALUE
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "9999999999999\n" + // Invalid group code (too large)
+                      "LINE\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "invalid.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/invalidGroupCodeDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_InvalidDoubleValue() throws Exception {
+        // Test with invalid double value (Infinity)
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nLINE\n8\n0\n" +
+                      "10\nInfinity\n" +
+                      "20\n0.0\n11\n100.0\n21\n100.0\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "invalid.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/invalidDoubleDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_NaNValue() throws Exception {
+        // Test with NaN value
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nCIRCLE\n8\n0\n" +
+                      "10\n50.0\n20\n50.0\n" +
+                      "40\nNaN\n" + // Invalid radius
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "nan.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/nanDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_VeryLargeCoordinates() throws Exception {
+        // Test with very large but valid coordinates
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nLINE\n8\n0\n" +
+                      "10\n999999999.99\n20\n999999999.99\n" +
+                      "11\n-999999999.99\n21\n-999999999.99\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "large.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/largeDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_MixedValidInvalidEntities() throws Exception {
+        // Test with mix of valid and invalid entities
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nLINE\n8\n0\n10\n0.0\n20\n0.0\n11\n100.0\n21\n100.0\n" +
+                      "0\nCIRCLE\n8\n0\n10\nInvalid\n20\n50.0\n40\n25.0\n" + // Invalid X coord
+                      "0\nARC\n8\n0\n10\n150.0\n20\n150.0\n40\n30.0\n50\n0.0\n51\n90.0\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "mixed.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/mixedDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_ScientificNotation() throws Exception {
+        // Test with scientific notation values
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nLINE\n8\n0\n" +
+                      "10\n1.5e2\n20\n2.3e1\n" + // 150.0, 23.0
+                      "11\n3.7e-1\n21\n4.9e0\n" + // 0.37, 4.9
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "scientific.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/scientificDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_EmptyStringCoordinates() throws Exception {
+        // Test with empty string coordinates
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nLINE\n8\n0\n" +
+                      "10\n\n" + // Empty coordinate
+                      "20\n0.0\n11\n100.0\n21\n100.0\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "empty.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/emptyCoordDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_WhitespaceCoordinates() throws Exception {
+        // Test with whitespace-only coordinates
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nCIRCLE\n8\n0\n" +
+                      "10\n   \n" + // Whitespace only
+                      "20\n50.0\n40\n25.0\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "whitespace.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/whitespaceDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_ZeroRadiusCircle() throws Exception {
+        // Test with zero radius circle
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nCIRCLE\n8\n0\n" +
+                      "10\n50.0\n20\n50.0\n40\n0.0\n" +
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "zerocircle.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/zeroCircleDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
+    
+    @Test
+    void testConvertDxfToPdf_NegativeAngles() throws Exception {
+        // Test with negative angles
+        var content = "0\nSECTION\n2\nENTITIES\n" +
+                      "0\nARC\n8\n0\n" +
+                      "10\n100.0\n20\n100.0\n40\n50.0\n" +
+                      "50\n-45.0\n51\n-180.0\n" + // Negative angles
+                      "0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "negangles.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+        
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/negAnglesDxf.pdf");
+        dxfToPdfService.convertDxfToPdf(dxfFile, pdfFile);
+        
+        assertTrue(pdfFile.exists());
+        pdfFile.delete();
+    }
 }
