@@ -53,6 +53,10 @@ java -jar xtopdf-VERSION.jar
 - Convert TIFF/TIF images to PDF
 - Convert SVG images to PDF
 
+### CAD Formats
+- Convert DXF files to PDF (Drawing Exchange Format)
+- Convert DWG files to PDF (AutoCAD Drawing - requires pre-conversion to DXF or external tools)
+
 ### Other Features
 - REST API endpoints for file conversion
 - Optional page numbering with customizable position, alignment, and style
@@ -173,6 +177,32 @@ curl -X POST http://localhost:8080/api/convert \
 ```
 
 - `position`: `front` (prepend) or `back` (append)
+
+#### CAD File Conversion
+
+Convert DXF files to PDF:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@drawing.dxf" \
+  -F "outputFile=output.pdf"
+```
+
+Convert DWG files to PDF:
+
+**Note:** Direct DWG to PDF conversion requires the DWG file to be in a format compatible with DXF processing, or pre-converted to DXF format using external tools. The application follows the conversion path: DWG → DXF → PDF.
+
+For best results with DWG files, consider using external conversion tools first:
+- **ODA File Converter** (free, cross-platform)
+- **LibreDWG** (open source command-line tool)
+- Commercial libraries like Aspose.CAD or Teigha
+
+```bash
+# If your DWG file is compatible or pre-converted
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@drawing.dwg" \
+  -F "outputFile=output.pdf"
+```
 
 ## Development
 
