@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 
 /**
  * Service to convert DWG files to PDF by going through DXF intermediate format.
@@ -78,9 +79,12 @@ public class DwgToPdfService {
             
             dxfToPdfService.convertDxfToPdf(dxfMultipartFile, pdfFile);
         } finally {
-            // Clean up temporary file
-            if (tempDxfFile.exists()) {
-                tempDxfFile.delete();
+            // Clean up temporary file securely
+            try {
+                Files.deleteIfExists(tempDxfFile.toPath());
+            } catch (IOException e) {
+                // Log the error but don't fail the conversion
+                System.err.println("Warning: Failed to delete temporary file: " + tempDxfFile.getAbsolutePath());
             }
         }
     }

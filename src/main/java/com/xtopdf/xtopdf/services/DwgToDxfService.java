@@ -33,6 +33,11 @@ import java.util.List;
 @Service
 public class DwgToDxfService {
     
+    // Security: Maximum allowed values to prevent DoS attacks
+    private static final int MAX_VERTICES = 100000;  // Maximum vertices in a polyline/mesh
+    private static final int MAX_TEXT_LENGTH = 100000;  // Maximum text length in bytes
+    private static final int MAX_TABLE_CELLS = 10000;  // Maximum table cells (rows * columns)
+    
     // DWG entity type codes
     private static final byte TYPE_LINE = 1;
     private static final byte TYPE_CIRCLE = 2;
@@ -123,6 +128,9 @@ public class DwgToDxfService {
                     // POLYLINE: numVertices (int), then vertex pairs (x, y)
                     // DXF group codes: 90=vertex count, multiple 10/20 pairs
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     PolylineEntity polyline = new PolylineEntity();
                     for (int i = 0; i < numVertices; i++) {
                         double x = dis.readDouble();
@@ -165,6 +173,9 @@ public class DwgToDxfService {
                     double y = dis.readDouble();
                     double height = dis.readDouble();
                     int textLength = dis.readInt();
+                    if (textLength < 0 || textLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid text length: " + textLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] textBytes = new byte[textLength];
                     dis.readFully(textBytes);
                     String text = new String(textBytes, "UTF-8");
@@ -177,6 +188,9 @@ public class DwgToDxfService {
                     double width = dis.readDouble();
                     double height = dis.readDouble();
                     int textLength = dis.readInt();
+                    if (textLength < 0 || textLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid text length: " + textLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] textBytes = new byte[textLength];
                     dis.readFully(textBytes);
                     String text = new String(textBytes, "UTF-8");
@@ -197,6 +211,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_LEADER) {
                     // LEADER: numVertices (int), vertices, textX, textY, textLength, text
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     LeaderEntity leader = new LeaderEntity();
                     for (int i = 0; i < numVertices; i++) {
                         double x = dis.readDouble();
@@ -206,6 +223,9 @@ public class DwgToDxfService {
                     leader.setTextX(dis.readDouble());
                     leader.setTextY(dis.readDouble());
                     int textLength = dis.readInt();
+                    if (textLength < 0 || textLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid text length: " + textLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] textBytes = new byte[textLength];
                     dis.readFully(textBytes);
                     leader.setText(new String(textBytes, "UTF-8"));
@@ -217,6 +237,9 @@ public class DwgToDxfService {
                     double y = dis.readDouble();
                     double height = dis.readDouble();
                     int textLength = dis.readInt();
+                    if (textLength < 0 || textLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid text length: " + textLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] textBytes = new byte[textLength];
                     dis.readFully(textBytes);
                     String text = new String(textBytes, "UTF-8");
@@ -228,12 +251,21 @@ public class DwgToDxfService {
                     double y = dis.readDouble();
                     int rows = dis.readInt();
                     int columns = dis.readInt();
+                    if (rows < 0 || columns < 0 || rows > MAX_TABLE_CELLS || columns > MAX_TABLE_CELLS) {
+                        throw new IOException("Invalid table dimensions: " + rows + "x" + columns + ". Each dimension must be between 0 and " + MAX_TABLE_CELLS);
+                    }
+                    long cellCount = (long) rows * columns;
+                    if (cellCount > MAX_TABLE_CELLS) {
+                        throw new IOException("Invalid table size: " + cellCount + " cells. Must not exceed " + MAX_TABLE_CELLS);
+                    }
                     double cellHeight = dis.readDouble();
                     double cellWidth = dis.readDouble();
                     TableEntity table = new TableEntity(x, y, rows, columns, cellHeight, cellWidth);
-                    int cellCount = rows * columns;
                     for (int i = 0; i < cellCount; i++) {
                         int cellTextLength = dis.readInt();
+                        if (cellTextLength < 0 || cellTextLength > MAX_TEXT_LENGTH) {
+                            throw new IOException("Invalid cell text length: " + cellTextLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                        }
                         byte[] cellTextBytes = new byte[cellTextLength];
                         dis.readFully(cellTextBytes);
                         table.addCellValue(new String(cellTextBytes, "UTF-8"));
@@ -243,12 +275,18 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_BLOCK) {
                     // BLOCK: nameLength, name, baseX, baseY, numEntities, entities...
                     int nameLength = dis.readInt();
+                    if (nameLength < 0 || nameLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid block name length: " + nameLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] nameBytes = new byte[nameLength];
                     dis.readFully(nameBytes);
                     String name = new String(nameBytes, "UTF-8");
                     double baseX = dis.readDouble();
                     double baseY = dis.readDouble();
                     int numEntities = dis.readInt();
+                    if (numEntities < 0 || numEntities > MAX_VERTICES) {
+                        throw new IOException("Invalid number of block entities: " + numEntities + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     
                     BlockEntity block = new BlockEntity(name);
                     block.setBaseX(baseX);
@@ -265,6 +303,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_INSERT) {
                     // INSERT: nameLength, name, x, y, scaleX, scaleY, rotation
                     int nameLength = dis.readInt();
+                    if (nameLength < 0 || nameLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid block name length: " + nameLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] nameBytes = new byte[nameLength];
                     dis.readFully(nameBytes);
                     String blockName = new String(nameBytes, "UTF-8");
@@ -283,16 +324,25 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_ATTRIB) {
                     // ATTRIB: tagLength, tag, promptLength, prompt, valueLength, value, x, y, height
                     int tagLength = dis.readInt();
+                    if (tagLength < 0 || tagLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid tag length: " + tagLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] tagBytes = new byte[tagLength];
                     dis.readFully(tagBytes);
                     String tag = new String(tagBytes, "UTF-8");
                     
                     int promptLength = dis.readInt();
+                    if (promptLength < 0 || promptLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid prompt length: " + promptLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] promptBytes = new byte[promptLength];
                     dis.readFully(promptBytes);
                     String prompt = new String(promptBytes, "UTF-8");
                     
                     int valueLength = dis.readInt();
+                    if (valueLength < 0 || valueLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid value length: " + valueLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] valueBytes = new byte[valueLength];
                     dis.readFully(valueBytes);
                     String value = new String(valueBytes, "UTF-8");
@@ -308,6 +358,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_XREF) {
                     // XREF: pathLength, path, x, y
                     int pathLength = dis.readInt();
+                    if (pathLength < 0 || pathLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid path length: " + pathLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] pathBytes = new byte[pathLength];
                     dis.readFully(pathBytes);
                     String path = new String(pathBytes, "UTF-8");
@@ -319,6 +372,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_WIPEOUT) {
                     // WIPEOUT: numVertices (int), then vertex pairs
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     WipeoutEntity wipeout = new WipeoutEntity();
                     for (int i = 0; i < numVertices; i++) {
                         double x = dis.readDouble();
@@ -346,6 +402,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_POLYFACE_MESH) {
                     // POLYFACE MESH: numVertices (int), vertices (x,y,z triplets)
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     PolyfaceMeshEntity mesh = new PolyfaceMeshEntity();
                     for (int i = 0; i < numVertices; i++) {
                         double x = dis.readDouble();
@@ -358,7 +417,13 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_MESH) {
                     // MESH: numVertices (int), subdivisionLevel (int), vertices
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     int subdivisionLevel = dis.readInt();
+                    if (subdivisionLevel < 0 || subdivisionLevel > 10) {
+                        throw new IOException("Invalid subdivision level: " + subdivisionLevel + ". Must be between 0 and 10");
+                    }
                     MeshEntity mesh = new MeshEntity();
                     mesh.setSubdivisionLevel(subdivisionLevel);
                     for (int i = 0; i < numVertices; i++) {
@@ -378,6 +443,9 @@ public class DwgToDxfService {
                     double maxY = dis.readDouble();
                     double maxZ = dis.readDouble();
                     int dataLength = dis.readInt();
+                    if (dataLength < 0 || dataLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid data length: " + dataLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] data = new byte[dataLength];
                     dis.readFully(data);
                     
@@ -394,10 +462,25 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_SURFACE) {
                     // SURFACE: uDegree, vDegree, numU, numV (4 ints), dataLength, data
                     int uDegree = dis.readInt();
+                    if (uDegree < 0 || uDegree > 100) {
+                        throw new IOException("Invalid U degree: " + uDegree + ". Must be between 0 and 100");
+                    }
                     int vDegree = dis.readInt();
+                    if (vDegree < 0 || vDegree > 100) {
+                        throw new IOException("Invalid V degree: " + vDegree + ". Must be between 0 and 100");
+                    }
                     int numU = dis.readInt();
+                    if (numU < 0 || numU > MAX_VERTICES) {
+                        throw new IOException("Invalid numU: " + numU + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     int numV = dis.readInt();
+                    if (numV < 0 || numV > MAX_VERTICES) {
+                        throw new IOException("Invalid numV: " + numV + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     int dataLength = dis.readInt();
+                    if (dataLength < 0 || dataLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid data length: " + dataLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] data = new byte[dataLength];
                     dis.readFully(data);
                     
@@ -413,6 +496,9 @@ public class DwgToDxfService {
                     // BODY: version (int), dataLength (int), ACIS data
                     int version = dis.readInt();
                     int dataLength = dis.readInt();
+                    if (dataLength < 0 || dataLength > MAX_TEXT_LENGTH) {
+                        throw new IOException("Invalid data length: " + dataLength + ". Must be between 0 and " + MAX_TEXT_LENGTH);
+                    }
                     byte[] data = new byte[dataLength];
                     dis.readFully(data);
                     
@@ -424,6 +510,9 @@ public class DwgToDxfService {
                 } else if (entityType == TYPE_REGION) {
                     // REGION: numVertices (int), vertices (x,y pairs), filled (boolean)
                     int numVertices = dis.readInt();
+                    if (numVertices < 0 || numVertices > MAX_VERTICES) {
+                        throw new IOException("Invalid number of vertices: " + numVertices + ". Must be between 0 and " + MAX_VERTICES);
+                    }
                     RegionEntity region = new RegionEntity();
                     for (int i = 0; i < numVertices; i++) {
                         double x = dis.readDouble();
