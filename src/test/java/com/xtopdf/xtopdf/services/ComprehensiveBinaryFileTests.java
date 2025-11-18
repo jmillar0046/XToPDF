@@ -163,4 +163,58 @@ class ComprehensiveBinaryFileTests {
             assertTrue(output.length() > 0);
         }
     }
+
+    @Test
+    void testOdtToPdfService_RealFile() throws Exception {
+        OdtToPdfService service = new OdtToPdfService();
+        
+        ClassPathResource resource = new ClassPathResource("test-files/test.odt");
+        try (InputStream is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            MockMultipartFile file = new MockMultipartFile("test.odt", "test.odt",
+                "application/vnd.oasis.opendocument.text", fileBytes);
+            
+            File output = tempDir.resolve("output.pdf").toFile();
+            service.convertOdtToPdf(file, output);
+            
+            assertTrue(output.exists());
+            assertTrue(output.length() > 0);
+        }
+    }
+
+    @Test
+    void testOdsToPdfService_RealFile() throws Exception {
+        OdsToPdfService service = new OdsToPdfService();
+        
+        ClassPathResource resource = new ClassPathResource("test-files/test.ods");
+        try (InputStream is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            MockMultipartFile file = new MockMultipartFile("test.ods", "test.ods",
+                "application/vnd.oasis.opendocument.spreadsheet", fileBytes);
+            
+            File output = tempDir.resolve("output.pdf").toFile();
+            service.convertOdsToPdf(file, output);
+            
+            assertTrue(output.exists());
+            assertTrue(output.length() > 0);
+        }
+    }
+
+    @Test
+    void testOdpToPdfService_RealFile() throws Exception {
+        OdpToPdfService service = new OdpToPdfService();
+        
+        ClassPathResource resource = new ClassPathResource("test-files/test.odp");
+        try (InputStream is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            MockMultipartFile file = new MockMultipartFile("test.odp", "test.odp",
+                "application/vnd.oasis.opendocument.presentation", fileBytes);
+            
+            File output = tempDir.resolve("output.pdf").toFile();
+            service.convertOdpToPdf(file, output);
+            
+            assertTrue(output.exists());
+            assertTrue(output.length() > 0);
+        }
+    }
 }
