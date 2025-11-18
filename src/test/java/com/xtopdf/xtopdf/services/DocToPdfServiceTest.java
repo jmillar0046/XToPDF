@@ -6,8 +6,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.*;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DocToPdfServiceTest {
 
@@ -56,5 +55,53 @@ class DocToPdfServiceTest {
         byte[] docData = new byte[] { (byte)0xD0, (byte)0xCF, 0x11, (byte)0xE0 };
         var docFile = new MockMultipartFile("file", "test.doc", "application/msword", docData);
         assertThrows(Exception.class, () -> docToPdfService.convertDocToPdf(docFile, null));
+    }
+
+    // Additional comprehensive tests
+    
+    @Test
+    void testConvertDocToPdf_RealFile_FromDOCX() throws Exception {
+        // Use the DOCX file and test with invalid DOC data to get error handling coverage
+        var resource = new org.springframework.core.io.ClassPathResource("test-files/test.docx");
+        try (var is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            var docFile = new MockMultipartFile("test.doc", "test.doc",
+                "application/msword", fileBytes);
+            
+            pdfFile = new File(System.getProperty("java.io.tmpdir") + "/doc_docx_output.pdf");
+            
+            // DOCX is not a valid DOC format, should throw exception
+            assertThrows(IOException.class, () -> docToPdfService.convertDocToPdf(docFile, pdfFile));
+        }
+    }
+
+    @Test
+    void testConvertDocToPdf_EmptyFile() {
+        var docFile = new MockMultipartFile("test.doc", "test.doc",
+            "application/msword", new byte[0]);
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/doc_empty_output.pdf");
+        
+        assertThrows(IOException.class, () -> docToPdfService.convertDocToPdf(docFile, pdfFile));
+    }
+
+    @Test
+    void testConvertDocToPdf_InvalidFile() {
+        var docFile = new MockMultipartFile("test.doc", "test.doc",
+            "application/msword", "Not a valid DOC file".getBytes());
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/doc_invalid_output.pdf");
+        
+        assertThrows(IOException.class, () -> docToPdfService.convertDocToPdf(docFile, pdfFile));
+    }
+
+    @Test
+    void testConvertDocToPdf_TextOnlyContent() {
+        // Create a minimal text-only DOC-like content
+        byte[] textContent = "Simple text content".getBytes();
+        var docFile = new MockMultipartFile("test.doc", "test.doc",
+            "application/msword", textContent);
+        pdfFile = new File(System.getProperty("java.io.tmpdir") + "/doc_text_output.pdf");
+        
+        // Will fail as it's not a valid DOC format
+        assertThrows(IOException.class, () -> docToPdfService.convertDocToPdf(docFile, pdfFile));
     }
 }

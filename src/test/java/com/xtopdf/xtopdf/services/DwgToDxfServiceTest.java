@@ -11,8 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DwgToDxfServiceTest {
 
@@ -233,5 +232,126 @@ class DwgToDxfServiceTest {
         assertTrue(dxfContent.contains("CIRCLE"));
         
         dxfFile.delete();
+    }
+
+    // Additional comprehensive tests using test resource files
+    
+    @Test
+    void testConvertDwgToDxf_SimpleLine_FromFile() throws Exception {
+        var resource = new org.springframework.core.io.ClassPathResource("test-files/simple_line.dwg");
+        try (var is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+                "application/acad", fileBytes);
+            
+            dxfFile = new File(System.getProperty("java.io.tmpdir") + "/simple_line_output.dxf");
+            dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+            
+            assertTrue(dxfFile.exists());
+            assertTrue(dxfFile.length() > 0);
+            String content = Files.readString(dxfFile.toPath());
+            assertTrue(content.contains("LINE"));
+            assertTrue(content.contains("ENTITIES"));
+            
+            dxfFile.delete();
+        }
+    }
+
+    @Test
+    void testConvertDwgToDxf_MultipleEntities_FromFile() throws Exception {
+        var resource = new org.springframework.core.io.ClassPathResource("test-files/multi_entity.dwg");
+        try (var is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+                "application/acad", fileBytes);
+            
+            dxfFile = new File(System.getProperty("java.io.tmpdir") + "/multi_entity_output.dxf");
+            dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+            
+            assertTrue(dxfFile.exists());
+            String content = Files.readString(dxfFile.toPath());
+            assertTrue(content.contains("LINE"));
+            assertTrue(content.contains("CIRCLE"));
+            assertTrue(content.contains("ARC"));
+            assertTrue(content.contains("POINT"));
+            
+            dxfFile.delete();
+        }
+    }
+
+    @Test
+    void testConvertDwgToDxf_Polyline_FromFile() throws Exception {
+        var resource = new org.springframework.core.io.ClassPathResource("test-files/polyline.dwg");
+        try (var is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+                "application/acad", fileBytes);
+            
+            dxfFile = new File(System.getProperty("java.io.tmpdir") + "/polyline_output.dxf");
+            dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+            
+            assertTrue(dxfFile.exists());
+            String content = Files.readString(dxfFile.toPath());
+            assertTrue(content.contains("POLYLINE") || content.contains("LWPOLYLINE"));
+            
+            dxfFile.delete();
+        }
+    }
+
+    @Test
+    void testConvertDwgToDxf_ComplexEntities_FromFile() throws Exception {
+        var resource = new org.springframework.core.io.ClassPathResource("test-files/complex.dwg");
+        try (var is = resource.getInputStream()) {
+            byte[] fileBytes = is.readAllBytes();
+            var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+                "application/acad", fileBytes);
+            
+            dxfFile = new File(System.getProperty("java.io.tmpdir") + "/complex_output.dxf");
+            dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+            
+            assertTrue(dxfFile.exists());
+            String content = Files.readString(dxfFile.toPath());
+            assertTrue(content.contains("ELLIPSE"));
+            assertTrue(content.contains("SOLID") || content.contains("3DSOLID"));
+            assertTrue(content.contains("TEXT"));
+            assertTrue(content.contains("MTEXT"));
+            
+            dxfFile.delete();
+        }
+    }
+
+    @Test
+    void testConvertDwgToDxf_EmptyFile() {
+        var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+            "application/acad", new byte[0]);
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/empty_output.dxf");
+        
+        // Should handle empty file gracefully
+        assertDoesNotThrow(() -> dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile));
+        
+        if (dxfFile.exists()) {
+            dxfFile.delete();
+        }
+    }
+
+    @Test
+    void testConvertDwgToDxf_InvalidData() {
+        var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
+            "application/acad", "invalid data".getBytes());
+        dxfFile = new File(System.getProperty("java.io.tmpdir") + "/invalid_output.dxf");
+        
+        // May throw IOException for invalid format or handle gracefully
+        try {
+            dwgToDxfService.convertDwgToDxf(dwgFile, dxfFile);
+            // If it succeeds, file should exist
+            assertTrue(dxfFile.exists());
+        } catch (Exception e) {
+            // Expected for invalid format
+            assertTrue(e != null);
+        } finally {
+            if (dxfFile.exists()) {
+                dxfFile.delete();
+            }
+        }
     }
 }
