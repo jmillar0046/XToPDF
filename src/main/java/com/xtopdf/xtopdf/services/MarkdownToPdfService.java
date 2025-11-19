@@ -1,21 +1,36 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
+import org.commonmark.renderer.text.TextContentRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.itextpdf.html2pdf.HtmlConverter;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * Service to convert Markdown files to PDF.
+ * Parses Markdown and renders as plain text to PDF.
+ * Uses the PDF backend abstraction layer with Apache PDFBox.
+ * 
+ * Note: This implementation renders Markdown as plain text.
+ * For HTML-based rendering with better formatting, consider using
+ * a specialized HTML-to-PDF library.
+ */
 @Service
 public class MarkdownToPdfService {
+    
+    private final PdfBackendProvider pdfBackend;
+    
+    public MarkdownToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertMarkdownToPdf(MultipartFile markdownFile, File pdfFile) throws IOException {
         // Read the markdown file content
         StringBuilder markdownContent = new StringBuilder();
@@ -26,24 +41,16 @@ public class MarkdownToPdfService {
             }
         }
 
-        // Parse markdown to HTML
+        // Parse markdown and render as plain text
         Parser parser = Parser.builder().build();
         Node document = parser.parse(markdownContent.toString());
-        HtmlRenderer renderer = HtmlRenderer.builder().build();
-        String htmlContent = renderer.render(document);
+        TextContentRenderer renderer = TextContentRenderer.builder().build();
+        String textContent = renderer.render(document);
 
-        // Add basic HTML structure for better PDF rendering
-        String fullHtml = """
-                <!DOCTYPE html>
-                <html>
-                <head><meta charset="UTF-8"></head>
-                <body>%s</body>
-                </html>
-                """.formatted(htmlContent);
-
-        // Convert HTML to PDF using iText
-        try (FileOutputStream outputStream = new FileOutputStream(pdfFile)) {
-            HtmlConverter.convertToPdf(fullHtml, outputStream);
+        // Create PDF using abstraction layer (PDFBox backend)
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
+            builder.addParagraph(textContent);
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error creating PDF from markdown: " + e.getMessage(), e);
         }

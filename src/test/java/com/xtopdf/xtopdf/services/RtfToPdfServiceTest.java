@@ -13,10 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class RtfToPdfServiceTest {
 
     private RtfToPdfService rtfToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @BeforeEach
     void setUp() {
-        rtfToPdfService = new RtfToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        rtfToPdfService = new RtfToPdfService(pdfBackend);
     }
 
     @Test
