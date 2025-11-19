@@ -57,31 +57,8 @@ class FileConversionServiceTest {
     @Mock private StpFileConverterFactory stpFileConverterFactory;
     @Mock private IgesFileConverterFactory igesFileConverterFactory;
     @Mock private IgsFileConverterFactory igsFileConverterFactory;
-    @Mock private XTFileConverterFactory xtFileConverterFactory;
-    @Mock private XBFileConverterFactory xbFileConverterFactory;
     @Mock private StlFileConverterFactory stlFileConverterFactory;
     @Mock private ObjFileConverterFactory objFileConverterFactory;
-    @Mock private SldprtFileConverterFactory sldprtFileConverterFactory;
-    @Mock private SldasmFileConverterFactory sldasmFileConverterFactory;
-    @Mock private SlddrawFileConverterFactory slddrawFileConverterFactory;
-    @Mock private CatpartFileConverterFactory catpartFileConverterFactory;
-    @Mock private CatproductFileConverterFactory catproductFileConverterFactory;
-    @Mock private CatdrawingFileConverterFactory catdrawingFileConverterFactory;
-    @Mock private PrtFileConverterFactory prtFileConverterFactory;
-    @Mock private AsmFileConverterFactory asmFileConverterFactory;
-    @Mock private DrwFileConverterFactory drwFileConverterFactory;
-    @Mock private IptFileConverterFactory iptFileConverterFactory;
-    @Mock private IamFileConverterFactory iamFileConverterFactory;
-    @Mock private IdwFileConverterFactory idwFileConverterFactory;
-    @Mock private IpnFileConverterFactory ipnFileConverterFactory;
-    @Mock private F3dFileConverterFactory f3dFileConverterFactory;
-    @Mock private F3zFileConverterFactory f3zFileConverterFactory;
-    @Mock private SkpFileConverterFactory skpFileConverterFactory;
-    @Mock private DgnFileConverterFactory dgnFileConverterFactory;
-    @Mock private ThreeDmFileConverterFactory threeDmFileConverterFactory;
-    @Mock private RvtFileConverterFactory rvtFileConverterFactory;
-    @Mock private RfaFileConverterFactory rfaFileConverterFactory;
-    @Mock private JtFileConverterFactory jtFileConverterFactory;
     @Mock private ThreeMfFileConverterFactory threeMfFileConverterFactory;
     @Mock private WrlFileConverterFactory wrlFileConverterFactory;
     @Mock private X3dFileConverterFactory x3dFileConverterFactory;
@@ -109,14 +86,9 @@ class FileConversionServiceTest {
             markdownFileConverterFactory, odtFileConverterFactory, odsFileConverterFactory, odpFileConverterFactory,
             xmlFileConverterFactory, jsonFileConverterFactory, dxfFileConverterFactory, dwgFileConverterFactory,
             dwtFileConverterFactory, stepFileConverterFactory, stpFileConverterFactory, igesFileConverterFactory,
-            igsFileConverterFactory, xtFileConverterFactory, xbFileConverterFactory, stlFileConverterFactory,
-            objFileConverterFactory, sldprtFileConverterFactory, sldasmFileConverterFactory, slddrawFileConverterFactory,
-            catpartFileConverterFactory, catproductFileConverterFactory, catdrawingFileConverterFactory, prtFileConverterFactory,
-            asmFileConverterFactory, drwFileConverterFactory, iptFileConverterFactory, iamFileConverterFactory,
-            idwFileConverterFactory, ipnFileConverterFactory, f3dFileConverterFactory, f3zFileConverterFactory,
-            skpFileConverterFactory, dgnFileConverterFactory, threeDmFileConverterFactory, rvtFileConverterFactory,
-            rfaFileConverterFactory, jtFileConverterFactory, threeMfFileConverterFactory, wrlFileConverterFactory,
-            x3dFileConverterFactory, dwfFileConverterFactory, dwfxFileConverterFactory, pltFileConverterFactory,
+            igsFileConverterFactory, stlFileConverterFactory, objFileConverterFactory,
+            threeMfFileConverterFactory, wrlFileConverterFactory, x3dFileConverterFactory,
+            dwfFileConverterFactory, dwfxFileConverterFactory, pltFileConverterFactory,
             hpglFileConverterFactory, emfFileConverterFactory, wmfFileConverterFactory,
             pdfMergeService, pageNumberService, watermarkService
         );
@@ -156,9 +128,8 @@ class FileConversionServiceTest {
     @CsvSource({
         "test.txt,txt", "test.docx,docx", "test.xlsx,xlsx", "test.pptx,pptx",
         "test.step,step", "test.stl,stl", "test.obj,obj", "test.dwt,dwt",
-        "test.sldprt,sldprt", "test.catpart,catpart", "test.ipt,ipt",
-        "test.f3d,f3d", "test.skp,skp", "test.rvt,rvt", "test.jt,jt",
-        "test.3dm,3dm", "test.dwf,dwf", "test.plt,plt", "test.emf,emf"
+        "test.3mf,3mf", "test.wrl,wrl", "test.x3d,x3d",
+        "test.dwf,dwf", "test.plt,plt", "test.emf,emf"
     })
     void testGetFactoryForFile_ValidExtensions(String filename, String format) {
         var factory = fileConversionService.getFactoryForFile(filename);
