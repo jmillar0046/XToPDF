@@ -1,39 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.DwtToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class DwtFileConverterTest {
 
-    @Mock
-    private DwtToPdfService dwtToPdfService;
-
-    private DwtFileConverter dwtFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        dwtFileConverter = new DwtFileConverter(dwtToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.dwt", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        DwtToPdfService dwtToPdfService = Mockito.mock(DwtToPdfService.class);
+        DwtFileConverter dwtFileConverter = new DwtFileConverter(dwtToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.dwt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(dwtToPdfService).convertDwtToPdf(any(), any());
 
         dwtFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(dwtToPdfService).convertDwtToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(dwtToPdfService).convertDwtToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        DwtToPdfService dwtToPdfService = Mockito.mock(DwtToPdfService.class);
+        DwtFileConverter dwtFileConverter = new DwtFileConverter(dwtToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.dwt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(dwtToPdfService).convertDwtToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> dwtFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

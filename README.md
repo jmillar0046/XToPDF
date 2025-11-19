@@ -52,10 +52,26 @@ java -jar xtopdf-VERSION.jar
 - Convert GIF images to PDF
 - Convert TIFF/TIF images to PDF
 - Convert SVG images to PDF
+- Convert EMF images to PDF (Enhanced Metafile)
+- Convert WMF images to PDF (Windows Metafile)
 
 ### CAD Formats
 - Convert DXF files to PDF (Drawing Exchange Format)
 - Convert DWG files to PDF (AutoCAD Drawing Format)
+- Convert DWF files to PDF (Design Web Format)
+- Convert DWFX files to PDF (Design Web Format XPS)
+- Convert DWT files to PDF (Drawing Template)
+- Convert HPGL files to PDF (HP Graphics Language)
+- Convert PLT files to PDF (Plotter File)
+
+### 3D Model Formats
+- Convert STL files to PDF (Stereolithography)
+- Convert OBJ files to PDF (Wavefront Object)
+- Convert STEP/STP files to PDF (Standard for Exchange of Product Data)
+- Convert IGES/IGS files to PDF (Initial Graphics Exchange Specification)
+- Convert 3MF files to PDF (3D Manufacturing Format)
+- Convert WRL files to PDF (VRML - Virtual Reality Modeling Language)
+- Convert X3D files to PDF (Extensible 3D Graphics)
 
 ### Other Features
 - REST API endpoints for file conversion
@@ -178,19 +194,72 @@ curl -X POST http://localhost:8080/api/convert \
 
 - `position`: `front` (prepend) or `back` (append)
 
-#### CAD File Conversion
+#### CAD and 3D File Conversion
 
-Convert DXF files to PDF:
+Convert various CAD and 3D model files to PDF:
 
 ```bash
+# DXF (Drawing Exchange Format)
 curl -X POST http://localhost:8080/api/convert \
   -F "inputFile=@drawing.dxf" \
   -F "outputFile=output.pdf"
+
+# DWF (Design Web Format)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@design.dwf" \
+  -F "outputFile=output.pdf"
+
+# HPGL (HP Graphics Language)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@plot.hpgl" \
+  -F "outputFile=output.pdf"
+
+# PLT (Plotter File)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@drawing.plt" \
+  -F "outputFile=output.pdf"
 ```
 
-Convert DWG files to PDF:
+Convert 3D model files to PDF:
 
-**Note:** Direct DWG to PDF conversion requires the DWG file to be in a format compatible with DXF processing, or pre-converted to DXF format using external tools. The application follows the conversion path: DWG → DXF → PDF.
+```bash
+# STL (Stereolithography)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.stl" \
+  -F "outputFile=output.pdf"
+
+# OBJ (Wavefront Object)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.obj" \
+  -F "outputFile=output.pdf"
+
+# STEP (Standard for Exchange of Product Data)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.step" \
+  -F "outputFile=output.pdf"
+
+# IGES (Initial Graphics Exchange Specification)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.iges" \
+  -F "outputFile=output.pdf"
+
+# 3MF (3D Manufacturing Format)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.3mf" \
+  -F "outputFile=output.pdf"
+
+# WRL (VRML - Virtual Reality Modeling Language)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.wrl" \
+  -F "outputFile=output.pdf"
+
+# X3D (Extensible 3D Graphics)
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@model.x3d" \
+  -F "outputFile=output.pdf"
+```
+
+**DWG Conversion Note:** Direct DWG to PDF conversion requires the DWG file to be in a format compatible with DXF processing, or pre-converted to DXF format using external tools. The application follows the conversion path: DWG → DXF → PDF.
 
 For best results with DWG files, consider using external conversion tools first:
 - **ODA File Converter** (free, cross-platform)

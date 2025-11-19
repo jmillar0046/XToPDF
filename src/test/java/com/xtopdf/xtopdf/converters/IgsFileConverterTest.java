@@ -1,38 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.IgsToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class IgsFileConverterTest {
 
-    @Mock
-    private IgsToPdfService igsToPdfService;
-
-    private IgsFileConverter igsFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        igsFileConverter = new IgsFileConverter(igsToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.igs", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        IgsToPdfService igsToPdfService = Mockito.mock(IgsToPdfService.class);
+        IgsFileConverter igsFileConverter = new IgsFileConverter(igsToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.igs", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(igsToPdfService).convertIgsToPdf(any(), any());
 
         igsFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(igsToPdfService).convertIgsToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(igsToPdfService).convertIgsToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        IgsToPdfService igsToPdfService = Mockito.mock(IgsToPdfService.class);
+        IgsFileConverter igsFileConverter = new IgsFileConverter(igsToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.igs", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(igsToPdfService).convertIgsToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> igsFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

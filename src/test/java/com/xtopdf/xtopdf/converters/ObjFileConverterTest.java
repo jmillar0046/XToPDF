@@ -1,38 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.ObjToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class ObjFileConverterTest {
 
-    @Mock
-    private ObjToPdfService objToPdfService;
-
-    private ObjFileConverter objFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        objFileConverter = new ObjFileConverter(objToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.obj", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        ObjToPdfService objToPdfService = Mockito.mock(ObjToPdfService.class);
+        ObjFileConverter objFileConverter = new ObjFileConverter(objToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.obj", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(objToPdfService).convertObjToPdf(any(), any());
 
         objFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(objToPdfService).convertObjToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(objToPdfService).convertObjToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        ObjToPdfService objToPdfService = Mockito.mock(ObjToPdfService.class);
+        ObjFileConverter objFileConverter = new ObjFileConverter(objToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.obj", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(objToPdfService).convertObjToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> objFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }
