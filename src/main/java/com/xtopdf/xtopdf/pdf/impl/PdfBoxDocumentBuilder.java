@@ -76,6 +76,12 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
             return;
         }
         
+        // Replace tabs with spaces for consistent rendering
+        text = text.replace("\t", "    ");
+        
+        // Filter out characters that aren't supported by Helvetica font
+        text = filterUnsupportedCharacters(text);
+        
         contentStream.beginText();
         contentStream.setFont(defaultFont, DEFAULT_FONT_SIZE);
         contentStream.setLeading(DEFAULT_LEADING);
@@ -302,5 +308,28 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         }
         
         return truncated.toString() + ellipsis;
+    }
+    
+    /**
+     * Filters out characters not supported by the default Helvetica font.
+     * Helvetica (Type1) only supports WinAnsiEncoding characters (code points 32-126 and 128-255).
+     * Unicode characters and emojis are replaced with '?' to prevent rendering errors.
+     * 
+     * @param text The text to filter
+     * @return Filtered text with unsupported characters replaced
+     */
+    private String filterUnsupportedCharacters(String text) {
+        StringBuilder filtered = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            // Allow basic ASCII (32-126) and extended ASCII (128-255)
+            // Also preserve newlines and carriage returns
+            if ((c >= 32 && c <= 126) || (c >= 128 && c <= 255) || c == '\n' || c == '\r') {
+                filtered.append(c);
+            } else {
+                // Replace unsupported characters (Unicode, emojis, etc.) with '?'
+                filtered.append('?');
+            }
+        }
+        return filtered.toString();
     }
 }

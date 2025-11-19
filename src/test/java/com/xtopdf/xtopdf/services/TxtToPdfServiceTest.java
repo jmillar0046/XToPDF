@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,7 +19,8 @@ class TxtToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        txtToPdfService = new TxtToPdfService();
+        // Use PDFBox backend for testing
+        txtToPdfService = new TxtToPdfService(new PdfBoxBackend());
     }
 
 
