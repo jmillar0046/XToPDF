@@ -55,7 +55,7 @@ java -jar xtopdf-VERSION.jar
 
 ### CAD Formats
 - Convert DXF files to PDF (Drawing Exchange Format)
-- Convert DWG files to PDF (AutoCAD Drawing - requires pre-conversion to DXF or external tools)
+- Convert DWG files to PDF (AutoCAD Drawing Format)
 
 ### Other Features
 - REST API endpoints for file conversion
