@@ -19,7 +19,7 @@ class PngToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        pngToPdfService = new PngToPdfService();
+        pngToPdfService = new PngToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
     }
 
     private byte[] createSimplePNG(int width, int height, Color color) throws IOException {

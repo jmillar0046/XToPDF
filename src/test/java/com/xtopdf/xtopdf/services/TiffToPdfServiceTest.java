@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TiffToPdfServiceTest {
 
-    private final TiffToPdfService tiffToPdfService = new TiffToPdfService();
+    private final TiffToPdfService tiffToPdfService = new TiffToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
 
     @TempDir
     Path tempDir;
