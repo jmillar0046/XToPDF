@@ -1,0 +1,11 @@
+{
+  "name": "Test Document",
+  "items": [
+    {"id": 1, "value": "Item 1"},
+    {"id": 2, "value": "Item 2"}
+  ],
+  "metadata": {
+    "author": "Test Author",
+    "date": "2024-01-01"
+  }
+}

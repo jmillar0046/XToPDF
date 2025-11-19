@@ -138,6 +138,28 @@ public class DxfToPdfService {
         return doubleValue;
     }
     
+    /**
+     * Safely cast a double to an int, preventing user-controlled data vulnerabilities.
+     * Validates that the double value is within int range before casting.
+     * 
+     * @param value The double value to cast to int
+     * @return The casted int value
+     * @throws NumberFormatException if the value is out of int range or not finite
+     */
+    private int safeDoubleToInt(double value) throws NumberFormatException {
+        // Reject infinite and NaN values
+        if (!Double.isFinite(value)) {
+            throw new NumberFormatException("Cannot cast non-finite value to int: " + value);
+        }
+        
+        // Check if value is within int range
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            throw new NumberFormatException("Value out of int range: " + value);
+        }
+        
+        return (int) value;
+    }
+    
     public void convertDxfToPdf(MultipartFile dxfFile, File pdfFile) throws IOException {
         // Parse DXF entities and blocks
         blockRegistry.clear(); // Reset block registry
@@ -983,7 +1005,7 @@ public class DxfToPdfService {
             } else if (entity instanceof DimensionEntity) {
                 DimensionEntity dim = (DimensionEntity) entity;
                 switch (groupCode) {
-                    case 70: dim.setDimensionType((int)doubleValue); break;
+                    case 70: dim.setDimensionType(safeDoubleToInt(doubleValue)); break;
                     case GROUP_CODE_X_START: dim.setX1(doubleValue); break;
                     case GROUP_CODE_Y_START: dim.setY1(doubleValue); break;
                     case GROUP_CODE_X_END: dim.setX2(doubleValue); break;
@@ -1016,8 +1038,8 @@ public class DxfToPdfService {
                 switch (groupCode) {
                     case GROUP_CODE_X_START: table.setX(doubleValue); break;
                     case GROUP_CODE_Y_START: table.setY(doubleValue); break;
-                    case 90: table.setRows((int)doubleValue); break;
-                    case 91: table.setColumns((int)doubleValue); break;
+                    case 90: table.setRows(safeDoubleToInt(doubleValue)); break;
+                    case 91: table.setColumns(safeDoubleToInt(doubleValue)); break;
                     case 40: table.setCellHeight(doubleValue); break;
                     case 41: table.setCellWidth(doubleValue); break;
                 }
@@ -1103,7 +1125,7 @@ public class DxfToPdfService {
                     List<Double> vertices = mesh.getVertices();
                     vertices.set(vertices.size() - 1, doubleValue);
                 } else if (groupCode == 92) {
-                    mesh.setSubdivisionLevel((int)doubleValue);
+                    mesh.setSubdivisionLevel(safeDoubleToInt(doubleValue));
                 }
             } else if (entity instanceof Solid3DEntity) {
                 Solid3DEntity solid = (Solid3DEntity) entity;
@@ -1118,15 +1140,15 @@ public class DxfToPdfService {
             } else if (entity instanceof SurfaceEntity) {
                 SurfaceEntity surface = (SurfaceEntity) entity;
                 switch (groupCode) {
-                    case 71: surface.setUDegree((int)doubleValue); break;
-                    case 72: surface.setVDegree((int)doubleValue); break;
-                    case 73: surface.setNumUControlPoints((int)doubleValue); break;
-                    case 74: surface.setNumVControlPoints((int)doubleValue); break;
+                    case 71: surface.setUDegree(safeDoubleToInt(doubleValue)); break;
+                    case 72: surface.setVDegree(safeDoubleToInt(doubleValue)); break;
+                    case 73: surface.setNumUControlPoints(safeDoubleToInt(doubleValue)); break;
+                    case 74: surface.setNumVControlPoints(safeDoubleToInt(doubleValue)); break;
                 }
             } else if (entity instanceof BodyEntity) {
                 BodyEntity body = (BodyEntity) entity;
                 if (groupCode == 70) {
-                    body.setVersion((int)doubleValue);
+                    body.setVersion(safeDoubleToInt(doubleValue));
                 }
             } else if (entity instanceof RegionEntity) {
                 RegionEntity region = (RegionEntity) entity;
