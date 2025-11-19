@@ -303,5 +303,15 @@ The built JAR files will be in `build/libs/`.
 
 ## License
 
-This project is provided as-is for educational and commercial purposes.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+### Commercial Use
+
+XToPDF is available for commercial use under the Apache 2.0 license, which allows:
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+
+**Note:** This project is currently in the process of migrating from iText 7 (AGPL) to Apache PDFBox (Apache 2.0) to ensure full license compatibility for commercial deployments. See [TECHNICAL_ANALYSIS.md](TECHNICAL_ANALYSIS.md) for details.
 

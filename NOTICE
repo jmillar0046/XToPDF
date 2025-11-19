@@ -1,0 +1,38 @@
+XToPDF
+Copyright 2025 XToPDF Contributors
+
+This product includes software developed by the XToPDF project
+(https://github.com/jmillar0046/XToPDF).
+
+-------------------------------------------------------------------------------
+
+This product includes or depends on the following third-party software:
+
+Apache POI (Apache License 2.0)
+  https://poi.apache.org/
+  
+Apache PDFBox (Apache License 2.0)
+  https://pdfbox.apache.org/
+  
+Spring Boot (Apache License 2.0)
+  https://spring.io/projects/spring-boot
+  
+ODF Toolkit (Apache License 2.0)
+  https://odftoolkit.org/
+  
+Commonmark (BSD 2-Clause License)
+  https://github.com/commonmark/commonmark-java
+  
+JAI ImageIO (BSD 3-Clause License)
+  https://github.com/jai-imageio/jai-imageio-core
+
+iText 7 (AGPL 3.0) - Planned for removal
+  https://itextpdf.com/
+  Note: This dependency is being migrated to Apache PDFBox to ensure
+  full Apache 2.0 license compatibility. See TECHNICAL_ANALYSIS.md for
+  the migration plan.
+
+-------------------------------------------------------------------------------
+
+For complete license information, see the LICENSE file.
+For third-party license information, see individual dependency licenses.
