@@ -11,11 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class OdpToPdfServiceTest {
 
     private OdpToPdfService odpToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     private File pdfFile;
 
     @BeforeEach
     void setUp() {
-        odpToPdfService = new OdpToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        odpToPdfService = new OdpToPdfService(pdfBackend);
     }
 
     @Test
