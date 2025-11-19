@@ -9,14 +9,14 @@ import java.io.IOException;
 
 /**
  * Service to convert Design Web Format XPS files (DWFX) to PDF.
+ * DWFX is based on the XPS format, delegates to DwfToPdfService for similar parsing.
  */
 @AllArgsConstructor
 @Service
 public class DwfxToPdfService {
-    private final ProprietaryCadToPdfService proprietaryCadService;
+    private final DwfToPdfService dwfToPdfService;
     
     public void convertDwfxToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        String[] suggestions = {"Use Autodesk Design Review to print to PDF", "Use DWF to PDF online converters"};
-        proprietaryCadService.convertToPdf(inputFile, pdfFile, "Design Web Format XPS", "DWFX", suggestions);
+        dwfToPdfService.convertDwfToPdf(inputFile, pdfFile);
     }
 }
