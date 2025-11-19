@@ -1,38 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.PltToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class PltFileConverterTest {
 
-    @Mock
-    private PltToPdfService pltToPdfService;
-
-    private PltFileConverter pltFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        pltFileConverter = new PltFileConverter(pltToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.plt", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        PltToPdfService pltToPdfService = Mockito.mock(PltToPdfService.class);
+        PltFileConverter pltFileConverter = new PltFileConverter(pltToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.plt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(pltToPdfService).convertPltToPdf(any(), any());
 
         pltFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(pltToPdfService).convertPltToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(pltToPdfService).convertPltToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        PltToPdfService pltToPdfService = Mockito.mock(PltToPdfService.class);
+        PltFileConverter pltFileConverter = new PltFileConverter(pltToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.plt", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(pltToPdfService).convertPltToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> pltFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

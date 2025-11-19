@@ -1,38 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.WrlToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class WrlFileConverterTest {
 
-    @Mock
-    private WrlToPdfService wrlToPdfService;
-
-    private WrlFileConverter wrlFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        wrlFileConverter = new WrlFileConverter(wrlToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.wrl", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        WrlToPdfService wrlToPdfService = Mockito.mock(WrlToPdfService.class);
+        WrlFileConverter wrlFileConverter = new WrlFileConverter(wrlToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.wrl", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(wrlToPdfService).convertWrlToPdf(any(), any());
 
         wrlFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(wrlToPdfService).convertWrlToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(wrlToPdfService).convertWrlToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        WrlToPdfService wrlToPdfService = Mockito.mock(WrlToPdfService.class);
+        WrlFileConverter wrlFileConverter = new WrlFileConverter(wrlToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.wrl", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(wrlToPdfService).convertWrlToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> wrlFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

@@ -1,38 +1,44 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.services.WmfToPdfService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.File;
+import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 class WmfFileConverterTest {
 
-    @Mock
-    private WmfToPdfService wmfToPdfService;
-
-    private WmfFileConverter wmfFileConverter;
-
-    @BeforeEach
-    void setUp() {
-        wmfFileConverter = new WmfFileConverter(wmfToPdfService);
-    }
-
     @Test
-    void testConvertToPDF() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.wmf", "application/octet-stream", "content".getBytes());
-        String outputFile = "output.pdf";
+    void testConvertToPDF() throws IOException {
+        WmfToPdfService wmfToPdfService = Mockito.mock(WmfToPdfService.class);
+        WmfFileConverter wmfFileConverter = new WmfFileConverter(wmfToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.wmf", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doNothing().when(wmfToPdfService).convertWmfToPdf(any(), any());
 
         wmfFileConverter.convertToPDF(inputFile, outputFile, false);
 
-        verify(wmfToPdfService).convertWmfToPdf(any(MockMultipartFile.class), any(File.class));
+        verify(wmfToPdfService).convertWmfToPdf(any(), any());
+    }
+
+    @Test
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+        WmfToPdfService wmfToPdfService = Mockito.mock(WmfToPdfService.class);
+        WmfFileConverter wmfFileConverter = new WmfFileConverter(wmfToPdfService);
+        var outputFile = "output.pdf";
+        var inputFile = new MockMultipartFile("inputFile", "test.wmf", MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+
+        doThrow(new IOException("File not found")).when(wmfToPdfService).convertWmfToPdf(any(), any());
+
+        assertThrows(RuntimeException.class, () -> wmfFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }
