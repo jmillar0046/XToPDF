@@ -16,11 +16,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class XlsxToPdfServiceTest {
 
     private XlsxToPdfService xlsxToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     private Path tempDir;
 
     @BeforeEach
     void setUp() throws IOException {
-        xlsxToPdfService = new XlsxToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        xlsxToPdfService = new XlsxToPdfService(pdfBackend);
         tempDir = Files.createTempDirectory("xlsx-test");
     }
 

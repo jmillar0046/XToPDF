@@ -18,10 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DocxToPdfServiceTest {
     private DocxToPdfService docxToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @BeforeEach
     void setUp() {
-        docxToPdfService = new DocxToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        docxToPdfService = new DocxToPdfService(pdfBackend);
     }
 
     @Test
