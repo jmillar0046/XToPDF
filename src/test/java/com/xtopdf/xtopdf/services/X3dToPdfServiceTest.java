@@ -14,13 +14,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class X3dToPdfServiceTest {
 
     private X3dToPdfService x3dToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        x3dToPdfService = new X3dToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        x3dToPdfService = new X3dToPdfService(pdfBackend);
     }
 
     @Test

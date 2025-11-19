@@ -17,13 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class ThreeMfToPdfServiceTest {
 
     private ThreeMfToPdfService threeMfToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        threeMfToPdfService = new ThreeMfToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        threeMfToPdfService = new ThreeMfToPdfService(pdfBackend);
     }
 
     @Test

@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,44 +17,46 @@ import java.util.*;
 @Service
 public class WrlToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public WrlToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertWrlToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
             // Parse VRML file
             VrmlFileData vrmlData = parseVrmlFile(inputFile);
             
             // Add title
-            document.add(new Paragraph("VRML Scene Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
+            builder.addParagraph("VRML Scene Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: VRML (Virtual Reality Modeling Language)").setFontSize(12));
-            document.add(new Paragraph("Version: " + vrmlData.version).setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + inputFile.getOriginalFilename());
+            builder.addParagraph("Format: VRML (Virtual Reality Modeling Language)");
+            builder.addParagraph("Version: " + vrmlData.version);
+            builder.addParagraph("");
             
             // Add scene statistics
-            document.add(new Paragraph("Scene Statistics:").setFontSize(14));
-            document.add(new Paragraph("Total Nodes: " + vrmlData.totalNodes).setFontSize(12));
-            document.add(new Paragraph("Shapes: " + vrmlData.shapeCount).setFontSize(12));
-            document.add(new Paragraph("Transforms: " + vrmlData.transformCount).setFontSize(12));
-            document.add(new Paragraph("Materials: " + vrmlData.materialCount).setFontSize(12));
+            builder.addParagraph("Scene Statistics:");
+            builder.addParagraph("Total Nodes: " + vrmlData.totalNodes);
+            builder.addParagraph("Shapes: " + vrmlData.shapeCount);
+            builder.addParagraph("Transforms: " + vrmlData.transformCount);
+            builder.addParagraph("Materials: " + vrmlData.materialCount);
             
             if (!vrmlData.nodeTypes.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Node Types Found:").setFontSize(12));
+                builder.addParagraph("");
+                builder.addParagraph("Node Types Found:");
                 for (Map.Entry<String, Integer> entry : vrmlData.nodeTypes.entrySet()) {
-                    document.add(new Paragraph("  • " + entry.getKey() + ": " + entry.getValue()).setFontSize(10));
+                    builder.addParagraph("  • " + entry.getKey() + ": " + entry.getValue());
                 }
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains scene statistics. For full 3D visualization, use VRML viewers or convert to X3D.").setFontSize(10));
+            builder.addParagraph("");
+            builder.addParagraph("Note: This PDF contains scene statistics. For full 3D visualization, use VRML viewers or convert to X3D.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting VRML to PDF: " + e.getMessage(), e);
         }

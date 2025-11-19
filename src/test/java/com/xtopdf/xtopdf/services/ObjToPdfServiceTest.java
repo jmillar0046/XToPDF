@@ -14,13 +14,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class ObjToPdfServiceTest {
 
     private ObjToPdfService objToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        objToPdfService = new ObjToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        objToPdfService = new ObjToPdfService(pdfBackend);
     }
 
     @Test

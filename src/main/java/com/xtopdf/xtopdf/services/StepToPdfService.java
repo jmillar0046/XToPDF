@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,49 +21,50 @@ import java.util.regex.Pattern;
 @Service
 public class StepToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public StepToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertStepToPdf(MultipartFile stepFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
             // Parse STEP file
             StepFileData stepData = parseStepFile(stepFile);
             
             // Add title
-            document.add(new Paragraph("STEP File Analysis")
-                .setFontSize(18)
-                
-                .setMarginBottom(10));
+            builder.addParagraph("STEP File Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + stepFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: STEP (ISO 10303)").setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + stepFile.getOriginalFilename());
+            builder.addParagraph("Format: STEP (ISO 10303)");
+            builder.addParagraph("");
             
             // Add header information
             if (!stepData.header.isEmpty()) {
-                document.add(new Paragraph("Header Information:").setFontSize(14));
+                builder.addParagraph("Header Information:");
                 for (String line : stepData.header) {
-                    document.add(new Paragraph(line).setFontSize(10));
+                    builder.addParagraph(line);
                 }
-                document.add(new Paragraph(""));
+                builder.addParagraph("");
             }
             
             // Add entity summary
-            document.add(new Paragraph("Entity Summary:").setFontSize(14));
-            document.add(new Paragraph("Total Entities: " + stepData.entityCount).setFontSize(12));
+            builder.addParagraph("Entity Summary:");
+            builder.addParagraph("Total Entities: " + stepData.entityCount);
             
             // Add first few entities as sample
             if (!stepData.entities.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Sample Entities (first 50):").setFontSize(12));
+                builder.addParagraph("");
+                builder.addParagraph("Sample Entities (first 50):");
                 int count = Math.min(50, stepData.entities.size());
                 for (int i = 0; i < count; i++) {
-                    document.add(new Paragraph(stepData.entities.get(i)).setFontSize(8));
+                    builder.addParagraph(stepData.entities.get(i));
                 }
             }
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting STEP to PDF: " + e.getMessage(), e);
         }

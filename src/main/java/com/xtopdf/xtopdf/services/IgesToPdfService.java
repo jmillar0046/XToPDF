@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,46 +18,48 @@ import java.util.List;
 @Service
 public class IgesToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public IgesToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertIgesToPdf(MultipartFile igesFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
             // Parse IGES file
             IgesFileData igesData = parseIgesFile(igesFile);
             
             // Add title
-            document.add(new Paragraph("IGES File Analysis")
-                .setFontSize(18)
+            builder.addParagraph("IGES File Analysis\n\n");
                 
-                .setMarginBottom(10));
             
             // Add file information
-            document.add(new Paragraph("File: " + igesFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: IGES (Initial Graphics Exchange Specification)").setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + igesFile.getOriginalFilename());
+            builder.addParagraph("Format: IGES (Initial Graphics Exchange Specification)");
+            builder.addParagraph("");
             
             // Add global section data
             if (!igesData.globalSection.isEmpty()) {
-                document.add(new Paragraph("Global Section:").setFontSize(14));
+                builder.addParagraph("Global Section:");
                 for (String line : igesData.globalSection.subList(0, Math.min(10, igesData.globalSection.size()))) {
-                    document.add(new Paragraph(line).setFontSize(9));
+                    builder.addParagraph(line);
                 }
                 if (igesData.globalSection.size() > 10) {
-                    document.add(new Paragraph("... (" + (igesData.globalSection.size() - 10) + " more lines)").setFontSize(9));
+                    builder.addParagraph("... (" + (igesData.globalSection.size() - 10) + " more lines)");
                 }
-                document.add(new Paragraph(""));
+                builder.addParagraph("");
             }
             
             // Add entity statistics
-            document.add(new Paragraph("Entity Statistics:").setFontSize(14));
-            document.add(new Paragraph("Directory Entries: " + igesData.directoryEntryCount).setFontSize(12));
-            document.add(new Paragraph("Parameter Data Lines: " + igesData.parameterDataCount).setFontSize(12));
+            builder.addParagraph("Entity Statistics:");
+            builder.addParagraph("Directory Entries: " + igesData.directoryEntryCount);
+            builder.addParagraph("Parameter Data Lines: " + igesData.parameterDataCount);
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This is a parsed representation of the IGES file. For full CAD visualization, please use specialized CAD software.").setFontSize(10));
+            builder.addParagraph("");
+            builder.addParagraph("Note: This is a parsed representation of the IGES file. For full CAD visualization, please use specialized CAD software.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting IGES to PDF: " + e.getMessage(), e);
         }

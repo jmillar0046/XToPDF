@@ -14,13 +14,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class WrlToPdfServiceTest {
 
     private WrlToPdfService wrlToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        wrlToPdfService = new WrlToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        wrlToPdfService = new WrlToPdfService(pdfBackend);
     }
 
     @Test
