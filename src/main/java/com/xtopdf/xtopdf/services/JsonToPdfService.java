@@ -1,21 +1,28 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * Service for converting JSON files to PDF.
+ * Uses the PDF backend abstraction layer with Apache PDFBox.
+ */
 @Service
 public class JsonToPdfService {
+    
+    private final PdfBackendProvider pdfBackend;
+    
+    public JsonToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertJsonToPdf(MultipartFile jsonFile, File pdfFile) throws IOException {
         // Read the JSON file content
         StringBuilder jsonContent = new StringBuilder();
@@ -27,15 +34,10 @@ public class JsonToPdfService {
             }
         }
 
-        // Create a PDF document using iText
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
-            // Add the JSON content as a paragraph to the PDF with monospace formatting
-            document.add(new Paragraph(jsonContent.toString()));
-            
-            document.close();
+        // Create PDF using abstraction layer (PDFBox backend)
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
+            builder.addParagraph(jsonContent.toString());
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error creating PDF from JSON: " + e.getMessage(), e);
         }

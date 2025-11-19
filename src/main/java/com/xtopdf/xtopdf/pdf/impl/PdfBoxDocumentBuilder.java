@@ -21,6 +21,9 @@ import java.util.List;
  * 
  * <p>PDFBox is licensed under Apache License 2.0, making it suitable
  * for commercial use without source code disclosure requirements.</p>
+ * 
+ * <p><strong>Note:</strong> Currently uses Helvetica font which has limited Unicode support.
+ * TODO: Implement proper Unicode font support (see issue for font handling).</p>
  */
 public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     
@@ -37,6 +40,9 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     
     /**
      * Creates a new PDFBox document builder.
+     * 
+     * TODO: Add proper Unicode font support (NotoSansCJK or similar) for full international character support.
+     *       Currently using Helvetica which only supports WinAnsi characters.
      * 
      * @throws IOException if the document cannot be created
      */
@@ -63,6 +69,10 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     
     @Override
     public void addText(String text, float x, float y) throws IOException {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        text = filterUnsupportedGlyphs(text);
         contentStream.beginText();
         contentStream.setFont(defaultFont, DEFAULT_FONT_SIZE);
         contentStream.newLineAtOffset(x, y);
@@ -79,8 +89,8 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         // Replace tabs with spaces for consistent rendering
         text = text.replace("\t", "    ");
         
-        // Filter out characters that aren't supported by Helvetica font
-        text = filterUnsupportedCharacters(text);
+        // Filter out unsupported glyphs
+        text = filterUnsupportedGlyphs(text);
         
         contentStream.beginText();
         contentStream.setFont(defaultFont, DEFAULT_FONT_SIZE);
@@ -136,8 +146,9 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
                 contentStream.addRect(x, y - cellHeight, cellWidth, cellHeight);
                 contentStream.stroke();
                 
-                // Draw cell text
+                // Draw cell text - filter unsupported glyphs
                 String cellText = row[col] != null ? row[col] : "";
+                cellText = filterUnsupportedGlyphs(cellText);
                 cellText = truncateText(cellText, cellWidth - (2 * TABLE_CELL_PADDING), defaultFont, DEFAULT_FONT_SIZE);
                 
                 contentStream.beginText();
@@ -311,25 +322,30 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     }
     
     /**
-     * Filters out characters not supported by the default Helvetica font.
-     * Helvetica (Type1) only supports WinAnsiEncoding characters (code points 32-126 and 128-255).
-     * Unicode characters and emojis are replaced with '?' to prevent rendering errors.
+     * Filters out characters not supported by Helvetica font.
+     * Helvetica (Type1) only supports WinAnsiEncoding (code points 32-126 and 128-255).
+     * 
+     * TODO: Remove this filtering once proper Unicode font is implemented.
      * 
      * @param text The text to filter
-     * @return Filtered text with unsupported characters replaced
+     * @return Filtered text with unsupported characters replaced with '?'
      */
-    private String filterUnsupportedCharacters(String text) {
+    private String filterUnsupportedGlyphs(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        
         StringBuilder filtered = new StringBuilder();
         for (char c : text.toCharArray()) {
-            // Allow basic ASCII (32-126) and extended ASCII (128-255)
-            // Also preserve newlines and carriage returns
-            if ((c >= 32 && c <= 126) || (c >= 128 && c <= 255) || c == '\n' || c == '\r') {
+            // Allow basic ASCII (32-126), extended ASCII (128-255), and whitespace
+            if ((c >= 32 && c <= 126) || (c >= 128 && c <= 255) || Character.isWhitespace(c)) {
                 filtered.append(c);
             } else {
-                // Replace unsupported characters (Unicode, emojis, etc.) with '?'
+                // Replace unsupported characters with '?'
                 filtered.append('?');
             }
         }
+        
         return filtered.toString();
     }
 }
