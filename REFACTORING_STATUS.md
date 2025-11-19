@@ -26,17 +26,17 @@ Replace iText 7 (AGPL) with Apache PDFBox (Apache 2.0) to enable commercial use 
 - [x] Configured Spring to use PDFBox as default backend
 - [x] No backward compatibility with iText (clean implementation)
 
-### ✅ Phase 3: Service Migration (IN PROGRESS - 1 of 58 services)
+### ✅ Phase 3: Service Migration (IN PROGRESS - 4 of 58 services)
 **Migrated:**
 - [x] TxtToPdfService (14/14 tests passing)
+- [x] CsvToPdfService (13/13 tests passing) ✅ NEW
+- [x] JsonToPdfService (11/11 tests passing) ✅ NEW
+- [x] XmlToPdfService (11/11 tests passing) ✅ NEW
 
-**Pending Migration (57 services):**
+**Pending Migration (54 services):**
 
-**Simple Text Services (4):**
-- [ ] CsvToPdfService
-- [ ] JsonToPdfService
-- [ ] XmlToPdfService
-- [ ] MarkdownToPdfService
+**Simple Text Services (1):**
+- [ ] MarkdownToPdfService (requires HTML converter)
 
 **Image Services (8):**
 - [ ] JpegToPdfService
@@ -88,14 +88,14 @@ Replace iText 7 (AGPL) with Apache PDFBox (Apache 2.0) to enable commercial use 
 
 | Metric | Before | After |
 |--------|--------|-------|
-| iText Direct Usage | 37 files | 36 files (1 migrated) |
-| Services Using Abstraction | 0 | 1 (TxtToPdfService) |
+| iText Direct Usage | 37 files | 33 files (4 migrated) |
+| Services Using Abstraction | 0 | 4 (Txt, Csv, Json, Xml) |
 | Test Coverage | 85% | 85% (maintained) |
-| Apache 2.0 Compliant | ❌ No | 🟡 Partial |
+| Apache 2.0 Compliant | ❌ No | 🟡 Partial (7% migrated) |
 
 ## Progress Metrics
 
-- **Services Migrated:** 1 / 58 (1.7%)
+- **Services Migrated:** 4 / 58 (7%)
 - **Estimated Completion:** 6-8 weeks for full migration
 - **Commercial Ready:** Not yet (iText still in build.gradle)
 
@@ -175,11 +175,13 @@ Migration is complete when:
 ## Timeline
 
 **Start Date:** November 19, 2025  
-**Current Progress:** 3 commits, Phase 3 started  
+**Current Progress:** 6 commits, 4 services migrated (7%)  
 **Estimated Completion:** January 15, 2026 (8 weeks)  
 **Status:** On Track 🟢
+
+**Note:** Unicode font support to be added in separate phase - see TODO comments in code.
 
 ---
 
 *Last Updated: November 19, 2025*  
-*Latest Commit: 3332edc - Migrate TxtToPdfService to PDFBox backend*
+*Latest Commit: 541d57d - Migrate CsvToPdfService, JsonToPdfService, and XmlToPdfService*
