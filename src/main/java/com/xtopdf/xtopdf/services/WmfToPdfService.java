@@ -1,9 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,52 +13,48 @@ import java.nio.ByteOrder;
  * Service to convert Windows Metafile files (WMF) to PDF.
  * WMF is a binary vector graphics format for Windows.
  * This converter parses the WMF header and provides file statistics.
+ * Uses the PDF backend abstraction layer with Apache PDFBox.
  */
 @Service
 public class WmfToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public WmfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertWmfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Parse WMF file
             WmfFileData wmfData = parseWmfFile(inputFile);
             
-            // Add title
-            document.add(new Paragraph("Windows Metafile Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
-            
-            // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: WMF (Windows Metafile)").setFontSize(12));
-            document.add(new Paragraph("Type: " + (wmfData.isPlaceable ? "Placeable" : "Standard")).setFontSize(12));
-            document.add(new Paragraph(""));
-            
-            // Add metafile statistics
-            document.add(new Paragraph("Metafile Statistics:").setFontSize(14));
-            document.add(new Paragraph("File Size: " + formatSize(inputFile.getSize())).setFontSize(12));
+            // Build PDF content
+            StringBuilder content = new StringBuilder();
+            content.append("Windows Metafile Analysis\n\n");
+            content.append("File: ").append(inputFile.getOriginalFilename()).append("\n");
+            content.append("Format: WMF (Windows Metafile)\n");
+            content.append("Type: ").append(wmfData.isPlaceable ? "Placeable" : "Standard").append("\n\n");
+            content.append("Metafile Statistics:\n");
+            content.append("File Size: ").append(formatSize(inputFile.getSize())).append("\n");
             
             if (wmfData.isPlaceable && wmfData.boundsValid) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Bounds:").setFontSize(12));
-                document.add(new Paragraph(String.format("  Left: %d, Top: %d", wmfData.boundsLeft, wmfData.boundsTop)).setFontSize(10));
-                document.add(new Paragraph(String.format("  Right: %d, Bottom: %d", wmfData.boundsRight, wmfData.boundsBottom)).setFontSize(10));
-                document.add(new Paragraph(String.format("  Width: %d, Height: %d", 
+                content.append("\nBounds:\n");
+                content.append(String.format("  Left: %d, Top: %d\n", wmfData.boundsLeft, wmfData.boundsTop));
+                content.append(String.format("  Right: %d, Bottom: %d\n", wmfData.boundsRight, wmfData.boundsBottom));
+                content.append(String.format("  Width: %d, Height: %d\n", 
                     wmfData.boundsRight - wmfData.boundsLeft, 
-                    wmfData.boundsBottom - wmfData.boundsTop)).setFontSize(10));
+                    wmfData.boundsBottom - wmfData.boundsTop));
             }
             
             if (wmfData.maxRecordSize > 0) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Max Record Size: " + wmfData.maxRecordSize + " words").setFontSize(12));
+                content.append("\nMax Record Size: ").append(wmfData.maxRecordSize).append(" words\n");
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains metafile statistics. For visual rendering, use image conversion tools or Windows applications.").setFontSize(10));
+            content.append("\nNote: This PDF contains metafile statistics. For visual rendering, use image conversion tools or Windows applications.");
             
-            document.close();
+            builder.addParagraph(content.toString());
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting WMF to PDF: " + e.getMessage(), e);
         }

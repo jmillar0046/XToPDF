@@ -1,9 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,47 +13,44 @@ import java.nio.ByteOrder;
  * Service to convert Enhanced Metafile files (EMF) to PDF.
  * EMF is a binary vector graphics format for Windows.
  * This converter parses the EMF header and provides file statistics.
+ * Uses the PDF backend abstraction layer with Apache PDFBox.
  */
 @Service
 public class EmfToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public EmfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertEmfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Parse EMF file
             EmfFileData emfData = parseEmfFile(inputFile);
             
-            // Add title
-            document.add(new Paragraph("Enhanced Metafile Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
-            
-            // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: EMF (Enhanced Metafile)").setFontSize(12));
-            document.add(new Paragraph(""));
-            
-            // Add metafile statistics
-            document.add(new Paragraph("Metafile Statistics:").setFontSize(14));
-            document.add(new Paragraph("File Size: " + formatSize(inputFile.getSize())).setFontSize(12));
-            document.add(new Paragraph("Record Count: " + emfData.recordCount).setFontSize(12));
+            // Build PDF content
+            StringBuilder content = new StringBuilder();
+            content.append("Enhanced Metafile Analysis\n\n");
+            content.append("File: ").append(inputFile.getOriginalFilename()).append("\n");
+            content.append("Format: EMF (Enhanced Metafile)\n\n");
+            content.append("Metafile Statistics:\n");
+            content.append("File Size: ").append(formatSize(inputFile.getSize())).append("\n");
+            content.append("Record Count: ").append(emfData.recordCount).append("\n");
             
             if (emfData.boundsValid) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Bounds:").setFontSize(12));
-                document.add(new Paragraph(String.format("  Left: %d, Top: %d", emfData.boundsLeft, emfData.boundsTop)).setFontSize(10));
-                document.add(new Paragraph(String.format("  Right: %d, Bottom: %d", emfData.boundsRight, emfData.boundsBottom)).setFontSize(10));
-                document.add(new Paragraph(String.format("  Width: %d, Height: %d", 
+                content.append("\nBounds:\n");
+                content.append(String.format("  Left: %d, Top: %d\n", emfData.boundsLeft, emfData.boundsTop));
+                content.append(String.format("  Right: %d, Bottom: %d\n", emfData.boundsRight, emfData.boundsBottom));
+                content.append(String.format("  Width: %d, Height: %d\n", 
                     emfData.boundsRight - emfData.boundsLeft, 
-                    emfData.boundsBottom - emfData.boundsTop)).setFontSize(10));
+                    emfData.boundsBottom - emfData.boundsTop));
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains metafile statistics. For visual rendering, use image conversion tools or Windows applications.").setFontSize(10));
+            content.append("\nNote: This PDF contains metafile statistics. For visual rendering, use image conversion tools or Windows applications.");
             
-            document.close();
+            builder.addParagraph(content.toString());
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting EMF to PDF: " + e.getMessage(), e);
         }
