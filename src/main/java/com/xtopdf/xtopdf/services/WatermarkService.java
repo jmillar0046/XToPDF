@@ -1,18 +1,17 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.extgstate.PdfExtGState;
-import com.itextpdf.layout.Canvas;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.properties.TextAlignment;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
 import com.xtopdf.xtopdf.enums.WatermarkLayer;
 import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.util.Matrix;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -32,49 +31,54 @@ public class WatermarkService {
         // Create a temporary file for the modified PDF
         File tempFile = File.createTempFile("temp_", ".pdf");
         
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile), new PdfWriter(tempFile))) {
-            int numberOfPages = pdfDoc.getNumberOfPages();
+        try (PDDocument document = Loader.loadPDF(pdfFile)) {
+            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
             
-            for (int i = 1; i <= numberOfPages; i++) {
-                var page = pdfDoc.getPage(i);
-                Rectangle pageSize = page.getPageSize();
+            for (PDPage page : document.getPages()) {
+                float pageWidth = page.getMediaBox().getWidth();
+                float pageHeight = page.getMediaBox().getHeight();
                 
-                // Create canvas based on layer (foreground or background)
-                PdfCanvas pdfCanvas;
-                if (config.getLayer() == WatermarkLayer.BACKGROUND) {
-                    // Add watermark under the content
-                    pdfCanvas = new PdfCanvas(page.newContentStreamBefore(), page.getResources(), pdfDoc);
-                } else {
-                    // Add watermark over the content
-                    pdfCanvas = new PdfCanvas(page);
+                // Determine if we're adding to background or foreground
+                boolean append = (config.getLayer() == WatermarkLayer.FOREGROUND);
+                
+                try (PDPageContentStream contentStream = new PDPageContentStream(
+                        document, page, 
+                        append ? PDPageContentStream.AppendMode.APPEND : PDPageContentStream.AppendMode.PREPEND,
+                        true)) {
+                    
+                    // Set transparency
+                    PDExtendedGraphicsState gs = new PDExtendedGraphicsState();
+                    gs.setNonStrokingAlphaConstant(DEFAULT_OPACITY);
+                    gs.setStrokingAlphaConstant(DEFAULT_OPACITY);
+                    contentStream.setGraphicsStateParameters(gs);
+                    
+                    // Calculate position (center of page)
+                    float centerX = pageWidth / 2;
+                    float centerY = pageHeight / 2;
+                    
+                    // Get rotation angle
+                    float rotationAngle = getRotationAngle(config.getOrientation(), pageWidth, pageHeight);
+                    
+                    // Set up transformation matrix for rotation around center
+                    contentStream.saveGraphicsState();
+                    contentStream.transform(Matrix.getTranslateInstance(centerX, centerY));
+                    contentStream.transform(Matrix.getRotateInstance(Math.toRadians(rotationAngle), 0, 0));
+                    
+                    // Draw watermark text
+                    contentStream.beginText();
+                    contentStream.setFont(font, config.getFontSize());
+                    
+                    // Calculate text width for centering
+                    float textWidth = font.getStringWidth(config.getText()) / 1000 * config.getFontSize();
+                    contentStream.newLineAtOffset(-textWidth / 2, 0);
+                    contentStream.showText(config.getText());
+                    contentStream.endText();
+                    
+                    contentStream.restoreGraphicsState();
                 }
-                
-                // Set transparency
-                PdfExtGState gs1 = new PdfExtGState();
-                gs1.setFillOpacity(DEFAULT_OPACITY);
-                pdfCanvas.setExtGState(gs1);
-                
-                Canvas canvas = new Canvas(pdfCanvas, pageSize);
-                
-                // Create paragraph with watermark text
-                Paragraph paragraph = new Paragraph(config.getText())
-                        .setFontSize(config.getFontSize())
-                        .setTextAlignment(TextAlignment.CENTER);
-                
-                // Calculate position (center of page)
-                float centerX = pageSize.getWidth() / 2;
-                float centerY = pageSize.getHeight() / 2;
-                
-                // Apply rotation based on orientation
-                float rotationAngle = getRotationAngle(config.getOrientation(), pageSize);
-                
-                // Position and rotate the watermark at the center of the page
-                canvas.showTextAligned(paragraph, centerX, centerY, i, 
-                        TextAlignment.CENTER, com.itextpdf.layout.properties.VerticalAlignment.MIDDLE, 
-                        (float) Math.toRadians(rotationAngle));
-                
-                canvas.close();
             }
+            
+            document.save(tempFile);
         }
         
         // Replace original file with the modified one
@@ -88,24 +92,18 @@ public class WatermarkService {
         }
     }
     
-    private float getRotationAngle(WatermarkOrientation orientation, Rectangle pageSize) {
+    private float getRotationAngle(WatermarkOrientation orientation, float pageWidth, float pageHeight) {
         return switch (orientation) {
             case HORIZONTAL -> 0f;
             case VERTICAL -> 90f;
             case DIAGONAL_UP -> {
                 // Calculate angle for diagonal from upper-left to bottom-right (negative slope)
-                // Using negative height creates a clockwise rotation from horizontal
-                float angle = (float) Math.toDegrees(Math.atan2(
-                    -pageSize.getHeight(), pageSize.getWidth()
-                ));
+                float angle = (float) Math.toDegrees(Math.atan2(-pageHeight, pageWidth));
                 yield angle;
             }
             case DIAGONAL_DOWN -> {
                 // Calculate angle for diagonal from bottom-left to top-right (positive slope)
-                // Using positive height creates a counter-clockwise rotation from horizontal
-                float angle = (float) Math.toDegrees(Math.atan2(
-                    pageSize.getHeight(), pageSize.getWidth()
-                ));
+                float angle = (float) Math.toDegrees(Math.atan2(pageHeight, pageWidth));
                 yield angle;
             }
         };

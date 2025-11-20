@@ -71,12 +71,13 @@ public class DxfPdfRenderer {
     
     public void fill() throws IOException {
         if (pathStarted && pathX.size() >= 3) {
-            float[] points = new float[pathX.size() * 2];
+            float[] xPoints = new float[pathX.size()];
+            float[] yPoints = new float[pathY.size()];
             for (int i = 0; i < pathX.size(); i++) {
-                points[i * 2] = pathX.get(i).floatValue();
-                points[i * 2 + 1] = pathY.get(i).floatValue();
+                xPoints[i] = pathX.get(i).floatValue();
+                yPoints[i] = pathY.get(i).floatValue();
             }
-            builder.drawPolygon(points, true);
+            builder.drawPolygon(xPoints, yPoints, xPoints.length, true);
         }
         pathX.clear();
         pathY.clear();
@@ -85,12 +86,13 @@ public class DxfPdfRenderer {
     
     public void fillStroke() throws IOException {
         if (pathStarted && pathX.size() >= 3) {
-            float[] points = new float[pathX.size() * 2];
+            float[] xPoints = new float[pathX.size()];
+            float[] yPoints = new float[pathY.size()];
             for (int i = 0; i < pathX.size(); i++) {
-                points[i * 2] = pathX.get(i).floatValue();
-                points[i * 2 + 1] = pathY.get(i).floatValue();
+                xPoints[i] = pathX.get(i).floatValue();
+                yPoints[i] = pathY.get(i).floatValue();
             }
-            builder.drawPolygon(points, true);
+            builder.drawPolygon(xPoints, yPoints, xPoints.length, true);
         }
         pathX.clear();
         pathY.clear();
@@ -106,7 +108,8 @@ public class DxfPdfRenderer {
         double height = y2 - y1;
         double centerX = x1 + width / 2;
         double centerY = y1 + height / 2;
-        builder.drawArc((float)centerX, (float)centerY, (float)width, (float)height, 
+        double radius = Math.max(width, height) / 2;
+        builder.drawArc((float)centerX, (float)centerY, (float)radius, 
                        (float)startAngle, (float)sweepAngle);
     }
     
@@ -115,7 +118,9 @@ public class DxfPdfRenderer {
         double height = y2 - y1;
         double centerX = x1 + width / 2;
         double centerY = y1 + height / 2;
-        builder.drawEllipse((float)centerX, (float)centerY, (float)width, (float)height);
+        double radiusX = width / 2;
+        double radiusY = height / 2;
+        builder.drawEllipse((float)centerX, (float)centerY, (float)radiusX, (float)radiusY);
     }
     
     public void rectangle(double x, double y, double width, double height) throws IOException {
@@ -128,27 +133,27 @@ public class DxfPdfRenderer {
     }
     
     public void setStrokeColor(float r, float g, float b) throws IOException {
-        builder.setStrokeColor(r, g, b);
+        builder.setStrokeColor((int)(r * 255), (int)(g * 255), (int)(b * 255));
     }
     
     public void setFillColor(float r, float g, float b) throws IOException {
-        builder.setFillColor(r, g, b);
+        builder.setFillColor((int)(r * 255), (int)(g * 255), (int)(b * 255));
     }
     
     public void setLineWidth(float width) throws IOException {
         builder.setLineWidth(width);
     }
     
-    public void setLineDash(float... pattern) throws IOException {
-        builder.setDashPattern(pattern);
+    public void setLineDash(float dashLength, float gapLength) throws IOException {
+        builder.setLineDash(dashLength, gapLength);
     }
     
     public void saveState() throws IOException {
-        builder.saveGraphicsState();
+        builder.saveState();
     }
     
     public void restoreState() throws IOException {
-        builder.restoreGraphicsState();
+        builder.restoreState();
     }
     
     public void addText(double x, double y, String text, float fontSize) throws IOException {
