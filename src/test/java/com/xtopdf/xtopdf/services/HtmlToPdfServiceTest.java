@@ -15,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class HtmlToPdfServiceTest {
 
     private HtmlToPdfService createService() {
-        HtmlToPdfService service = new HtmlToPdfService();
-        service.pdfBackend = new PdfBoxBackend();
+        HtmlToPdfService service = new HtmlToPdfService(new PdfBoxBackend());
+        // Backend injected via constructor
         return service;
     }
 

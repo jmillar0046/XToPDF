@@ -28,8 +28,12 @@ import java.nio.charset.StandardCharsets;
 @Service
 public class SvgToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
     @Autowired
-    PdfBackendProvider pdfBackend; // Package-private for testing
+    public SvgToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
     
     public void convertSvgToPdf(MultipartFile svgFile, File pdfFile) throws IOException {
         try {

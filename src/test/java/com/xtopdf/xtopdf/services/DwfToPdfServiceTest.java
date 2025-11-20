@@ -24,8 +24,7 @@ class DwfToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        dwfToPdfService = new DwfToPdfService();
-        dwfToPdfService.pdfBackend = new PdfBoxBackend();
+        dwfToPdfService = new DwfToPdfService(new PdfBoxBackend());
     }
 
     @Test

@@ -28,8 +28,12 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class HtmlToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
     @Autowired
-    PdfBackendProvider pdfBackend; // Package-private for testing
+    public HtmlToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
     
     public void convertHtmlToPdf(MultipartFile htmlFile, File pdfFile) {
         try {

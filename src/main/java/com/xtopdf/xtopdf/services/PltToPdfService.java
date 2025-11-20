@@ -17,8 +17,12 @@ import java.util.*;
 @Service
 public class PltToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
     @Autowired
-    PdfBackendProvider pdfBackend; // Package-private for testing
+    public PltToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
     
     public void convertPltToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
         // Parse PLT/HPGL file

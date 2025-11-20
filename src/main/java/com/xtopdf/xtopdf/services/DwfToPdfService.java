@@ -19,8 +19,12 @@ import java.util.zip.ZipInputStream;
 @Service
 public class DwfToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
     @Autowired
-    PdfBackendProvider pdfBackend; // Package-private for testing
+    public DwfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
     
     public void convertDwfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
         // Parse DWF file

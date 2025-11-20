@@ -17,8 +17,7 @@ class SvgToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        svgToPdfService = new SvgToPdfService();
-        svgToPdfService.pdfBackend = new PdfBoxBackend();
+        svgToPdfService = new SvgToPdfService(new PdfBoxBackend());
     }
 
     @Test

@@ -21,8 +21,7 @@ class PltToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        pltToPdfService = new PltToPdfService();
-        pltToPdfService.pdfBackend = new PdfBoxBackend();
+        pltToPdfService = new PltToPdfService(new PdfBoxBackend());
     }
 
     @Test
