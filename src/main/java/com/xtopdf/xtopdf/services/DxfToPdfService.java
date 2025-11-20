@@ -325,7 +325,7 @@ public class DxfToPdfService {
                 textX, 
                 textY, 
                 String.format("%.2f", dim.getMeasurement()), 
-                (float)(dim.getTextHeight() * scale)
+                10.0f // Default text height
             );
         } else if (entity instanceof LeaderEntity) {
             LeaderEntity leader = (LeaderEntity) entity;
@@ -351,7 +351,7 @@ public class DxfToPdfService {
                 double textX = offsetX + leader.getTextX() * scale;
                 double textY = offsetY + leader.getTextY() * scale;
                 String leaderText = leader.getText();
-                renderer.showTextAligned(leaderText, textX, textY, 0); // 0 for default alignment
+                renderer.addText(textX, textY, leaderText, 10.0f);
             }
             
         } else if (entity instanceof ToleranceEntity) {

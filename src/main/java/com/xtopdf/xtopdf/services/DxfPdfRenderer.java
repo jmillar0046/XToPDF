@@ -158,7 +158,7 @@ public class DxfPdfRenderer {
     
     public void addText(double x, double y, String text, float fontSize) throws IOException {
         // Position text at the specified location
-        builder.setFontSize(fontSize); // If PdfDocumentBuilder supports this
-        builder.addText(x, y, text);
+        // Note: Font size is not currently configurable in the abstraction layer
+        builder.addText(text, (float)x, (float)y);
     }
 }
