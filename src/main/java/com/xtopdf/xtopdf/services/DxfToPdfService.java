@@ -365,9 +365,9 @@ public class DxfToPdfService {
             renderer.stroke();
             
             // Draw tolerance text
+            // Render the tolerance value inside the box
+            renderer.addText(x + 2, y + height * 0.2, tolerance.getToleranceString(), 8);
             
-            // Text positioning: x + 2, y + height * 0.2);
-            // Text content: tolerance.getToleranceString());
             
             
         } else if (entity instanceof TableEntity) {
