@@ -1,19 +1,15 @@
 package com.xtopdf.xtopdf.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import com.xtopdf.xtopdf.entities.*;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -23,12 +19,20 @@ import java.util.List;
  * Service to convert DXF (Drawing Exchange Format) files to PDF.
  * 
  * This implementation parses DXF entities and renders them as actual graphics
- * in the PDF using iText's canvas API.
+ * in the PDF using Apache PDFBox via the abstraction layer.
  * 
  * Supported entities: LINE, CIRCLE, ARC, ELLIPSE, POINT, POLYLINE, SOLID/TRACE
+ * Plus: TEXT, MTEXT, DIMENSION, LEADER, TABLE, BLOCK/INSERT, and 50+ more entity types
  */
 @Service
 public class DxfToPdfService {
+    
+    private final PdfBackendProvider pdfBackend;
+    
+    @Autowired
+    public DxfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
     
     // DXF entity types
     private static final String ENTITY_LINE = "LINE";
@@ -165,40 +169,45 @@ public class DxfToPdfService {
         blockRegistry.clear(); // Reset block registry
         List<DxfEntity> entities = parseDxfEntities(dxfFile);
         
-        // Create a PDF document using iText
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            PdfPage page = pdfDocument.addNewPage(PageSize.A4);
-            PdfCanvas canvas = new PdfCanvas(page);
+        // Create a PDF document using PDFBox abstraction
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
+            // Set up A4 page size (595x842 points)
+            builder.setPageSize(595, 842);
             
-            // Set up drawing parameters
-            canvas.setStrokeColor(ColorConstants.BLACK);
-            canvas.setFillColor(ColorConstants.LIGHT_GRAY);
-            canvas.setLineWidth(1);
+            // Set up default drawing parameters (black lines, light gray fill)
+            builder.setStrokeColor(0, 0, 0); // Black
+            builder.setFillColor(0.827f, 0.827f, 0.827f); // Light gray
+            builder.setLineWidth(1);
             
             // Calculate scale factor to fit drawing on page
-            double scale = calculateScale(entities, page.getPageSize().getWidth(), page.getPageSize().getHeight());
+            double pageWidth = 595;
+            double pageHeight = 842;
+            double scale = calculateScale(entities, pageWidth, pageHeight);
             double offsetX = 50; // Left margin
             double offsetY = 50; // Bottom margin
+            
+            // Create renderer helper for canvas-like operations
+            DxfPdfRenderer renderer = new DxfPdfRenderer(builder);
             
             // Render each entity (blocks are stored in registry, not rendered directly)
             for (DxfEntity entity : entities) {
                 if (!(entity instanceof BlockEntity)) {
-                    renderEntity(canvas, entity, scale, offsetX, offsetY, 1.0, 1.0, 0.0);
+                    renderEntity(renderer, builder, entity, scale, offsetX, offsetY, 1.0, 1.0, 0.0);
                 }
             }
             
-            pdfDocument.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error creating PDF from DXF: " + e.getMessage(), e);
         }
     }
     
     /**
-     * Render a single entity on the PDF canvas with optional transformations.
+     * Render a single entity on the PDF using the abstraction layer with optional transformations.
      * Supports recursive rendering for blocks.
      * 
-     * @param canvas PDF canvas
+     * @param renderer Canvas-like renderer helper
+     * @param builder PDF document builder
      * @param entity Entity to render
      * @param scale Global scale factor
      * @param offsetX Global X offset
@@ -207,77 +216,99 @@ public class DxfToPdfService {
      * @param localScaleY Local Y scale (for block insertions)
      * @param localRotation Local rotation in degrees (for block insertions)
      */
-    private void renderEntity(PdfCanvas canvas, DxfEntity entity, double scale, double offsetX, double offsetY,
+    private void renderEntity(DxfPdfRenderer renderer, PdfDocumentBuilder builder, DxfEntity entity, double scale, double offsetX, double offsetY,
                              double localScaleX, double localScaleY, double localRotation) throws IOException {
         if (entity instanceof LineEntity) {
             LineEntity line = (LineEntity) entity;
-            canvas.moveTo(offsetX + line.getX1() * scale, offsetY + line.getY1() * scale);
-            canvas.lineTo(offsetX + line.getX2() * scale, offsetY + line.getY2() * scale);
-            canvas.stroke();
+            builder.drawLine(
+                (float)(offsetX + line.getX1() * scale), (float)(offsetY + line.getY1() * scale),
+                (float)(offsetX + line.getX2() * scale), (float)(offsetY + line.getY2() * scale)
+            );
             
         } else if (entity instanceof CircleEntity) {
             CircleEntity circle = (CircleEntity) entity;
-            canvas.circle(offsetX + circle.getCenterX() * scale, offsetY + circle.getCenterY() * scale, 
-                         circle.getRadius() * scale);
-            canvas.stroke();
+            builder.drawCircle(
+                (float)(offsetX + circle.getCenterX() * scale), 
+                (float)(offsetY + circle.getCenterY() * scale),
+                (float)(circle.getRadius() * scale)
+            );
             
         } else if (entity instanceof ArcEntity) {
             ArcEntity arc = (ArcEntity) entity;
-            double centerX = offsetX + arc.getCenterX() * scale;
-            double centerY = offsetY + arc.getCenterY() * scale;
-            double radius = arc.getRadius() * scale;
-            // Draw arc using iText's arc method (angles in degrees)
-            canvas.arc(centerX - radius, centerY - radius, centerX + radius, centerY + radius,
-                      arc.getStartAngle(), arc.getEndAngle() - arc.getStartAngle());
-            canvas.stroke();
+            float centerX = (float)(offsetX + arc.getCenterX() * scale);
+            float centerY = (float)(offsetY + arc.getCenterY() * scale);
+            float radius = (float)(arc.getRadius() * scale);
+            // Draw arc using abstraction (angles in degrees)
+            float width = radius * 2;
+            float height = radius * 2;
+            builder.drawArc(centerX, centerY, width, height,
+                          (float)arc.getStartAngle(), (float)(arc.getEndAngle() - arc.getStartAngle()));
             
         } else if (entity instanceof PointEntity) {
             PointEntity point = (PointEntity) entity;
-            double x = offsetX + point.getX() * scale;
-            double y = offsetY + point.getY() * scale;
-            double size = 2; // Small cross size
-            canvas.moveTo(x - size, y);
-            canvas.lineTo(x + size, y);
-            canvas.moveTo(x, y - size);
-            canvas.lineTo(x, y + size);
-            canvas.stroke();
+            float x = (float)(offsetX + point.getX() * scale);
+            float y = (float)(offsetY + point.getY() * scale);
+            float size = 2; // Small cross size
+            builder.drawLine(x - size, y, x + size, y);
+            builder.drawLine(x, y - size, x, y + size);
             
         } else if (entity instanceof PolylineEntity) {
             PolylineEntity polyline = (PolylineEntity) entity;
             List<Double> vertices = polyline.getVertices();
             if (vertices.size() >= 4) {
-                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
-                for (int i = 2; i < vertices.size(); i += 2) {
-                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
-                }
+                // Build polygon points array
+                int numPoints = vertices.size() / 2;
                 if (polyline.isClosed()) {
-                    canvas.closePath();
+                    numPoints++; // Add closing point
                 }
-                canvas.stroke();
+                float[] points = new float[numPoints * 2];
+                
+                for (int i = 0; i < vertices.size(); i += 2) {
+                    points[i] = (float)(offsetX + vertices.get(i) * scale);
+                    points[i + 1] = (float)(offsetY + vertices.get(i + 1) * scale);
+                }
+                
+                if (polyline.isClosed() && vertices.size() >= 4) {
+                    // Close the path
+                    points[points.length - 2] = points[0];
+                    points[points.length - 1] = points[1];
+                }
+                
+                builder.drawPolygon(points, false); // Outline only
             }
             
         } else if (entity instanceof EllipseEntity) {
             EllipseEntity ellipse = (EllipseEntity) entity;
-            double centerX = offsetX + ellipse.getCenterX() * scale;
-            double centerY = offsetY + ellipse.getCenterY() * scale;
+            float centerX = (float)(offsetX + ellipse.getCenterX() * scale);
+            float centerY = (float)(offsetY + ellipse.getCenterY() * scale);
             double majorRadius = Math.sqrt(ellipse.getMajorAxisX() * ellipse.getMajorAxisX() + 
                                           ellipse.getMajorAxisY() * ellipse.getMajorAxisY()) * scale;
             double minorRadius = majorRadius * ellipse.getRatio();
-            // Simplified ellipse rendering as circle for now
-            canvas.ellipse(centerX - majorRadius, centerY - minorRadius, 
-                          centerX + majorRadius, centerY + minorRadius);
-            canvas.stroke();
+            builder.drawEllipse(centerX, centerY, (float)(majorRadius * 2), (float)(minorRadius * 2));
             
         } else if (entity instanceof SolidEntity) {
             SolidEntity solid = (SolidEntity) entity;
-            canvas.moveTo(offsetX + solid.getX1() * scale, offsetY + solid.getY1() * scale);
-            canvas.lineTo(offsetX + solid.getX2() * scale, offsetY + solid.getY2() * scale);
-            canvas.lineTo(offsetX + solid.getX3() * scale, offsetY + solid.getY3() * scale);
-            if (!solid.isTriangle()) {
-                canvas.lineTo(offsetX + solid.getX4() * scale, offsetY + solid.getY4() * scale);
+            float[] points;
+            if (solid.isTriangle()) {
+                points = new float[6];
+                points[0] = (float)(offsetX + solid.getX1() * scale);
+                points[1] = (float)(offsetY + solid.getY1() * scale);
+                points[2] = (float)(offsetX + solid.getX2() * scale);
+                points[3] = (float)(offsetY + solid.getY2() * scale);
+                points[4] = (float)(offsetX + solid.getX3() * scale);
+                points[5] = (float)(offsetY + solid.getY3() * scale);
+            } else {
+                points = new float[8];
+                points[0] = (float)(offsetX + solid.getX1() * scale);
+                points[1] = (float)(offsetY + solid.getY1() * scale);
+                points[2] = (float)(offsetX + solid.getX2() * scale);
+                points[3] = (float)(offsetY + solid.getY2() * scale);
+                points[4] = (float)(offsetX + solid.getX3() * scale);
+                points[5] = (float)(offsetY + solid.getY3() * scale);
+                points[6] = (float)(offsetX + solid.getX4() * scale);
+                points[7] = (float)(offsetY + solid.getY4() * scale);
             }
-            canvas.closePath();
-            canvas.fillStroke();
+            builder.drawPolygon(points, true); // Filled polygon
             
         } else if (entity instanceof TextEntity) {
             TextEntity text = (TextEntity) entity;
