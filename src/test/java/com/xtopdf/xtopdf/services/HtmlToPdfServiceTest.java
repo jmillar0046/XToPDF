@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,9 +14,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class HtmlToPdfServiceTest {
 
+    private HtmlToPdfService createService() {
+        HtmlToPdfService service = createService();
+        
+        return service;
+    }
+
     @Test
     void testConvertValidHtmlToPdf(@TempDir Path tempDir) throws Exception {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
+        
         String html = "<html><body><h1>Hello PDF</h1></body></html>";
         MockMultipartFile htmlFile = new MockMultipartFile("file", "test.html", MediaType.TEXT_HTML_VALUE, html.getBytes());
         File pdfFile = tempDir.resolve("test.pdf").toFile();
@@ -26,7 +34,8 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertEmptyHtmlToPdf(@TempDir Path tempDir) throws Exception {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
+        
         MockMultipartFile htmlFile = new MockMultipartFile("file", "empty.html", MediaType.TEXT_HTML_VALUE, new byte[0]);
         File pdfFile = tempDir.resolve("empty.pdf").toFile();
         service.convertHtmlToPdf(htmlFile, pdfFile);
@@ -36,7 +45,8 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertInvalidHtmlDoesNotThrow(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
+        
         MockMultipartFile htmlFile = new MockMultipartFile("file", "invalid.html", MediaType.TEXT_HTML_VALUE, "<html><body>".getBytes());
         File pdfFile = tempDir.resolve("invalid.pdf").toFile();
         service.convertHtmlToPdf(htmlFile, pdfFile);
@@ -45,7 +55,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithStyles_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><head><style>h1 { color: blue; }</style></head>" +
                      "<body><h1>Styled Heading</h1><p>Paragraph text</p></body></html>";
         MockMultipartFile htmlFile = new MockMultipartFile("file", "styled.html", MediaType.TEXT_HTML_VALUE, html.getBytes());
@@ -57,7 +67,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithTable_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<table border='1'><tr><th>Name</th><th>Age</th></tr>" +
                      "<tr><td>John</td><td>30</td></tr>" +
@@ -72,7 +82,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithList_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul>" +
                      "<ol><li>First</li><li>Second</li><li>Third</li></ol>" +
@@ -86,7 +96,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithLinks_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<a href='https://example.com'>Example Link</a>" +
                      "<p>Text with <a href='#'>internal link</a></p>" +
@@ -100,7 +110,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithImages_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' alt='test'/>" +
                      "</body></html>";
@@ -113,7 +123,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithFormElements_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<form><input type='text' value='Sample'/>" +
                      "<textarea>Text area content</textarea>" +
@@ -128,7 +138,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlWithSpecialCharacters_Success(@TempDir Path tempDir) throws Exception {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         String html = "<html><body>" +
                      "<p>Special: &lt; &gt; &amp; &quot; &apos;</p>" +
                      "<p>Unicode: 你好 世界 Ñoño</p>" +
@@ -142,7 +152,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertLargeHtml_Success(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         StringBuilder html = new StringBuilder("<html><body>");
         for (int i = 0; i < 100; i++) {
             html.append("<p>This is paragraph ").append(i).append("</p>");
@@ -157,7 +167,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlToPdfWithNullFileThrows(@TempDir Path tempDir) {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         File pdfFile = tempDir.resolve("nullfile.pdf").toFile();
         assertThrows(NullPointerException.class, () -> {
             service.convertHtmlToPdf(null, pdfFile);
@@ -166,7 +176,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlToPdfWithNullOutputFileThrows() {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         MockMultipartFile htmlFile = new MockMultipartFile("file", "test.html", MediaType.TEXT_HTML_VALUE, "<html></html>".getBytes());
         assertThrows(NullPointerException.class, () -> {
             service.convertHtmlToPdf(htmlFile, null);
@@ -175,7 +185,7 @@ class HtmlToPdfServiceTest {
 
     @Test
     void testConvertHtmlToPdfWithInvalidOutputPath() {
-        HtmlToPdfService service = new HtmlToPdfService();
+        HtmlToPdfService service = createService();
         MockMultipartFile htmlFile = new MockMultipartFile("file", "test.html", MediaType.TEXT_HTML_VALUE, "<html></html>".getBytes());
         // Use an invalid path (directory that doesn't exist and can't be created)
         File invalidFile = new File("/nonexistent/directory/that/cannot/be/created/test.pdf");

@@ -348,4 +348,146 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         
         return filtered.toString();
     }
+    
+    @Override
+    public void newPage(float width, float height) throws IOException {
+        if (contentStream != null) {
+            contentStream.close();
+        }
+        currentPage = new PDPage(new PDRectangle(width, height));
+        document.addPage(currentPage);
+        contentStream = new PDPageContentStream(document, currentPage);
+        currentY = height - DEFAULT_MARGIN;
+    }
+    
+    @Override
+    public void drawArc(float cx, float cy, float radius, float startAngle, float sweepAngle) throws IOException {
+        // Convert angles from degrees to radians
+        double startRad = Math.toRadians(startAngle);
+        double endRad = Math.toRadians(startAngle + sweepAngle);
+        
+        // Draw arc using Bezier curve approximation
+        int segments = Math.max(1, (int)(Math.abs(sweepAngle) / 90) * 4);
+        double angleStep = (endRad - startRad) / segments;
+        
+        float prevX = (float)(cx + radius * Math.cos(startRad));
+        float prevY = (float)(cy + radius * Math.sin(startRad));
+        
+        for (int i = 1; i <= segments; i++) {
+            double angle = startRad + i * angleStep;
+            float x = (float)(cx + radius * Math.cos(angle));
+            float y = (float)(cy + radius * Math.sin(angle));
+            contentStream.moveTo(prevX, prevY);
+            contentStream.lineTo(x, y);
+            contentStream.stroke();
+            prevX = x;
+            prevY = y;
+        }
+    }
+    
+    @Override
+    public void drawEllipse(float cx, float cy, float radiusX, float radiusY) throws IOException {
+        // Draw ellipse using Bezier curve approximation (4 segments)
+        float kappa = 0.5522848f; // Magic constant for Bezier circle approximation
+        float ox = radiusX * kappa; // Control point offset X
+        float oy = radiusY * kappa; // Control point offset Y
+        
+        // Starting point (right)
+        contentStream.moveTo(cx + radiusX, cy);
+        
+        // Top-right quadrant
+        contentStream.curveTo(
+            cx + radiusX, cy + oy,
+            cx + ox, cy + radiusY,
+            cx, cy + radiusY
+        );
+        
+        // Top-left quadrant
+        contentStream.curveTo(
+            cx - ox, cy + radiusY,
+            cx - radiusX, cy + oy,
+            cx - radiusX, cy
+        );
+        
+        // Bottom-left quadrant
+        contentStream.curveTo(
+            cx - radiusX, cy - oy,
+            cx - ox, cy - radiusY,
+            cx, cy - radiusY
+        );
+        
+        // Bottom-right quadrant
+        contentStream.curveTo(
+            cx + ox, cy - radiusY,
+            cx + radiusX, cy - oy,
+            cx + radiusX, cy
+        );
+        
+        contentStream.stroke();
+    }
+    
+    @Override
+    public void fillRectangle(float x, float y, float width, float height) throws IOException {
+        contentStream.addRect(x, y, width, height);
+        contentStream.fill();
+    }
+    
+    @Override
+    public void drawPolygon(float[] xPoints, float[] yPoints, int nPoints, boolean filled) throws IOException {
+        if (nPoints < 2) {
+            return;
+        }
+        
+        // Move to first point
+        contentStream.moveTo(xPoints[0], yPoints[0]);
+        
+        // Draw lines to remaining points
+        for (int i = 1; i < nPoints; i++) {
+            contentStream.lineTo(xPoints[i], yPoints[i]);
+        }
+        
+        // Close the path
+        contentStream.closePath();
+        
+        if (filled) {
+            contentStream.fillAndStroke();
+        } else {
+            contentStream.stroke();
+        }
+    }
+    
+    @Override
+    public void setStrokeColor(int r, int g, int b) throws IOException {
+        contentStream.setStrokingColor(r / 255f, g / 255f, b / 255f);
+    }
+    
+    @Override
+    public void setFillColor(int r, int g, int b) throws IOException {
+        contentStream.setNonStrokingColor(r / 255f, g / 255f, b / 255f);
+    }
+    
+    @Override
+    public void setLineWidth(float width) throws IOException {
+        contentStream.setLineWidth(width);
+    }
+    
+    @Override
+    public void setLineDash(float dashLength, float gapLength) throws IOException {
+        contentStream.setLineDashPattern(new float[]{dashLength, gapLength}, 0);
+    }
+    
+    @Override
+    public void resetLineDash() throws IOException {
+        contentStream.setLineDashPattern(new float[]{}, 0);
+    }
+    
+    @Override
+    public void saveState() throws IOException {
+        contentStream.saveGraphicsState();
+    }
+    
+    @Override
+    public void restoreState() throws IOException {
+        contentStream.restoreGraphicsState();
+    }
 }

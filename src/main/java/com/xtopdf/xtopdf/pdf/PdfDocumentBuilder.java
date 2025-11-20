@@ -16,6 +16,15 @@ import java.io.IOException;
 public interface PdfDocumentBuilder extends AutoCloseable {
     
     /**
+     * Creates a new page in the PDF document with specified dimensions.
+     * 
+     * @param width Page width in points
+     * @param height Page height in points
+     * @throws IOException if an I/O error occurs
+     */
+    void newPage(float width, float height) throws IOException;
+    
+    /**
      * Creates a new page in the PDF document.
      * The page size will be determined by the implementation (typically A4).
      */
@@ -79,6 +88,29 @@ public interface PdfDocumentBuilder extends AutoCloseable {
     void drawCircle(float cx, float cy, float radius) throws IOException;
     
     /**
+     * Draws an arc on the current page.
+     * 
+     * @param cx Center x-coordinate
+     * @param cy Center y-coordinate
+     * @param radius Arc radius
+     * @param startAngle Starting angle in degrees (0 = right, 90 = up)
+     * @param sweepAngle Sweep angle in degrees
+     * @throws IOException if an I/O error occurs
+     */
+    void drawArc(float cx, float cy, float radius, float startAngle, float sweepAngle) throws IOException;
+    
+    /**
+     * Draws an ellipse on the current page.
+     * 
+     * @param cx Center x-coordinate
+     * @param cy Center y-coordinate
+     * @param radiusX Horizontal radius
+     * @param radiusY Vertical radius
+     * @throws IOException if an I/O error occurs
+     */
+    void drawEllipse(float cx, float cy, float radiusX, float radiusY) throws IOException;
+    
+    /**
      * Draws a rectangle on the current page.
      * 
      * @param x Left x-coordinate
@@ -88,6 +120,86 @@ public interface PdfDocumentBuilder extends AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     void drawRectangle(float x, float y, float width, float height) throws IOException;
+    
+    /**
+     * Draws a filled rectangle on the current page.
+     * 
+     * @param x Left x-coordinate
+     * @param y Bottom y-coordinate
+     * @param width Rectangle width
+     * @param height Rectangle height
+     * @throws IOException if an I/O error occurs
+     */
+    void fillRectangle(float x, float y, float width, float height) throws IOException;
+    
+    /**
+     * Draws a polygon on the current page.
+     * 
+     * @param xPoints Array of x-coordinates
+     * @param yPoints Array of y-coordinates
+     * @param nPoints Number of points
+     * @param filled Whether to fill the polygon
+     * @throws IOException if an I/O error occurs
+     */
+    void drawPolygon(float[] xPoints, float[] yPoints, int nPoints, boolean filled) throws IOException;
+    
+    /**
+     * Sets the current stroke color.
+     * 
+     * @param r Red component (0-255)
+     * @param g Green component (0-255)
+     * @param b Blue component (0-255)
+     * @throws IOException if an I/O error occurs
+     */
+    void setStrokeColor(int r, int g, int b) throws IOException;
+    
+    /**
+     * Sets the current fill color.
+     * 
+     * @param r Red component (0-255)
+     * @param g Green component (0-255)
+     * @param b Blue component (0-255)
+     * @throws IOException if an I/O error occurs
+     */
+    void setFillColor(int r, int g, int b) throws IOException;
+    
+    /**
+     * Sets the line width for drawing operations.
+     * 
+     * @param width Line width in points
+     * @throws IOException if an I/O error occurs
+     */
+    void setLineWidth(float width) throws IOException;
+    
+    /**
+     * Sets the line dash pattern.
+     * 
+     * @param dashLength Length of dashes
+     * @param gapLength Length of gaps
+     * @throws IOException if an I/O error occurs
+     */
+    void setLineDash(float dashLength, float gapLength) throws IOException;
+    
+    /**
+     * Resets the line dash pattern to solid.
+     * 
+     * @throws IOException if an I/O error occurs
+     */
+    void resetLineDash() throws IOException;
+    
+    /**
+     * Saves the current graphics state (colors, line width, etc.).
+     * 
+     * @throws IOException if an I/O error occurs
+     */
+    void saveState() throws IOException;
+    
+    /**
+     * Restores the previously saved graphics state.
+     * 
+     * @throws IOException if an I/O error occurs
+     */
+    void restoreState() throws IOException;
     
     /**
      * Saves the PDF document to the specified file.

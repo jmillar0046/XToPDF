@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,6 +18,7 @@ class SvgToPdfServiceTest {
     @BeforeEach
     void setUp() {
         svgToPdfService = new SvgToPdfService();
+        svgToPdfService.pdfBackend = new PdfBoxBackend();
     }
 
     @Test
