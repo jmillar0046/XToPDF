@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
@@ -23,51 +22,53 @@ import java.util.*;
 @Service
 public class X3dToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public X3dToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertX3dToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
             // Parse X3D file
             X3dFileData x3dData = parseX3dFile(inputFile);
             
             // Add title
-            document.add(new Paragraph("X3D Scene Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
+            builder.addParagraph("X3D Scene Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: X3D (Extensible 3D)").setFontSize(12));
-            document.add(new Paragraph("Version: " + x3dData.version).setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + inputFile.getOriginalFilename());
+            builder.addParagraph("Format: X3D (Extensible 3D)");
+            builder.addParagraph("Version: " + x3dData.version);
+            builder.addParagraph("");
             
             // Add scene statistics
-            document.add(new Paragraph("Scene Statistics:").setFontSize(14));
-            document.add(new Paragraph("Total Nodes: " + x3dData.totalNodes).setFontSize(12));
-            document.add(new Paragraph("Shapes: " + x3dData.shapeCount).setFontSize(12));
-            document.add(new Paragraph("Transforms: " + x3dData.transformCount).setFontSize(12));
-            document.add(new Paragraph("Materials: " + x3dData.materialCount).setFontSize(12));
-            document.add(new Paragraph("Geometries: " + x3dData.geometryCount).setFontSize(12));
+            builder.addParagraph("Scene Statistics:");
+            builder.addParagraph("Total Nodes: " + x3dData.totalNodes);
+            builder.addParagraph("Shapes: " + x3dData.shapeCount);
+            builder.addParagraph("Transforms: " + x3dData.transformCount);
+            builder.addParagraph("Materials: " + x3dData.materialCount);
+            builder.addParagraph("Geometries: " + x3dData.geometryCount);
             
             if (!x3dData.nodeTypes.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Node Types Found:").setFontSize(12));
+                builder.addParagraph("");
+                builder.addParagraph("Node Types Found:");
                 List<Map.Entry<String, Integer>> sortedEntries = new ArrayList<>(x3dData.nodeTypes.entrySet());
                 sortedEntries.sort((a, b) -> b.getValue().compareTo(a.getValue()));
                 for (int i = 0; i < Math.min(15, sortedEntries.size()); i++) {
                     Map.Entry<String, Integer> entry = sortedEntries.get(i);
-                    document.add(new Paragraph("  • " + entry.getKey() + ": " + entry.getValue()).setFontSize(10));
+                    builder.addParagraph("  • " + entry.getKey() + ": " + entry.getValue());
                 }
                 if (sortedEntries.size() > 15) {
-                    document.add(new Paragraph("  ... and " + (sortedEntries.size() - 15) + " more types").setFontSize(10));
+                    builder.addParagraph("  ... and " + (sortedEntries.size() - 15) + " more types");
                 }
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains scene statistics. For full 3D visualization, use X3D viewers or convert to other 3D formats.").setFontSize(10));
+            builder.addParagraph("");
+            builder.addParagraph("Note: This PDF contains scene statistics. For full 3D visualization, use X3D viewers or convert to other 3D formats.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting X3D to PDF: " + e.getMessage(), e);
         }

@@ -18,7 +18,7 @@ class DxfToPdfServiceSecurityTest {
 
     @BeforeEach
     void setUp() {
-        dxfToPdfService = new DxfToPdfService();
+        dxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
     }
 
     @Test

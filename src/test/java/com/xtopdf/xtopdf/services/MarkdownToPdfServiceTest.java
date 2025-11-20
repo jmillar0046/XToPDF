@@ -14,12 +14,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MarkdownToPdfServiceTest {
 
     private MarkdownToPdfService markdownToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     private File pdfFile;
 
     @BeforeEach
     void setUp() {
-        markdownToPdfService = new MarkdownToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        markdownToPdfService = new MarkdownToPdfService(pdfBackend);
     }
 
     @Test

@@ -14,13 +14,15 @@ class IgsToPdfServiceTest {
 
     private IgsToPdfService igsToPdfService;
     private IgesToPdfService igesToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        igesToPdfService = new IgesToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        igesToPdfService = new IgesToPdfService(pdfBackend);
         igsToPdfService = new IgsToPdfService(igesToPdfService);
     }
 

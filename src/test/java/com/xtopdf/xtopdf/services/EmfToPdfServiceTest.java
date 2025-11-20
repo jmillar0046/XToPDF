@@ -17,13 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class EmfToPdfServiceTest {
 
     private EmfToPdfService emfToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        emfToPdfService = new EmfToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        emfToPdfService = new EmfToPdfService(pdfBackend);
     }
 
     @Test

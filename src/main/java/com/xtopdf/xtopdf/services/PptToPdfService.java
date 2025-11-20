@@ -1,66 +1,60 @@
 package com.xtopdf.xtopdf.services;
 
-import java.io.File;
-import java.io.IOException;
-
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
-import lombok.extern.slf4j.Slf4j;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.hslf.usermodel.HSLFTextParagraph;
 import org.apache.poi.hslf.usermodel.HSLFTextShape;
-import org.apache.poi.sl.usermodel.Shape;
+import org.apache.poi.hslf.usermodel.HSLFShape;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
 @Service
-@Slf4j
 public class PptToPdfService {
+    
+    private final PdfBackendProvider pdfBackend;
+    
+    public PptToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertPptToPdf(MultipartFile pptFile, File pdfFile) throws IOException {
-        try (var fis = pptFile.getInputStream();
-             HSLFSlideShow pptShow = new HSLFSlideShow(fis);
-             PdfWriter writer = new PdfWriter(pdfFile)) {
+        if (pptFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+        
+        try (var inputStream = pptFile.getInputStream();
+             HSLFSlideShow pptDocument = new HSLFSlideShow(inputStream);
+             PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document pdfDoc = new Document(pdfDocument);
-            
-            // Process each slide
-            for (HSLFSlide slide : pptShow.getSlides()) {
-                // Add slide title
-                String title = slide.getTitle();
-                if (title != null && !title.isEmpty()) {
-                    Paragraph titlePara = new Paragraph(title);
-                    try {
-                        titlePara.setFont(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                            com.itextpdf.io.font.constants.StandardFonts.HELVETICA_BOLD));
-                        titlePara.setFontSize(14);
-                    } catch (Exception e) {
-                        log.warn("Could not set font for title", e);
-                    }
-                    pdfDoc.add(titlePara);
-                }
+            int slideNumber = 1;
+            for (HSLFSlide slide : pptDocument.getSlides()) {
+                builder.addParagraph("Slide " + slideNumber + "\n");
                 
-                // Extract text from shapes
-                for (Shape<?,?> shape : slide.getShapes()) {
+                for (HSLFShape shape : slide.getShapes()) {
                     if (shape instanceof HSLFTextShape) {
                         HSLFTextShape textShape = (HSLFTextShape) shape;
                         String text = textShape.getText();
-                        if (text != null && !text.isEmpty()) {
-                            pdfDoc.add(new Paragraph(text));
+                        if (text != null && !text.trim().isEmpty()) {
+                            builder.addParagraph(text);
                         }
                     }
                 }
                 
-                // Add spacing between slides
-                pdfDoc.add(new Paragraph("\n"));
+                builder.addParagraph("\n");
+                slideNumber++;
             }
             
-            pdfDoc.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
-            log.error("Error processing PPT file: {}", e.getMessage(), e);
             throw new IOException("Error processing PPT file: " + e.getMessage(), e);
         }
     }

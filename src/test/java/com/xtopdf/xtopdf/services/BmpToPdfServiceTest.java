@@ -19,7 +19,7 @@ class BmpToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        bmpToPdfService = new BmpToPdfService();
+        bmpToPdfService = new BmpToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
     }
 
     private byte[] createSimpleBMP(int width, int height, Color color) throws IOException {

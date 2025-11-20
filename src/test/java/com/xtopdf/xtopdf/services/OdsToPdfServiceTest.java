@@ -15,10 +15,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class OdsToPdfServiceTest {
 
     private OdsToPdfService odsToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @BeforeEach
     void setUp() {
-        odsToPdfService = new OdsToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        odsToPdfService = new OdsToPdfService(pdfBackend);
     }
 
     @Test

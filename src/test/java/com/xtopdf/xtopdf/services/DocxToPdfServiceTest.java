@@ -1,7 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
 
-import com.itextpdf.io.source.ByteArrayOutputStream;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -18,10 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DocxToPdfServiceTest {
     private DocxToPdfService docxToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @BeforeEach
     void setUp() {
-        docxToPdfService = new DocxToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        docxToPdfService = new DocxToPdfService(pdfBackend);
     }
 
     @Test

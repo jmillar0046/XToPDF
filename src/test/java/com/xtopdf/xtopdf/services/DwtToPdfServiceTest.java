@@ -21,7 +21,7 @@ class DwtToPdfServiceTest {
     @BeforeEach
     void setUp() {
         DwgToDxfService dwgToDxfService = new DwgToDxfService();
-        DxfToPdfService dxfToPdfService = new DxfToPdfService();
+        DxfToPdfService dxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
         dwgToPdfService = new DwgToPdfService(dwgToDxfService, dxfToPdfService);
         dwtToPdfService = new DwtToPdfService(dwgToPdfService);
     }

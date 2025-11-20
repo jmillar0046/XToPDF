@@ -1,18 +1,16 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.layout.Canvas;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.properties.TextAlignment;
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.enums.PageNumberAlignment;
 import com.xtopdf.xtopdf.enums.PageNumberPosition;
 import com.xtopdf.xtopdf.enums.PageNumberStyle;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -23,7 +21,7 @@ import java.io.IOException;
 public class PageNumberService {
     
     private static final float MARGIN = 36; // 0.5 inch margin
-    private static final float PAGE_NUMBER_HEIGHT = 20;
+    private static final float DEFAULT_FONT_SIZE = 12;
     
     public void addPageNumbers(File pdfFile, PageNumberConfig config) throws IOException {
         if (!config.isEnabled()) {
@@ -33,61 +31,55 @@ public class PageNumberService {
         // Create a temporary file for the modified PDF
         File tempFile = File.createTempFile("temp_", ".pdf");
         
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile), new PdfWriter(tempFile))) {
-            int numberOfPages = pdfDoc.getNumberOfPages();
+        try (PDDocument document = Loader.loadPDF(pdfFile)) {
+            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            int pageNum = 1;
+            int totalPages = document.getNumberOfPages();
             
-            for (int i = 1; i <= numberOfPages; i++) {
-                var page = pdfDoc.getPage(i);
-                Rectangle pageSize = page.getPageSize();
+            for (PDPage page : document.getPages()) {
+                float pageWidth = page.getMediaBox().getWidth();
+                float pageHeight = page.getMediaBox().getHeight();
                 
                 // Determine position
                 float yPosition;
                 if (config.getPosition() == PageNumberPosition.TOP) {
-                    yPosition = pageSize.getTop() - MARGIN;
+                    yPosition = pageHeight - MARGIN;
                 } else {
                     yPosition = MARGIN;
                 }
                 
-                // Create canvas for the page
-                PdfCanvas pdfCanvas = new PdfCanvas(page);
-                Canvas canvas = new Canvas(pdfCanvas, pageSize);
+                // Format page number based on style
+                String pageNumberText = formatPageNumber(pageNum, config.getStyle());
                 
-                // Create paragraph with page number
-                String pageNumber = formatPageNumber(i, config.getStyle());
-                Paragraph paragraph = new Paragraph(pageNumber);
+                // Calculate x position based on alignment
+                float textWidth = font.getStringWidth(pageNumberText) / 1000 * DEFAULT_FONT_SIZE;
+                float xPosition = switch (config.getAlignment()) {
+                    case LEFT -> MARGIN;
+                    case RIGHT -> pageWidth - MARGIN - textWidth;
+                    case CENTER -> (pageWidth - textWidth) / 2;
+                };
                 
-                // Set alignment
-                TextAlignment textAlignment = getTextAlignment(config.getAlignment());
-                paragraph.setTextAlignment(textAlignment);
-                
-                // Calculate x position and width based on alignment
-                float xPosition;
-                float width = pageSize.getWidth() - (2 * MARGIN);
-                
-                if (config.getAlignment() == PageNumberAlignment.LEFT) {
-                    xPosition = MARGIN;
-                } else if (config.getAlignment() == PageNumberAlignment.RIGHT) {
-                    xPosition = pageSize.getWidth() - MARGIN;
-                } else { // CENTER
-                    xPosition = MARGIN;
+                try (PDPageContentStream contentStream = new PDPageContentStream(
+                        document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+                    
+                    // Draw page number
+                    contentStream.beginText();
+                    contentStream.setFont(font, DEFAULT_FONT_SIZE);
+                    contentStream.newLineAtOffset(xPosition, yPosition);
+                    contentStream.showText(pageNumberText);
+                    contentStream.endText();
                 }
                 
-                // Position the paragraph
-                if (config.getPosition() == PageNumberPosition.TOP) {
-                    paragraph.setFixedPosition(xPosition, yPosition - PAGE_NUMBER_HEIGHT, width);
-                } else {
-                    paragraph.setFixedPosition(xPosition, yPosition, width);
-                }
-                
-                canvas.add(paragraph);
-                canvas.close();
+                pageNum++;
             }
+            
+            document.save(tempFile);
         }
         
         // Replace original file with the modified one
         if (pdfFile.delete()) {
             if (!tempFile.renameTo(pdfFile)) {
-                throw new IOException("Failed to replace original PDF with numbered version");
+                throw new IOException("Failed to replace original PDF with page numbers");
             }
         } else {
             tempFile.delete();
@@ -95,19 +87,19 @@ public class PageNumberService {
         }
     }
     
-    private String formatPageNumber(int pageNumber, PageNumberStyle style) {
+    private String formatPageNumber(int pageNum, PageNumberStyle style) {
         return switch (style) {
-            case ARABIC -> String.valueOf(pageNumber);
-            case ROMAN_UPPER -> toRomanNumeral(pageNumber).toUpperCase();
-            case ROMAN_LOWER -> toRomanNumeral(pageNumber).toLowerCase();
-            case ALPHABETIC_UPPER -> toAlphabetic(pageNumber).toUpperCase();
-            case ALPHABETIC_LOWER -> toAlphabetic(pageNumber).toLowerCase();
+            case ARABIC -> String.valueOf(pageNum);
+            case ROMAN_UPPER -> toRomanNumeral(pageNum, true);
+            case ROMAN_LOWER -> toRomanNumeral(pageNum, false);
+            case ALPHABETIC_UPPER -> toAlphabetic(pageNum, true);
+            case ALPHABETIC_LOWER -> toAlphabetic(pageNum, false);
         };
     }
     
-    private String toRomanNumeral(int number) {
-        if (number < 1 || number > 3999) {
-            return String.valueOf(number); // Fallback for out of range
+    private String toRomanNumeral(int num, boolean uppercase) {
+        if (num <= 0 || num > 3999) {
+            return String.valueOf(num); // Fallback for out-of-range values
         }
         
         String[] thousands = {"", "M", "MM", "MMM"};
@@ -115,33 +107,27 @@ public class PageNumberService {
         String[] tens = {"", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"};
         String[] ones = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"};
         
-        return thousands[number / 1000] +
-               hundreds[(number % 1000) / 100] +
-               tens[(number % 100) / 10] +
-               ones[number % 10];
+        String roman = thousands[num / 1000] + hundreds[(num % 1000) / 100] +
+                      tens[(num % 100) / 10] + ones[num % 10];
+        
+        return uppercase ? roman : roman.toLowerCase();
     }
     
-    private String toAlphabetic(int number) {
-        if (number < 1) {
-            return String.valueOf(number);
+    private String toAlphabetic(int num, boolean uppercase) {
+        if (num <= 0) {
+            return String.valueOf(num); // Fallback
         }
         
         StringBuilder result = new StringBuilder();
-        int n = number - 1; // Convert to 0-based index
+        int current = num;
         
-        while (n >= 0) {
-            result.insert(0, (char) ('a' + (n % 26)));
-            n = (n / 26) - 1;
+        while (current > 0) {
+            current--; // Adjust for 0-based indexing
+            char letter = (char) ((current % 26) + (uppercase ? 'A' : 'a'));
+            result.insert(0, letter);
+            current /= 26;
         }
         
         return result.toString();
-    }
-    
-    private TextAlignment getTextAlignment(PageNumberAlignment alignment) {
-        return switch (alignment) {
-            case LEFT -> TextAlignment.LEFT;
-            case CENTER -> TextAlignment.CENTER;
-            case RIGHT -> TextAlignment.RIGHT;
-        };
     }
 }

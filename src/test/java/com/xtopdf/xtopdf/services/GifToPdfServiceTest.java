@@ -16,7 +16,7 @@ class GifToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        gifToPdfService = new GifToPdfService();
+        gifToPdfService = new GifToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
     }
 
     @Test

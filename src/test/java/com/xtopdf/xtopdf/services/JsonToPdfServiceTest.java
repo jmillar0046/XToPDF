@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +18,8 @@ class JsonToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        jsonToPdfService = new JsonToPdfService();
+        // Use PDFBox backend for testing
+        jsonToPdfService = new JsonToPdfService(new PdfBoxBackend());
     }
 
     @Test

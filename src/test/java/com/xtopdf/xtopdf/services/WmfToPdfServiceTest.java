@@ -17,13 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class WmfToPdfServiceTest {
 
     private WmfToPdfService wmfToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
     
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        wmfToPdfService = new WmfToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        wmfToPdfService = new WmfToPdfService(pdfBackend);
     }
 
     @Test

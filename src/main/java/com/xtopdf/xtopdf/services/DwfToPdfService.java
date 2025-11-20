@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,46 +19,46 @@ import java.util.zip.ZipInputStream;
 @Service
 public class DwfToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    @Autowired
+    public DwfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertDwfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
-            // Parse DWF file
-            DwfFileData dwfData = parseDwfFile(inputFile);
-            
+        // Parse DWF file
+        DwfFileData dwfData = parseDwfFile(inputFile);
+        
+        // Create PDF using abstraction layer
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Add title
-            document.add(new Paragraph("DWF Package Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
+            builder.addParagraph("DWF Package Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: DWF (Design Web Format)").setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + inputFile.getOriginalFilename() + "\n");
+            builder.addParagraph("Format: DWF (Design Web Format)\n\n");
             
             // Add package statistics
-            document.add(new Paragraph("Package Statistics:").setFontSize(14));
-            document.add(new Paragraph("Total Files: " + dwfData.totalFiles).setFontSize(12));
-            document.add(new Paragraph("Sections: " + dwfData.sections.size()).setFontSize(12));
+            builder.addParagraph("Package Statistics:\n");
+            builder.addParagraph("Total Files: " + dwfData.totalFiles + "\n");
+            builder.addParagraph("Sections: " + dwfData.sections.size() + "\n\n");
             
             if (!dwfData.sections.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Package Contents:").setFontSize(12));
+                builder.addParagraph("Package Contents:\n");
                 for (String section : dwfData.sections) {
-                    document.add(new Paragraph("  • " + section).setFontSize(10));
+                    builder.addParagraph("  • " + section + "\n");
                 }
+                builder.addParagraph("\n");
             }
             
             if (dwfData.hasDescriptor) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Contains descriptor file with drawing metadata").setFontSize(10));
+                builder.addParagraph("Contains descriptor file with drawing metadata\n\n");
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains package statistics. For full viewing, use Autodesk Design Review or convert using specialized DWF tools.").setFontSize(10));
+            builder.addParagraph("Note: This PDF contains package statistics. For full viewing, use Autodesk Design Review or convert using specialized DWF tools.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting DWF to PDF: " + e.getMessage(), e);
         }

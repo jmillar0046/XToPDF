@@ -1,25 +1,30 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.UnitValue;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service for converting CSV files to PDF.
+ * Uses the PDF backend abstraction layer with Apache PDFBox.
+ */
 @Service
 public class CsvToPdfService {
+    
+    private final PdfBackendProvider pdfBackend;
+    
+    public CsvToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertCsvToPdf(MultipartFile csvFile, File pdfFile) throws IOException {
         // Read CSV content
         List<String[]> rows = new ArrayList<>();
@@ -38,24 +43,19 @@ public class CsvToPdfService {
             throw new IOException("CSV file is empty");
         }
 
-        // Create PDF document
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
-            // Create table with appropriate number of columns
-            Table table = new Table(UnitValue.createPercentArray(maxColumns)).useAllAvailableWidth();
-            
-            // Add rows to table
-            for (String[] row : rows) {
-                for (int i = 0; i < maxColumns; i++) {
-                    String cellValue = i < row.length ? row[i] : "";
-                    table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(cellValue)));
-                }
+        // Normalize rows to have same number of columns
+        String[][] tableData = new String[rows.size()][maxColumns];
+        for (int i = 0; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            for (int j = 0; j < maxColumns; j++) {
+                tableData[i][j] = j < row.length ? row[j] : "";
             }
-            
-            document.add(table);
-            document.close();
+        }
+
+        // Create PDF using abstraction layer (PDFBox backend)
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
+            builder.addTable(tableData);
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error creating PDF from CSV: " + e.getMessage(), e);
         }

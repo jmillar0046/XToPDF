@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Element;
@@ -24,48 +23,50 @@ import java.util.zip.ZipInputStream;
 @Service
 public class ThreeMfToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    public ThreeMfToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convert3mfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             
             // Parse 3MF file
             ThreeMfFileData mfData = parse3mfFile(inputFile);
             
             // Add title
-            document.add(new Paragraph("3MF Model Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
+            builder.addParagraph("3MF Model Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: 3MF (3D Manufacturing Format)").setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + inputFile.getOriginalFilename());
+            builder.addParagraph("Format: 3MF (3D Manufacturing Format)");
+            builder.addParagraph("");
             
             // Add model statistics
-            document.add(new Paragraph("Model Statistics:").setFontSize(14));
-            document.add(new Paragraph("Objects: " + mfData.objectCount).setFontSize(12));
-            document.add(new Paragraph("Meshes: " + mfData.meshCount).setFontSize(12));
-            document.add(new Paragraph("Total Vertices: " + mfData.vertexCount).setFontSize(12));
-            document.add(new Paragraph("Total Triangles: " + mfData.triangleCount).setFontSize(12));
+            builder.addParagraph("Model Statistics:");
+            builder.addParagraph("Objects: " + mfData.objectCount);
+            builder.addParagraph("Meshes: " + mfData.meshCount);
+            builder.addParagraph("Total Vertices: " + mfData.vertexCount);
+            builder.addParagraph("Total Triangles: " + mfData.triangleCount);
             
             if (!mfData.components.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Components: " + mfData.components.size()).setFontSize(12));
+                builder.addParagraph("");
+                builder.addParagraph("Components: " + mfData.components.size());
             }
             
             if (!mfData.files.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Package Contents:").setFontSize(12));
+                builder.addParagraph("");
+                builder.addParagraph("Package Contents:");
                 for (String fileName : mfData.files) {
-                    document.add(new Paragraph("  • " + fileName).setFontSize(10));
+                    builder.addParagraph("  • " + fileName);
                 }
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains model statistics. For 3D printing or visualization, use 3MF-compatible software like 3D Builder or slicing software.").setFontSize(10));
+            builder.addParagraph("");
+            builder.addParagraph("Note: This PDF contains model statistics. For 3D printing or visualization, use 3MF-compatible software like 3D Builder or slicing software.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting 3MF to PDF: " + e.getMessage(), e);
         }

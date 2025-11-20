@@ -1,9 +1,8 @@
 package com.xtopdf.xtopdf.services;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,47 +17,48 @@ import java.util.*;
 @Service
 public class PltToPdfService {
     
+    private final PdfBackendProvider pdfBackend;
+    
+    @Autowired
+    public PltToPdfService(PdfBackendProvider pdfBackend) {
+        this.pdfBackend = pdfBackend;
+    }
+    
     public void convertPltToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
-            PdfDocument pdfDocument = new PdfDocument(writer);
-            Document document = new Document(pdfDocument);
-            
-            // Parse PLT/HPGL file
-            HpglFileData hpglData = parseHpglFile(inputFile);
-            
+        // Parse PLT/HPGL file
+        HpglFileData hpglData = parseHpglFile(inputFile);
+        
+        // Create PDF using abstraction layer
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Add title
-            document.add(new Paragraph("HPGL/PLT Drawing Analysis")
-                .setFontSize(18)
-                .setMarginBottom(10));
+            builder.addParagraph("HPGL/PLT Drawing Analysis\n\n");
             
             // Add file information
-            document.add(new Paragraph("File: " + inputFile.getOriginalFilename()).setFontSize(12));
-            document.add(new Paragraph("Format: HPGL/PLT (Plotter Language)").setFontSize(12));
-            document.add(new Paragraph(""));
+            builder.addParagraph("File: " + inputFile.getOriginalFilename() + "\n");
+            builder.addParagraph("Format: HPGL/PLT (Plotter Language)\n\n");
             
             // Add drawing statistics
-            document.add(new Paragraph("Drawing Statistics:").setFontSize(14));
-            document.add(new Paragraph("Total Commands: " + hpglData.totalCommands).setFontSize(12));
-            document.add(new Paragraph("Pen Movements: " + hpglData.penMovements).setFontSize(12));
-            document.add(new Paragraph("Draw Commands: " + hpglData.drawCommands).setFontSize(12));
-            document.add(new Paragraph("Label Commands: " + hpglData.labelCommands).setFontSize(12));
-            document.add(new Paragraph("Pen Selects: " + hpglData.penSelects).setFontSize(12));
+            builder.addParagraph("Drawing Statistics:\n");
+            builder.addParagraph("Total Commands: " + hpglData.totalCommands + "\n");
+            builder.addParagraph("Pen Movements: " + hpglData.penMovements + "\n");
+            builder.addParagraph("Draw Commands: " + hpglData.drawCommands + "\n");
+            builder.addParagraph("Label Commands: " + hpglData.labelCommands + "\n");
+            builder.addParagraph("Pen Selects: " + hpglData.penSelects + "\n\n");
             
             if (!hpglData.commandTypes.isEmpty()) {
-                document.add(new Paragraph(""));
-                document.add(new Paragraph("Command Types:").setFontSize(12));
+                builder.addParagraph("Command Types:\n");
                 List<Map.Entry<String, Integer>> sortedCommands = new ArrayList<>(hpglData.commandTypes.entrySet());
                 sortedCommands.sort((a, b) -> b.getValue().compareTo(a.getValue()));
                 for (int i = 0; i < Math.min(10, sortedCommands.size()); i++) {
                     Map.Entry<String, Integer> entry = sortedCommands.get(i);
-                    document.add(new Paragraph("  • " + entry.getKey() + ": " + entry.getValue()).setFontSize(10));
+                    builder.addParagraph("  • " + entry.getKey() + ": " + entry.getValue() + "\n");
                 }
+                builder.addParagraph("\n");
             }
             
-            document.add(new Paragraph(""));
-            document.add(new Paragraph("Note: This PDF contains command statistics. For visual rendering, use HPGL viewers like ViewCompanion or convert to PDF through specialized tools.").setFontSize(10));
+            builder.addParagraph("Note: This PDF contains command statistics. For visual rendering, use HPGL viewers like ViewCompanion or convert to PDF through specialized tools.");
             
-            document.close();
+            builder.save(pdfFile);
         } catch (Exception e) {
             throw new IOException("Error converting PLT to PDF: " + e.getMessage(), e);
         }

@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +18,8 @@ class CsvToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        csvToPdfService = new CsvToPdfService();
+        // Use PDFBox backend for testing
+        csvToPdfService = new CsvToPdfService(new PdfBoxBackend());
     }
 
     @Test

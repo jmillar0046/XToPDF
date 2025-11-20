@@ -14,13 +14,15 @@ class StpToPdfServiceTest {
 
     private StpToPdfService stpToPdfService;
     private StepToPdfService stepToPdfService;
+    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        stepToPdfService = new StepToPdfService();
+        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+        stepToPdfService = new StepToPdfService(pdfBackend);
         stpToPdfService = new StpToPdfService(stepToPdfService);
     }
 
