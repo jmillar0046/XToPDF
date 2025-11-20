@@ -348,10 +348,10 @@ public class DxfToPdfService {
                 renderer.fill();
                 
                 // Draw text
-                
-                // Text positioning: offsetX + leader.getTextX() * scale, offsetY + leader.getTextY() * scale);
-                // Text content: leader.getText());
-                
+                double textX = offsetX + leader.getTextX() * scale;
+                double textY = offsetY + leader.getTextY() * scale;
+                String leaderText = leader.getText();
+                renderer.showTextAligned(leaderText, textX, textY, 0); // 0 for default alignment
             }
             
         } else if (entity instanceof ToleranceEntity) {
