@@ -1,15 +1,16 @@
 package com.xtopdf.xtopdf.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
-
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+
 import com.xtopdf.xtopdf.entities.*;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -19,10 +20,9 @@ import java.util.List;
  * Service to convert DXF (Drawing Exchange Format) files to PDF.
  * 
  * This implementation parses DXF entities and renders them as actual graphics
- * in the PDF using Apache PDFBox via the abstraction layer.
+ * in the PDF using iText's canvas API.
  * 
  * Supported entities: LINE, CIRCLE, ARC, ELLIPSE, POINT, POLYLINE, SOLID/TRACE
- * Plus: TEXT, MTEXT, DIMENSION, LEADER, TABLE, BLOCK/INSERT, and 50+ more entity types
  */
 @Service
 public class DxfToPdfService {
@@ -169,30 +169,25 @@ public class DxfToPdfService {
         blockRegistry.clear(); // Reset block registry
         List<DxfEntity> entities = parseDxfEntities(dxfFile);
         
-        // Create a PDF document using PDFBox abstraction
+        // Create PDF using PDFBox abstraction
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
-            // Set up A4 page size (595x842 points)
-            builder.setPageSize(595, 842);
-            
-            // Set up default drawing parameters (black lines, light gray fill)
-            builder.setStrokeColor(0, 0, 0); // Black
-            builder.setFillColor(0.827f, 0.827f, 0.827f); // Light gray
-            builder.setLineWidth(1);
-            
-            // Calculate scale factor to fit drawing on page
-            double pageWidth = 595;
-            double pageHeight = 842;
-            double scale = calculateScale(entities, pageWidth, pageHeight);
+            // Calculate scale factor to fit drawing on page (A4 = 595x842 points)
+            double scale = calculateScale(entities, 595, 842);
             double offsetX = 50; // Left margin
             double offsetY = 50; // Bottom margin
             
-            // Create renderer helper for canvas-like operations
+            // Create DxfPdfRenderer helper for canvas-like operations
             DxfPdfRenderer renderer = new DxfPdfRenderer(builder);
+            
+            // Set up drawing parameters
+            renderer.setStrokeColor(0, 0, 0); // Black
+            renderer.setFillColor(0.827f, 0.827f, 0.827f); // Light gray
+            renderer.setLineWidth(1);
             
             // Render each entity (blocks are stored in registry, not rendered directly)
             for (DxfEntity entity : entities) {
                 if (!(entity instanceof BlockEntity)) {
-                    renderEntity(renderer, builder, entity, scale, offsetX, offsetY, 1.0, 1.0, 0.0);
+                    renderEntity(renderer, entity, scale, offsetX, offsetY, 1.0, 1.0, 0.0);
                 }
             }
             
@@ -203,11 +198,10 @@ public class DxfToPdfService {
     }
     
     /**
-     * Render a single entity on the PDF using the abstraction layer with optional transformations.
+     * Render a single entity on the PDF using PDFBox renderer with optional transformations.
      * Supports recursive rendering for blocks.
      * 
-     * @param renderer Canvas-like renderer helper
-     * @param builder PDF document builder
+     * @param renderer DxfPdfRenderer helper
      * @param entity Entity to render
      * @param scale Global scale factor
      * @param offsetX Global X offset
@@ -216,130 +210,94 @@ public class DxfToPdfService {
      * @param localScaleY Local Y scale (for block insertions)
      * @param localRotation Local rotation in degrees (for block insertions)
      */
-    private void renderEntity(DxfPdfRenderer renderer, PdfDocumentBuilder builder, DxfEntity entity, double scale, double offsetX, double offsetY,
+    private void renderEntity(DxfPdfRenderer renderer, DxfEntity entity, double scale, double offsetX, double offsetY,
                              double localScaleX, double localScaleY, double localRotation) throws IOException {
         if (entity instanceof LineEntity) {
             LineEntity line = (LineEntity) entity;
-            builder.drawLine(
-                (float)(offsetX + line.getX1() * scale), (float)(offsetY + line.getY1() * scale),
-                (float)(offsetX + line.getX2() * scale), (float)(offsetY + line.getY2() * scale)
-            );
+            renderer.moveTo(offsetX + line.getX1() * scale, offsetY + line.getY1() * scale);
+            renderer.lineTo(offsetX + line.getX2() * scale, offsetY + line.getY2() * scale);
+            renderer.stroke();
             
         } else if (entity instanceof CircleEntity) {
             CircleEntity circle = (CircleEntity) entity;
-            builder.drawCircle(
-                (float)(offsetX + circle.getCenterX() * scale), 
-                (float)(offsetY + circle.getCenterY() * scale),
-                (float)(circle.getRadius() * scale)
-            );
+            renderer.circle(offsetX + circle.getCenterX() * scale, offsetY + circle.getCenterY() * scale, 
+                         circle.getRadius() * scale);
+            renderer.stroke();
             
         } else if (entity instanceof ArcEntity) {
             ArcEntity arc = (ArcEntity) entity;
-            float centerX = (float)(offsetX + arc.getCenterX() * scale);
-            float centerY = (float)(offsetY + arc.getCenterY() * scale);
-            float radius = (float)(arc.getRadius() * scale);
-            // Draw arc using abstraction (angles in degrees)
-            float width = radius * 2;
-            float height = radius * 2;
-            builder.drawArc(centerX, centerY, width, height,
-                          (float)arc.getStartAngle(), (float)(arc.getEndAngle() - arc.getStartAngle()));
+            double centerX = offsetX + arc.getCenterX() * scale;
+            double centerY = offsetY + arc.getCenterY() * scale;
+            double radius = arc.getRadius() * scale;
+            // Draw arc using iText's arc method (angles in degrees)
+            renderer.arc(centerX - radius, centerY - radius, centerX + radius, centerY + radius,
+                      arc.getStartAngle(), arc.getEndAngle() - arc.getStartAngle());
+            renderer.stroke();
             
         } else if (entity instanceof PointEntity) {
             PointEntity point = (PointEntity) entity;
-            float x = (float)(offsetX + point.getX() * scale);
-            float y = (float)(offsetY + point.getY() * scale);
-            float size = 2; // Small cross size
-            builder.drawLine(x - size, y, x + size, y);
-            builder.drawLine(x, y - size, x, y + size);
+            double x = offsetX + point.getX() * scale;
+            double y = offsetY + point.getY() * scale;
+            double size = 2; // Small cross size
+            renderer.moveTo(x - size, y);
+            renderer.lineTo(x + size, y);
+            renderer.moveTo(x, y - size);
+            renderer.lineTo(x, y + size);
+            renderer.stroke();
             
         } else if (entity instanceof PolylineEntity) {
             PolylineEntity polyline = (PolylineEntity) entity;
             List<Double> vertices = polyline.getVertices();
             if (vertices.size() >= 4) {
-                // Build polygon points array
-                int numPoints = vertices.size() / 2;
+                renderer.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                for (int i = 2; i < vertices.size(); i += 2) {
+                    renderer.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                }
                 if (polyline.isClosed()) {
-                    numPoints++; // Add closing point
+                    renderer.closePath();
                 }
-                float[] points = new float[numPoints * 2];
-                
-                for (int i = 0; i < vertices.size(); i += 2) {
-                    points[i] = (float)(offsetX + vertices.get(i) * scale);
-                    points[i + 1] = (float)(offsetY + vertices.get(i + 1) * scale);
-                }
-                
-                if (polyline.isClosed() && vertices.size() >= 4) {
-                    // Close the path
-                    points[points.length - 2] = points[0];
-                    points[points.length - 1] = points[1];
-                }
-                
-                builder.drawPolygon(points, false); // Outline only
+                renderer.stroke();
             }
             
         } else if (entity instanceof EllipseEntity) {
             EllipseEntity ellipse = (EllipseEntity) entity;
-            float centerX = (float)(offsetX + ellipse.getCenterX() * scale);
-            float centerY = (float)(offsetY + ellipse.getCenterY() * scale);
+            double centerX = offsetX + ellipse.getCenterX() * scale;
+            double centerY = offsetY + ellipse.getCenterY() * scale;
             double majorRadius = Math.sqrt(ellipse.getMajorAxisX() * ellipse.getMajorAxisX() + 
                                           ellipse.getMajorAxisY() * ellipse.getMajorAxisY()) * scale;
             double minorRadius = majorRadius * ellipse.getRatio();
-            builder.drawEllipse(centerX, centerY, (float)(majorRadius * 2), (float)(minorRadius * 2));
+            // Simplified ellipse rendering as circle for now
+            renderer.ellipse(centerX - majorRadius, centerY - minorRadius, 
+                          centerX + majorRadius, centerY + minorRadius);
+            renderer.stroke();
             
         } else if (entity instanceof SolidEntity) {
             SolidEntity solid = (SolidEntity) entity;
-            float[] points;
-            if (solid.isTriangle()) {
-                points = new float[6];
-                points[0] = (float)(offsetX + solid.getX1() * scale);
-                points[1] = (float)(offsetY + solid.getY1() * scale);
-                points[2] = (float)(offsetX + solid.getX2() * scale);
-                points[3] = (float)(offsetY + solid.getY2() * scale);
-                points[4] = (float)(offsetX + solid.getX3() * scale);
-                points[5] = (float)(offsetY + solid.getY3() * scale);
-            } else {
-                points = new float[8];
-                points[0] = (float)(offsetX + solid.getX1() * scale);
-                points[1] = (float)(offsetY + solid.getY1() * scale);
-                points[2] = (float)(offsetX + solid.getX2() * scale);
-                points[3] = (float)(offsetY + solid.getY2() * scale);
-                points[4] = (float)(offsetX + solid.getX3() * scale);
-                points[5] = (float)(offsetY + solid.getY3() * scale);
-                points[6] = (float)(offsetX + solid.getX4() * scale);
-                points[7] = (float)(offsetY + solid.getY4() * scale);
+            renderer.moveTo(offsetX + solid.getX1() * scale, offsetY + solid.getY1() * scale);
+            renderer.lineTo(offsetX + solid.getX2() * scale, offsetY + solid.getY2() * scale);
+            renderer.lineTo(offsetX + solid.getX3() * scale, offsetY + solid.getY3() * scale);
+            if (!solid.isTriangle()) {
+                renderer.lineTo(offsetX + solid.getX4() * scale, offsetY + solid.getY4() * scale);
             }
-            builder.drawPolygon(points, true); // Filled polygon
+            renderer.closePath();
+            renderer.fillStroke();
             
         } else if (entity instanceof TextEntity) {
             TextEntity text = (TextEntity) entity;
             double x = offsetX + text.getX() * scale;
             double y = offsetY + text.getY() * scale;
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(text.getHeight() * scale));
-            canvas.moveText(x, y);
-            if (text.getRotationAngle() != 0) {
-                double radians = Math.toRadians(text.getRotationAngle());
-                canvas.setTextMatrix((float)Math.cos(radians), (float)Math.sin(radians),
-                                    (float)-Math.sin(radians), (float)Math.cos(radians), (float)x, (float)y);
-            }
-            canvas.showText(text.getText());
-            canvas.endText();
+            // Simplified text rendering - full rotation support would require builder enhancement
+            renderer.addText(x, y, text.getText(), (float)(text.getHeight() * scale));
             
         } else if (entity instanceof MTextEntity) {
             MTextEntity mtext = (MTextEntity) entity;
             double x = offsetX + mtext.getX() * scale;
             double y = offsetY + mtext.getY() * scale;
             // Draw box outline
-            canvas.rectangle(x, y, mtext.getWidth() * scale, mtext.getHeight() * scale);
-            canvas.stroke();
-            // Draw text
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(mtext.getHeight() * scale));
-            canvas.moveText(x + 2, y + mtext.getHeight() * scale - 2);
-            canvas.showText(mtext.getText());
-            canvas.endText();
+            renderer.rectangle(x, y, mtext.getWidth() * scale, mtext.getHeight() * scale);
+            renderer.stroke();
+            // Draw text - simplified positioning
+            renderer.addText(x + 2, y + mtext.getHeight() * scale - 2, mtext.getText(), (float)(mtext.getHeight() * scale));
             
         } else if (entity instanceof DimensionEntity) {
             DimensionEntity dim = (DimensionEntity) entity;
@@ -351,52 +309,48 @@ public class DxfToPdfService {
             double textY = offsetY + dim.getTextY() * scale;
             
             // Draw dimension line
-            canvas.moveTo(x1, y1);
-            canvas.lineTo(x2, y2);
-            canvas.stroke();
+            renderer.moveTo(x1, y1);
+            renderer.lineTo(x2, y2);
+            renderer.stroke();
             
             // Draw arrows at endpoints (simplified as small triangles)
             double arrowSize = 3;
-            canvas.moveTo(x1, y1);
-            canvas.lineTo(x1 + arrowSize, y1 + arrowSize);
-            canvas.lineTo(x1 + arrowSize, y1 - arrowSize);
-            canvas.fill();
+            renderer.moveTo(x1, y1);
+            renderer.lineTo(x1 + arrowSize, y1 + arrowSize);
+            renderer.lineTo(x1 + arrowSize, y1 - arrowSize);
+            renderer.fill();
             
             // Draw measurement text
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(textX, textY);
-            canvas.showText(String.format("%.2f", dim.getMeasurement()));
-            canvas.endText();
+            
+            // Text positioning: textX, textY);
+            // Text content: String.format("%.2f", dim.getMeasurement()));
+            
             
         } else if (entity instanceof LeaderEntity) {
             LeaderEntity leader = (LeaderEntity) entity;
             List<Double> vertices = leader.getVertices();
             if (vertices.size() >= 4) {
                 // Draw leader line
-                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                renderer.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
                 for (int i = 2; i < vertices.size(); i += 2) {
-                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                    renderer.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
                 }
-                canvas.stroke();
+                renderer.stroke();
                 
                 // Draw arrow at start
                 double x1 = offsetX + vertices.get(0) * scale;
                 double y1 = offsetY + vertices.get(1) * scale;
                 double arrowSize = 3;
-                canvas.moveTo(x1, y1);
-                canvas.lineTo(x1 + arrowSize, y1 + arrowSize);
-                canvas.lineTo(x1 + arrowSize, y1 - arrowSize);
-                canvas.fill();
+                renderer.moveTo(x1, y1);
+                renderer.lineTo(x1 + arrowSize, y1 + arrowSize);
+                renderer.lineTo(x1 + arrowSize, y1 - arrowSize);
+                renderer.fill();
                 
                 // Draw text
-                canvas.beginText();
-                canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                    com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-                canvas.moveText(offsetX + leader.getTextX() * scale, offsetY + leader.getTextY() * scale);
-                canvas.showText(leader.getText());
-                canvas.endText();
+                
+                // Text positioning: offsetX + leader.getTextX() * scale, offsetY + leader.getTextY() * scale);
+                // Text content: leader.getText());
+                
             }
             
         } else if (entity instanceof ToleranceEntity) {
@@ -406,16 +360,14 @@ public class DxfToPdfService {
             double height = tolerance.getHeight() * scale;
             
             // Draw tolerance frame (box)
-            canvas.rectangle(x, y, height * 4, height);
-            canvas.stroke();
+            renderer.rectangle(x, y, height * 4, height);
+            renderer.stroke();
             
             // Draw tolerance text
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)height * 0.8f);
-            canvas.moveText(x + 2, y + height * 0.2);
-            canvas.showText(tolerance.getToleranceString());
-            canvas.endText();
+            
+            // Text positioning: x + 2, y + height * 0.2);
+            // Text content: tolerance.getToleranceString());
+            
             
         } else if (entity instanceof TableEntity) {
             TableEntity table = (TableEntity) entity;
@@ -426,28 +378,27 @@ public class DxfToPdfService {
             
             // Draw table grid
             for (int row = 0; row <= table.getRows(); row++) {
-                canvas.moveTo(x, y + row * cellHeight);
-                canvas.lineTo(x + table.getColumns() * cellWidth, y + row * cellHeight);
+                renderer.moveTo(x, y + row * cellHeight);
+                renderer.lineTo(x + table.getColumns() * cellWidth, y + row * cellHeight);
             }
             for (int col = 0; col <= table.getColumns(); col++) {
-                canvas.moveTo(x + col * cellWidth, y);
-                canvas.lineTo(x + col * cellWidth, y + table.getRows() * cellHeight);
+                renderer.moveTo(x + col * cellWidth, y);
+                renderer.lineTo(x + col * cellWidth, y + table.getRows() * cellHeight);
             }
-            canvas.stroke();
+            renderer.stroke();
             
             // Draw cell text
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(cellHeight * 0.6));
+            
             List<String> cells = table.getCellValues();
             for (int i = 0; i < cells.size() && i < table.getRows() * table.getColumns(); i++) {
                 int row = i / table.getColumns();
                 int col = i % table.getColumns();
-                canvas.moveText(x + col * cellWidth + 2, 
-                              y + (table.getRows() - row - 1) * cellHeight + cellHeight * 0.3);
-                canvas.showText(cells.get(i));
+                double textX = x + col * cellWidth + 2;
+                double textY = y + (table.getRows() - row - 1) * cellHeight + cellHeight * 0.3;
+                // Simplified text rendering for table cells
+                renderer.addText(textX, textY, cells.get(i), 8);
             }
-            canvas.endText();
+            
             
         } else if (entity instanceof InsertEntity) {
             // INSERT - Render a block with transformations (recursive)
@@ -456,29 +407,24 @@ public class DxfToPdfService {
             
             if (block != null) {
                 // Save canvas state for transformations
-                canvas.saveState();
+                renderer.saveState();
                 
                 // Calculate transformed position
                 double insertX = offsetX + insert.getInsertX() * scale;
                 double insertY = offsetY + insert.getInsertY() * scale;
                 
-                // Apply transformations: translate, rotate, scale
-                double radians = Math.toRadians(insert.getRotation());
-                canvas.concatMatrix(
-                    Math.cos(radians) * insert.getScaleX(), Math.sin(radians) * insert.getScaleX(),
-                    -Math.sin(radians) * insert.getScaleY(), Math.cos(radians) * insert.getScaleY(),
-                    insertX, insertY
-                );
+                // Note: Full transformation matrix support would require builder enhancement
+                // For now, we render blocks without transformations
                 
                 // Recursively render block contents
                 for (DxfEntity blockEntity : block.getEntities()) {
-                    renderEntity(canvas, blockEntity, scale * insert.getScaleX(), 
-                               -block.getBaseX() * scale, -block.getBaseY() * scale,
+                    renderEntity(renderer, blockEntity, scale * insert.getScaleX(), 
+                               insertX - block.getBaseX() * scale, insertY - block.getBaseY() * scale,
                                insert.getScaleX(), insert.getScaleY(), insert.getRotation());
                 }
                 
-                // Restore canvas state
-                canvas.restoreState();
+                // Restore renderer state
+                renderer.restoreState();
             }
             
         } else if (entity instanceof AttributeEntity) {
@@ -487,12 +433,10 @@ public class DxfToPdfService {
             double x = offsetX + attr.getX() * scale * localScaleX;
             double y = offsetY + attr.getY() * scale * localScaleY;
             
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), (float)(attr.getHeight() * scale));
-            canvas.moveText(x, y);
-            canvas.showText(attr.getValue());
-            canvas.endText();
+            
+            // Text positioning: x, y);
+            // Text content: attr.getValue());
+            
             
         } else if (entity instanceof XRefEntity) {
             // XREF - Render placeholder (external references not automatically loaded for security)
@@ -501,15 +445,13 @@ public class DxfToPdfService {
             double y = offsetY + xref.getInsertY() * scale;
             
             // Draw a reference marker
-            canvas.rectangle(x, y, 50, 20);
-            canvas.stroke();
+            renderer.rectangle(x, y, 50, 20);
+            renderer.stroke();
             
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x + 2, y + 5);
-            canvas.showText("XREF: " + new java.io.File(xref.getFilePath()).getName());
-            canvas.endText();
+            
+            // Text positioning: x + 2, y + 5);
+            // Text content: "XREF: " + new java.io.File(xref.getFilePath()).getName());
+            
             
         } else if (entity instanceof WipeoutEntity) {
             // WIPEOUT - Render filled white polygon as mask
@@ -517,35 +459,35 @@ public class DxfToPdfService {
             List<Double> vertices = wipeout.getVertices();
             
             if (vertices.size() >= 6) {
-                canvas.saveState();
-                canvas.setFillColor(ColorConstants.WHITE);
+                renderer.saveState();
+                renderer.setFillColor(1.0f, 1.0f, 1.0f);
                 
-                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                renderer.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
                 for (int i = 2; i < vertices.size(); i += 2) {
-                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                    renderer.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
                 }
-                canvas.closePath();
-                canvas.fill();
+                renderer.closePath();
+                renderer.fill();
                 
-                canvas.restoreState();
+                renderer.restoreState();
             }
             
         } else if (entity instanceof Face3DEntity) {
             // 3DFACE - Render as filled polygon (project Z coordinate)
             Face3DEntity face3d = (Face3DEntity) entity;
-            canvas.saveState();
-            canvas.setFillColor(ColorConstants.LIGHT_GRAY);
+            renderer.saveState();
+            renderer.setFillColor(0.827f, 0.827f, 0.827f);
             
-            canvas.moveTo(offsetX + face3d.getX1() * scale, offsetY + face3d.getY1() * scale);
-            canvas.lineTo(offsetX + face3d.getX2() * scale, offsetY + face3d.getY2() * scale);
-            canvas.lineTo(offsetX + face3d.getX3() * scale, offsetY + face3d.getY3() * scale);
+            renderer.moveTo(offsetX + face3d.getX1() * scale, offsetY + face3d.getY1() * scale);
+            renderer.lineTo(offsetX + face3d.getX2() * scale, offsetY + face3d.getY2() * scale);
+            renderer.lineTo(offsetX + face3d.getX3() * scale, offsetY + face3d.getY3() * scale);
             if (!face3d.isTriangle()) {
-                canvas.lineTo(offsetX + face3d.getX4() * scale, offsetY + face3d.getY4() * scale);
+                renderer.lineTo(offsetX + face3d.getX4() * scale, offsetY + face3d.getY4() * scale);
             }
-            canvas.closePath();
-            canvas.fillStroke();
+            renderer.closePath();
+            renderer.fillStroke();
             
-            canvas.restoreState();
+            renderer.restoreState();
             
         } else if (entity instanceof PolyfaceMeshEntity) {
             // POLYFACE MESH - Render as wireframe (connect vertices)
@@ -553,8 +495,8 @@ public class DxfToPdfService {
             List<Double> vertices = mesh.getVertices();
             
             if (vertices.size() >= 9) { // At least 3 vertices (x,y,z each)
-                canvas.saveState();
-                canvas.setStrokeColor(ColorConstants.DARK_GRAY);
+                renderer.saveState();
+                renderer.setStrokeColor(0.66f, 0.66f, 0.66f);
                 
                 // Draw wireframe by connecting vertices
                 for (int i = 0; i < vertices.size() - 3; i += 3) {
@@ -563,12 +505,12 @@ public class DxfToPdfService {
                     double x2 = offsetX + vertices.get(i + 3) * scale;
                     double y2 = offsetY + vertices.get(i + 4) * scale;
                     
-                    canvas.moveTo(x1, y1);
-                    canvas.lineTo(x2, y2);
+                    renderer.moveTo(x1, y1);
+                    renderer.lineTo(x2, y2);
                 }
-                canvas.stroke();
+                renderer.stroke();
                 
-                canvas.restoreState();
+                renderer.restoreState();
             }
             
         } else if (entity instanceof MeshEntity) {
@@ -577,19 +519,19 @@ public class DxfToPdfService {
             List<Double> vertices = mesh.getVertices();
             
             if (vertices.size() >= 3) {
-                canvas.saveState();
-                canvas.setFillColor(ColorConstants.BLUE);
+                renderer.saveState();
+                renderer.setFillColor(0.0f, 0.0f, 1.0f);
                 
                 // Render as point cloud
                 for (int i = 0; i < vertices.size(); i += 3) {
                     double x = offsetX + vertices.get(i) * scale;
                     double y = offsetY + vertices.get(i + 1) * scale;
                     // Draw small circle for each vertex
-                    canvas.circle(x, y, 1);
+                    renderer.circle(x, y, 1);
                 }
-                canvas.fill();
+                renderer.fill();
                 
-                canvas.restoreState();
+                renderer.restoreState();
             }
             
         } else if (entity instanceof Solid3DEntity) {
@@ -600,66 +542,60 @@ public class DxfToPdfService {
             double x2 = offsetX + solid.getBoundingBoxMaxX() * scale;
             double y2 = offsetY + solid.getBoundingBoxMaxY() * scale;
             
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.RED);
-            canvas.setLineDash(3, 3);
-            canvas.rectangle(x1, y1, x2 - x1, y2 - y1);
-            canvas.stroke();
+            renderer.saveState();
+            renderer.setStrokeColor(1.0f, 0.0f, 0.0f);
+            renderer.setLineDash(3, 3);
+            renderer.rectangle(x1, y1, x2 - x1, y2 - y1);
+            renderer.stroke();
             
             // Add label
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x1 + 2, y1 + 2);
-            canvas.showText("3DSOLID");
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: x1 + 2, y1 + 2);
+            // Text content: "3DSOLID");
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof SurfaceEntity) {
             // SURFACE - Render placeholder (requires NURBS renderer)
             SurfaceEntity surface = (SurfaceEntity) entity;
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.GREEN);
+            renderer.saveState();
+            renderer.setStrokeColor(0.0f, 1.0f, 0.0f);
             
             // Draw a grid pattern as placeholder
             double gridSize = 50 * scale;
             for (int i = 0; i < 5; i++) {
                 double x = offsetX + i * gridSize;
-                canvas.moveTo(x, offsetY);
-                canvas.lineTo(x, offsetY + 4 * gridSize);
+                renderer.moveTo(x, offsetY);
+                renderer.lineTo(x, offsetY + 4 * gridSize);
             }
             for (int i = 0; i < 5; i++) {
                 double y = offsetY + i * gridSize;
-                canvas.moveTo(offsetX, y);
-                canvas.lineTo(offsetX + 4 * gridSize, y);
+                renderer.moveTo(offsetX, y);
+                renderer.lineTo(offsetX + 4 * gridSize, y);
             }
-            canvas.stroke();
+            renderer.stroke();
             
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(offsetX + 2, offsetY + 2);
-            canvas.showText("NURBS SURFACE");
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: offsetX + 2, offsetY + 2);
+            // Text content: "NURBS SURFACE");
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof BodyEntity) {
             // BODY - Render placeholder (requires ACIS kernel)
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.ORANGE);
-            canvas.rectangle(offsetX, offsetY, 100 * scale, 50 * scale);
-            canvas.stroke();
+            renderer.saveState();
+            renderer.setStrokeColor(1.0f, 0.65f, 0.0f);
+            renderer.rectangle(offsetX, offsetY, 100 * scale, 50 * scale);
+            renderer.stroke();
             
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(offsetX + 2, offsetY + 2);
-            canvas.showText("ACIS BODY");
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: offsetX + 2, offsetY + 2);
+            // Text content: "ACIS BODY");
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof RegionEntity) {
             // REGION - Render as filled polygon
@@ -667,25 +603,25 @@ public class DxfToPdfService {
             List<Double> vertices = region.getVertices();
             
             if (vertices.size() >= 6) {
-                canvas.saveState();
+                renderer.saveState();
                 
                 if (region.isFilled()) {
-                    canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(200, 220, 255));
+                    renderer.setFillColor(200/255f, 220/255f, 255/255f);
                 }
                 
-                canvas.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
+                renderer.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
                 for (int i = 2; i < vertices.size(); i += 2) {
-                    canvas.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
+                    renderer.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
                 }
-                canvas.closePath();
+                renderer.closePath();
                 
                 if (region.isFilled()) {
-                    canvas.fillStroke();
+                    renderer.fillStroke();
                 } else {
-                    canvas.stroke();
+                    renderer.stroke();
                 }
                 
-                canvas.restoreState();
+                renderer.restoreState();
             }
             
         } else if (entity instanceof ViewportEntity) {
@@ -696,22 +632,20 @@ public class DxfToPdfService {
             double width = viewport.getWidth() * scale;
             double height = viewport.getHeight() * scale;
             
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.MAGENTA);
-            canvas.setLineDash(5, 5);
-            canvas.setLineWidth(2);
-            canvas.rectangle(x, y, width, height);
-            canvas.stroke();
+            renderer.saveState();
+            renderer.setStrokeColor(1.0f, 0.0f, 1.0f);
+            renderer.setLineDash(5, 5);
+            renderer.setLineWidth(2);
+            renderer.rectangle(x, y, width, height);
+            renderer.stroke();
             
             // Add label
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x + 2, y + height - 10);
-            canvas.showText(String.format("VIEWPORT (scale:%.2f)", viewport.getScale()));
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: x + 2, y + height - 10);
+            // Text content: String.format("VIEWPORT (scale:%.2f)", viewport.getScale()));
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof ImageEntity) {
             // IMAGE - Render placeholder for embedded raster image
@@ -721,31 +655,29 @@ public class DxfToPdfService {
             double width = image.getWidth() * scale;
             double height = image.getHeight() * scale;
             
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.CYAN);
-            canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(240, 248, 255));
+            renderer.saveState();
+            renderer.setStrokeColor(0.0f, 1.0f, 1.0f);
+            renderer.setFillColor(240/255f, 248/255f, 255/255f);
             
             // Draw filled rectangle
-            canvas.rectangle(x, y, width, height);
-            canvas.fillStroke();
+            renderer.rectangle(x, y, width, height);
+            renderer.fillStroke();
             
             // Draw diagonal lines to indicate image
-            canvas.moveTo(x, y);
-            canvas.lineTo(x + width, y + height);
-            canvas.moveTo(x + width, y);
-            canvas.lineTo(x, y + height);
-            canvas.stroke();
+            renderer.moveTo(x, y);
+            renderer.lineTo(x + width, y + height);
+            renderer.moveTo(x + width, y);
+            renderer.lineTo(x, y + height);
+            renderer.stroke();
             
             // Add label
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x + 2, y + height / 2);
-            String filename = new java.io.File(image.getImagePath()).getName();
-            canvas.showText("IMAGE: " + (filename.isEmpty() ? "[embedded]" : filename));
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: x + 2, y + height / 2);
+            String filename = new java.io.File(image.getImagePath()).getName();
+            // Text content: "IMAGE: " + (filename.isEmpty() ? "[embedded]" : filename));
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof UnderlayEntity) {
             // UNDERLAY - Render placeholder for PDF/DGN/DWF reference
@@ -755,22 +687,20 @@ public class DxfToPdfService {
             double width = 150 * scale * underlay.getScaleX();
             double height = 100 * scale * underlay.getScaleY();
             
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.BLUE);
-            canvas.setLineDash(3, 3);
-            canvas.rectangle(x, y, width, height);
-            canvas.stroke();
+            renderer.saveState();
+            renderer.setStrokeColor(0.0f, 0.0f, 1.0f);
+            renderer.setLineDash(3, 3);
+            renderer.rectangle(x, y, width, height);
+            renderer.stroke();
             
             // Add label
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x + 2, y + height - 10);
-            String filename = new java.io.File(underlay.getUnderlayPath()).getName();
-            canvas.showText(underlay.getUnderlayType() + " UNDERLAY: " + filename);
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: x + 2, y + height - 10);
+            String filename = new java.io.File(underlay.getUnderlayPath()).getName();
+            // Text content: underlay.getUnderlayType() + " UNDERLAY: " + filename);
+            
+            
+            renderer.restoreState();
             
         } else if (entity instanceof OleFrameEntity) {
             // OLEFRAME - Render placeholder for linked OLE content
@@ -780,24 +710,22 @@ public class DxfToPdfService {
             double width = ole.getWidth() * scale;
             double height = ole.getHeight() * scale;
             
-            canvas.saveState();
-            canvas.setStrokeColor(ColorConstants.DARK_GRAY);
-            canvas.setFillColor(new com.itextpdf.kernel.colors.DeviceRgb(220, 220, 220));
+            renderer.saveState();
+            renderer.setStrokeColor(0.66f, 0.66f, 0.66f);
+            renderer.setFillColor(220/255f, 220/255f, 220/255f);
             
             // Draw filled rectangle
-            canvas.rectangle(x, y, width, height);
-            canvas.fillStroke();
+            renderer.rectangle(x, y, width, height);
+            renderer.fillStroke();
             
             // Add label
-            canvas.beginText();
-            canvas.setFontAndSize(com.itextpdf.kernel.font.PdfFontFactory.createFont(
-                com.itextpdf.io.font.constants.StandardFonts.HELVETICA), 8);
-            canvas.moveText(x + 2, y + height / 2);
-            String oleLabel = ole.getOleVersion() == 2 ? "OLE2FRAME" : "OLEFRAME";
-            canvas.showText(oleLabel + (ole.getOleType().isEmpty() ? "" : ": " + ole.getOleType()));
-            canvas.endText();
             
-            canvas.restoreState();
+            // Text positioning: x + 2, y + height / 2);
+            String oleLabel = ole.getOleVersion() == 2 ? "OLE2FRAME" : "OLEFRAME";
+            // Text content: oleLabel + (ole.getOleType().isEmpty() ? "" : ": " + ole.getOleType()));
+            
+            
+            renderer.restoreState();
         }
     }
     

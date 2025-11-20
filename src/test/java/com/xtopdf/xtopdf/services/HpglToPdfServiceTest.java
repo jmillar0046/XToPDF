@@ -21,6 +21,7 @@ class HpglToPdfServiceTest {
     @BeforeEach
     void setUp() {
         pltToPdfService = new PltToPdfService();
+        pltToPdfService.pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
         hpglToPdfService = new HpglToPdfService(pltToPdfService);
     }
 

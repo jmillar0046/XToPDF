@@ -116,6 +116,11 @@ class ExcelUtilsTest {
         workbook.close();
     }
 
+    // Note: processSheet tests commented out as the method was removed during iText to PDFBox migration
+    // The processSheet method was iText-specific and is no longer needed as Excel services
+    // now use PdfDocumentBuilder directly
+    
+    /*
     @Test
     void processSheet_EmptySheet_AddsEmptyMessage() {
         com.itextpdf.kernel.pdf.PdfDocument pdfDocument = new com.itextpdf.kernel.pdf.PdfDocument(
@@ -145,4 +150,5 @@ class ExcelUtilsTest {
             pdfDoc.close();
         });
     }
+    */
 }

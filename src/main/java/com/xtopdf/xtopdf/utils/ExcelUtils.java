@@ -1,9 +1,5 @@
 package com.xtopdf.xtopdf.utils;
 
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.UnitValue;
 import org.apache.poi.ss.usermodel.*;
 
 /**
@@ -14,70 +10,6 @@ public final class ExcelUtils {
     
     private ExcelUtils() {
         // Private constructor to prevent instantiation
-    }
-    
-    /**
-     * Processes the given Excel sheet and adds its contents to the provided PDF document.
-     * <p>
-     * If the sheet is empty, a message indicating an empty sheet is added to the PDF.
-     * If the sheet has no data (no columns), a message indicating no data is added.
-     * Otherwise, the sheet's data is rendered as a table in the PDF.
-     *
-     * @param sheet   the Excel sheet to process
-     * @param pdfDoc  the PDF document to which the sheet's contents will be added
-     */
-    public static void processSheet(Sheet sheet, Document pdfDoc) {
-        if (sheet.getPhysicalNumberOfRows() == 0) {
-            pdfDoc.add(new Paragraph("(Empty sheet)"));
-            return;
-        }
-        
-        int maxColumns = getMaxColumnCount(sheet);
-        
-        if (maxColumns == 0) {
-            pdfDoc.add(new Paragraph("(No data in sheet)"));
-            return;
-        }
-        
-        Table table = createTable(sheet, maxColumns);
-        pdfDoc.add(table);
-    }
-    
-    /**
-     * Determines the maximum number of columns in a sheet.
-     *
-     * @param sheet the Excel sheet to analyze
-     * @return the maximum number of columns
-     */
-    private static int getMaxColumnCount(Sheet sheet) {
-        int maxColumns = 0;
-        for (Row row : sheet) {
-            if (row.getLastCellNum() > maxColumns) {
-                maxColumns = row.getLastCellNum();
-            }
-        }
-        return maxColumns;
-    }
-    
-    /**
-     * Creates a PDF table from an Excel sheet.
-     *
-     * @param sheet      the Excel sheet to convert
-     * @param maxColumns the number of columns in the table
-     * @return a PDF table containing the sheet data
-     */
-    private static Table createTable(Sheet sheet, int maxColumns) {
-        Table table = new Table(UnitValue.createPercentArray(maxColumns)).useAllAvailableWidth();
-        
-        for (Row row : sheet) {
-            for (int cellIndex = 0; cellIndex < maxColumns; cellIndex++) {
-                Cell cell = row.getCell(cellIndex);
-                String cellValue = getCellValueAsString(cell);
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(cellValue)));
-            }
-        }
-        
-        return table;
     }
     
     /**
