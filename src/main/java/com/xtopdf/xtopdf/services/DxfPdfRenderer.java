@@ -158,7 +158,7 @@ public class DxfPdfRenderer {
     
     public void addText(double x, double y, String text, float fontSize) throws IOException {
         // Position text at the specified location
-        // Note: PDFBox text positioning is limited compared to iText
-        builder.addParagraph(text);
+        builder.setFontSize(fontSize); // If PdfDocumentBuilder supports this
+        builder.addText(x, y, text);
     }
 }
