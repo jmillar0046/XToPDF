@@ -321,11 +321,12 @@ public class DxfToPdfService {
             renderer.fill();
             
             // Draw measurement text
-            
-            // Text positioning: textX, textY);
-            // Text content: String.format("%.2f", dim.getMeasurement()));
-            
-            
+            renderer.addText(
+                textX, 
+                textY, 
+                String.format("%.2f", dim.getMeasurement()), 
+                (float)(dim.getTextHeight() * scale)
+            );
         } else if (entity instanceof LeaderEntity) {
             LeaderEntity leader = (LeaderEntity) entity;
             List<Double> vertices = leader.getVertices();
