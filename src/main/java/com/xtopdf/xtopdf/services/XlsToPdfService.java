@@ -90,7 +90,20 @@ public class XlsToPdfService {
             case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
             case FORMULA:
                 try {
-                    return getCellValue(cell); // Recursive for formula result
+                    switch (cell.getCachedFormulaResultType()) {
+                        case STRING: return cell.getStringCellValue();
+                        case NUMERIC:
+                            if (DateUtil.isCellDateFormatted(cell)) {
+                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                                return sdf.format(cell.getDateCellValue());
+                            } else {
+                                double val = cell.getNumericCellValue();
+                                return val == (long)val ? String.valueOf((long)val) : String.valueOf(val);
+                            }
+                        case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+                        case ERROR: return "#ERROR";
+                        default: return "";
+                    }
                 } catch (Exception e) {
                     return cell.getCellFormula();
                 }
