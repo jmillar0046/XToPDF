@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.entities.*;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -14,6 +15,7 @@ import java.util.Map;
 /**
  * Parser for DXF (Drawing Exchange Format) files that extracts entities and blocks.
  */
+@Component
 public class DxfEntityParser {
     
     // DXF entity types

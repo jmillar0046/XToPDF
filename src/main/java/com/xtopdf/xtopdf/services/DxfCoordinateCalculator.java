@@ -1,12 +1,14 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.entities.*;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * Utility class for calculating scales and coordinate transformations for DXF entities.
  */
+@Component
 public class DxfCoordinateCalculator {
     
     /**

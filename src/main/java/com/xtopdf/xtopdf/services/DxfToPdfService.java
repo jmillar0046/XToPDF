@@ -1,7 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
@@ -19,19 +19,13 @@ import java.util.List;
  * 
  * Supported entities: LINE, CIRCLE, ARC, ELLIPSE, POINT, POLYLINE, SOLID/TRACE, and many more.
  */
+@RequiredArgsConstructor
 @Service
 public class DxfToPdfService {
     
     private final PdfBackendProvider pdfBackend;
     private final DxfEntityParser parser;
     private final DxfCoordinateCalculator calculator;
-    
-    @Autowired
-    public DxfToPdfService(PdfBackendProvider pdfBackend) {
-        this.pdfBackend = pdfBackend;
-        this.parser = new DxfEntityParser();
-        this.calculator = new DxfCoordinateCalculator();
-    }
     
     /**
      * Convert DXF file to PDF.

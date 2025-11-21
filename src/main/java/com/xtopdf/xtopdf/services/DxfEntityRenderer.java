@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.entities.*;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.util.List;
@@ -10,13 +11,10 @@ import java.util.Map;
  * Renderer for DXF entities to PDF using DxfPdfRenderer.
  * Handles recursive rendering for blocks and various entity types.
  */
+@RequiredArgsConstructor
 public class DxfEntityRenderer {
     
     private final Map<String, BlockEntity> blockRegistry;
-    
-    public DxfEntityRenderer(Map<String, BlockEntity> blockRegistry) {
-        this.blockRegistry = blockRegistry;
-    }
     
     /**
      * Render a single entity on the PDF using PDFBox renderer with optional transformations.
