@@ -253,10 +253,10 @@ public class DxfEntityRenderer {
             double x = offsetX + attr.getX() * scale * localScaleX;
             double y = offsetY + attr.getY() * scale * localScaleY;
             
-            
-            // Text positioning: x, y);
-            // Text content: attr.getValue());
-            
+            // Render attribute value if present
+            if (attr.getValue() != null && !attr.getValue().isEmpty()) {
+                renderer.addText(x, y, attr.getValue(), (float)(attr.getHeight() * scale));
+            }
             
         } else if (entity instanceof XRefEntity) {
             // XREF - Render placeholder (external references not automatically loaded for security)
@@ -268,10 +268,9 @@ public class DxfEntityRenderer {
             renderer.rectangle(x, y, 50, 20);
             renderer.stroke();
             
-            
-            // Text positioning: x + 2, y + 5);
-            // Text content: "XREF: " + new java.io.File(xref.getFilePath()).getName());
-            
+            // Add XREF label
+            String filename = new java.io.File(xref.getFilePath()).getName();
+            renderer.addText(x + 2, y + 14, "XREF: " + filename, 8.0f);
             
         } else if (entity instanceof WipeoutEntity) {
             // WIPEOUT - Render filled white polygon as mask
@@ -368,11 +367,8 @@ public class DxfEntityRenderer {
             renderer.rectangle(x1, y1, x2 - x1, y2 - y1);
             renderer.stroke();
             
-            // Add label
-            
-            // Text positioning: x1 + 2, y1 + 2);
-            // Text content: "3DSOLID");
-            
+            // Add placeholder label
+            renderer.addText(x1 + 2, y1 + 2, "3DSOLID", 8.0f);
             
             renderer.restoreState();
             
@@ -396,10 +392,8 @@ public class DxfEntityRenderer {
             }
             renderer.stroke();
             
-            
-            // Text positioning: offsetX + 2, offsetY + 2);
-            // Text content: "NURBS SURFACE");
-            
+            // Add placeholder label
+            renderer.addText(offsetX + 2, offsetY + 2, "NURBS SURFACE", 8.0f);
             
             renderer.restoreState();
             
@@ -410,10 +404,8 @@ public class DxfEntityRenderer {
             renderer.rectangle(offsetX, offsetY, 100 * scale, 50 * scale);
             renderer.stroke();
             
-            
-            // Text positioning: offsetX + 2, offsetY + 2);
-            // Text content: "ACIS BODY");
-            
+            // Add placeholder label
+            renderer.addText(offsetX + 2, offsetY + 2, "ACIS BODY", 8.0f);
             
             renderer.restoreState();
             
@@ -459,11 +451,8 @@ public class DxfEntityRenderer {
             renderer.rectangle(x, y, width, height);
             renderer.stroke();
             
-            // Add label
-            
-            // Text positioning: x + 2, y + height - 10);
-            // Text content: String.format("VIEWPORT (scale:%.2f)", viewport.getScale()));
-            
+            // Add viewport label
+            renderer.addText(x + 2, y + height - 10, String.format("VIEWPORT (scale:%.2f)", viewport.getScale()), 8.0f);
             
             renderer.restoreState();
             
@@ -490,12 +479,10 @@ public class DxfEntityRenderer {
             renderer.lineTo(x, y + height);
             renderer.stroke();
             
-            // Add label
-            
-            // Text positioning: x + 2, y + height / 2);
+            // Add image label
             String filename = new java.io.File(image.getImagePath()).getName();
-            // Text content: "IMAGE: " + (filename.isEmpty() ? "[embedded]" : filename));
-            
+            String label = "IMAGE: " + (filename.isEmpty() ? "[embedded]" : filename);
+            renderer.addText(x + 2, y + height / 2, label, 8.0f);
             
             renderer.restoreState();
             
@@ -513,12 +500,10 @@ public class DxfEntityRenderer {
             renderer.rectangle(x, y, width, height);
             renderer.stroke();
             
-            // Add label
-            
-            // Text positioning: x + 2, y + height - 10);
+            // Add underlay label
             String filename = new java.io.File(underlay.getUnderlayPath()).getName();
-            // Text content: underlay.getUnderlayType() + " UNDERLAY: " + filename);
-            
+            String label = underlay.getUnderlayType() + " UNDERLAY: " + filename;
+            renderer.addText(x + 2, y + height - 10, label, 8.0f);
             
             renderer.restoreState();
             
@@ -538,12 +523,10 @@ public class DxfEntityRenderer {
             renderer.rectangle(x, y, width, height);
             renderer.fillStroke();
             
-            // Add label
-            
-            // Text positioning: x + 2, y + height / 2);
+            // Add OLE label
             String oleLabel = ole.getOleVersion() == 2 ? "OLE2FRAME" : "OLEFRAME";
-            // Text content: oleLabel + (ole.getOleType().isEmpty() ? "" : ": " + ole.getOleType()));
-            
+            String label = oleLabel + (ole.getOleType().isEmpty() ? "" : ": " + ole.getOleType());
+            renderer.addText(x + 2, y + height / 2, label, 8.0f);
             
             renderer.restoreState();
         }
