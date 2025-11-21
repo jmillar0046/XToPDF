@@ -221,4 +221,141 @@ class DxfEntityRendererTest {
             renderer.renderEntity(mockPdfRenderer, insert, 1.0, 0, 0, 1.0, 1.0, 0.0)
         );
     }
+
+    @Test
+    void testRenderEntity_PolylineEntity_Closed() throws IOException {
+        PolylineEntity polyline = new PolylineEntity();
+        polyline.addVertex(0, 0);
+        polyline.addVertex(50, 50);
+        polyline.addVertex(100, 0);
+        polyline.setClosed(true);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, polyline, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_AttributeEntity_WithValue() throws IOException {
+        AttributeEntity attr = new AttributeEntity();
+        attr.setX(10);
+        attr.setY(20);
+        attr.setValue("Test Attribute");
+        attr.setHeight(12);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, attr, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_AttributeEntity_EmptyValue() throws IOException {
+        AttributeEntity attr = new AttributeEntity();
+        attr.setX(10);
+        attr.setY(20);
+        attr.setValue("");
+        attr.setHeight(12);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, attr, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_PolyfaceMeshEntity() throws IOException {
+        PolyfaceMeshEntity mesh = new PolyfaceMeshEntity();
+        mesh.addVertex(0, 0, 0);
+        mesh.addVertex(50, 50, 10);
+        mesh.addVertex(100, 0, 0);
+        mesh.addVertex(150, 50, 10);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, mesh, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_RegionEntity_Filled() throws IOException {
+        RegionEntity region = new RegionEntity();
+        region.addVertex(0, 0);
+        region.addVertex(50, 0);
+        region.addVertex(50, 50);
+        region.addVertex(0, 50);
+        region.setFilled(true);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, region, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_RegionEntity_NotFilled() throws IOException {
+        RegionEntity region = new RegionEntity();
+        region.addVertex(0, 0);
+        region.addVertex(50, 0);
+        region.addVertex(50, 50);
+        region.setFilled(false);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, region, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_ViewportEntity() throws IOException {
+        ViewportEntity viewport = new ViewportEntity();
+        viewport.setCenterX(100);
+        viewport.setCenterY(100);
+        viewport.setWidth(200);
+        viewport.setHeight(150);
+        viewport.setScale(0.5);
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, viewport, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_ImageEntity() throws IOException {
+        ImageEntity image = new ImageEntity();
+        image.setInsertX(10);
+        image.setInsertY(20);
+        image.setWidth(100);
+        image.setHeight(80);
+        image.setImagePath("/path/to/image.png");
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, image, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_UnderlayEntity() throws IOException {
+        UnderlayEntity underlay = new UnderlayEntity();
+        underlay.setInsertX(10);
+        underlay.setInsertY(20);
+        underlay.setScaleX(1.5);
+        underlay.setScaleY(1.5);
+        underlay.setUnderlayPath("/path/to/underlay.pdf");
+        underlay.setUnderlayType("PDF");
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, underlay, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
+
+    @Test
+    void testRenderEntity_OleFrameEntity() throws IOException {
+        OleFrameEntity ole = new OleFrameEntity();
+        ole.setInsertX(10);
+        ole.setInsertY(20);
+        ole.setWidth(100);
+        ole.setHeight(80);
+        ole.setOleVersion(2);
+        ole.setOleType("ExcelWorksheet");
+
+        assertDoesNotThrow(() -> 
+            renderer.renderEntity(mockPdfRenderer, ole, 1.0, 0, 0, 1.0, 1.0, 0.0)
+        );
+    }
 }

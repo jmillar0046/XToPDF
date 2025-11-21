@@ -140,5 +140,92 @@ class DxfEntityParserTest {
 
         List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
         assertNotNull(entities, "Should handle invalid numeric values gracefully");
+}
+
+    @Test
+    void testParseDxfEntities_PolylineEntityClosed() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nPOLYLINE\n8\n0\n70\n1\n10\n0.0\n20\n0.0\n10\n50.0\n20\n50.0\n10\n100.0\n20\n0.0\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "polyline.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one polyline entity");
+        assertTrue(entities.get(0) instanceof PolylineEntity, "Entity should be a PolylineEntity");
+        
+        PolylineEntity polyline = (PolylineEntity) entities.get(0);
+        assertTrue(polyline.getVertexCount() >= 3, "Should have vertices");
+    }
+
+    @Test
+    void testParseDxfEntities_EllipseEntity() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nELLIPSE\n8\n0\n10\n50.0\n20\n50.0\n11\n30.0\n21\n0.0\n40\n0.5\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "ellipse.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one ellipse entity");
+        assertTrue(entities.get(0) instanceof EllipseEntity, "Entity should be an EllipseEntity");
+        
+        EllipseEntity ellipse = (EllipseEntity) entities.get(0);
+        assertEquals(50.0, ellipse.getCenterX(), 0.001);
+        assertEquals(50.0, ellipse.getCenterY(), 0.001);
+    }
+
+    @Test
+    void testParseDxfEntities_TextEntity() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nTEXT\n8\n0\n10\n10.0\n20\n20.0\n40\n12.0\n1\nHello World\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "text.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one text entity");
+        assertTrue(entities.get(0) instanceof TextEntity, "Entity should be a TextEntity");
+        
+        TextEntity text = (TextEntity) entities.get(0);
+        assertEquals(10.0, text.getX(), 0.001);
+        assertEquals(20.0, text.getY(), 0.001);
+        assertEquals("Hello World", text.getText());
+    }
+
+    @Test
+    void testParseDxfEntities_SolidEntity() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nSOLID\n8\n0\n10\n0.0\n20\n0.0\n11\n50.0\n21\n0.0\n12\n50.0\n22\n50.0\n13\n0.0\n23\n50.0\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "solid.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one solid entity");
+        assertTrue(entities.get(0) instanceof SolidEntity, "Entity should be a SolidEntity");
+    }
+
+    @Test
+    void testParseDxfEntities_MTextEntity() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nMTEXT\n8\n0\n10\n10.0\n20\n20.0\n40\n12.0\n41\n100.0\n1\nMultiline text\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "mtext.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one mtext entity");
+        assertTrue(entities.get(0) instanceof MTextEntity, "Entity should be an MTextEntity");
+        
+        MTextEntity mtext = (MTextEntity) entities.get(0);
+        assertEquals("Multiline text", mtext.getText());
+    }
+
+    @Test
+    void testParseDxfEntities_DimensionEntity() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nDIMENSION\n8\n0\n70\n0\n10\n0.0\n20\n0.0\n11\n100.0\n21\n0.0\n13\n50.0\n23\n10.0\n42\n100.0\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "dimension.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertEquals(1, entities.size(), "Should parse one dimension entity");
+        assertTrue(entities.get(0) instanceof DimensionEntity, "Entity should be a DimensionEntity");
+    }
+
+    @Test
+    void testParseDxfEntities_BlockWithInsert() throws IOException {
+        var content = "0\nSECTION\n2\nENTITIES\n0\nBLOCK\n2\nTestBlock\n10\n0.0\n20\n0.0\n0\nLINE\n10\n0.0\n20\n0.0\n11\n10.0\n21\n10.0\n0\nENDBLK\n0\nINSERT\n2\nTestBlock\n10\n50.0\n20\n50.0\n41\n1.0\n42\n1.0\n50\n0.0\n0\nENDSEC\n0\nEOF\n";
+        var dxfFile = new MockMultipartFile("file", "block.dxf", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+        List<DxfEntity> entities = parser.parseDxfEntities(dxfFile);
+        assertTrue(entities.size() > 0, "Should parse insert entity");
+        
+        // Check that block was registered
+        assertNotNull(parser.getBlockRegistry(), "Block registry should not be null");
     }
 }
