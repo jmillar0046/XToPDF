@@ -118,10 +118,9 @@ public class DxfEntityRenderer {
             MTextEntity mtext = (MTextEntity) entity;
             double x = offsetX + mtext.getX() * scale;
             double y = offsetY + mtext.getY() * scale;
-            // Draw box outline
             renderer.rectangle(x, y, mtext.getWidth() * scale, mtext.getHeight() * scale);
             renderer.stroke();
-            // Draw text - simplified positioning
+            // Simplified positioning for multi-line text
             renderer.addText(x + 2, y + mtext.getHeight() * scale - 2, mtext.getText(), (float)(mtext.getHeight() * scale));
             
         } else if (entity instanceof DimensionEntity) {
@@ -133,37 +132,34 @@ public class DxfEntityRenderer {
             double textX = offsetX + dim.getTextX() * scale;
             double textY = offsetY + dim.getTextY() * scale;
             
-            // Draw dimension line
             renderer.moveTo(x1, y1);
             renderer.lineTo(x2, y2);
             renderer.stroke();
             
-            // Draw arrows at endpoints (simplified as small triangles)
+            // Simplified arrow rendering
             double arrowSize = 3;
             renderer.moveTo(x1, y1);
             renderer.lineTo(x1 + arrowSize, y1 + arrowSize);
             renderer.lineTo(x1 + arrowSize, y1 - arrowSize);
             renderer.fill();
             
-            // Draw measurement text
             renderer.addText(
                 textX, 
                 textY, 
                 String.format("%.2f", dim.getMeasurement()), 
-                10.0f // Default text height
+                10.0f
             );
         } else if (entity instanceof LeaderEntity) {
             LeaderEntity leader = (LeaderEntity) entity;
             List<Double> vertices = leader.getVertices();
             if (vertices.size() >= 4) {
-                // Draw leader line
                 renderer.moveTo(offsetX + vertices.get(0) * scale, offsetY + vertices.get(1) * scale);
                 for (int i = 2; i < vertices.size(); i += 2) {
                     renderer.lineTo(offsetX + vertices.get(i) * scale, offsetY + vertices.get(i + 1) * scale);
                 }
                 renderer.stroke();
                 
-                // Draw arrow at start
+                // Simplified arrow at start point
                 double x1 = offsetX + vertices.get(0) * scale;
                 double y1 = offsetY + vertices.get(1) * scale;
                 double arrowSize = 3;
@@ -172,7 +168,6 @@ public class DxfEntityRenderer {
                 renderer.lineTo(x1 + arrowSize, y1 - arrowSize);
                 renderer.fill();
                 
-                // Draw text
                 double textX = offsetX + leader.getTextX() * scale;
                 double textY = offsetY + leader.getTextY() * scale;
                 String leaderText = leader.getText();
@@ -185,15 +180,9 @@ public class DxfEntityRenderer {
             double y = offsetY + tolerance.getY() * scale;
             double height = tolerance.getHeight() * scale;
             
-            // Draw tolerance frame (box)
             renderer.rectangle(x, y, height * 4, height);
             renderer.stroke();
-            
-            // Draw tolerance text
-            // Render the tolerance value inside the box
             renderer.addText(x + 2, y + height * 0.2, tolerance.getToleranceString(), 8);
-            
-            
             
         } else if (entity instanceof TableEntity) {
             TableEntity table = (TableEntity) entity;
@@ -202,7 +191,6 @@ public class DxfEntityRenderer {
             double cellWidth = table.getCellWidth() * scale;
             double cellHeight = table.getCellHeight() * scale;
             
-            // Draw table grid
             for (int row = 0; row <= table.getRows(); row++) {
                 renderer.moveTo(x, y + row * cellHeight);
                 renderer.lineTo(x + table.getColumns() * cellWidth, y + row * cellHeight);
@@ -213,15 +201,12 @@ public class DxfEntityRenderer {
             }
             renderer.stroke();
             
-            // Draw cell text
-            
             List<String> cells = table.getCellValues();
             for (int i = 0; i < cells.size() && i < table.getRows() * table.getColumns(); i++) {
                 int row = i / table.getColumns();
                 int col = i % table.getColumns();
                 double textX = x + col * cellWidth + 2;
                 double textY = y + (table.getRows() - row - 1) * cellHeight + cellHeight * 0.3;
-                // Simplified text rendering for table cells
                 renderer.addText(textX, textY, cells.get(i), 8);
             }
             
@@ -232,24 +217,20 @@ public class DxfEntityRenderer {
             BlockEntity block = blockRegistry.get(insert.getBlockName());
             
             if (block != null) {
-                // Save canvas state for transformations
                 renderer.saveState();
                 
-                // Calculate transformed position
                 double insertX = offsetX + insert.getInsertX() * scale;
                 double insertY = offsetY + insert.getInsertY() * scale;
                 
                 // Note: Full transformation matrix support would require builder enhancement
-                // For now, we render blocks without transformations
+                // For now, we render blocks without rotation transformations
                 
-                // Recursively render block contents
                 for (DxfEntity blockEntity : block.getEntities()) {
                     renderEntity(renderer, blockEntity, scale * insert.getScaleX(), 
                                insertX - block.getBaseX() * scale, insertY - block.getBaseY() * scale,
                                insert.getScaleX(), insert.getScaleY(), insert.getRotation());
                 }
                 
-                // Restore renderer state
                 renderer.restoreState();
             }
             
@@ -259,7 +240,6 @@ public class DxfEntityRenderer {
             double x = offsetX + attr.getX() * scale * localScaleX;
             double y = offsetY + attr.getY() * scale * localScaleY;
             
-            // Render attribute value if present
             if (attr.getValue() != null && !attr.getValue().isEmpty()) {
                 renderer.addText(x, y, attr.getValue(), (float)(attr.getHeight() * scale));
             }
@@ -270,11 +250,9 @@ public class DxfEntityRenderer {
             double x = offsetX + xref.getInsertX() * scale;
             double y = offsetY + xref.getInsertY() * scale;
             
-            // Draw a reference marker
             renderer.rectangle(x, y, 50, 20);
             renderer.stroke();
             
-            // Add XREF label
             String filename = new java.io.File(xref.getFilePath()).getName();
             renderer.addText(x + LABEL_MARGIN, y + LABEL_VERTICAL_CENTER_OFFSET, "XREF: " + filename, 8.0f);
             
