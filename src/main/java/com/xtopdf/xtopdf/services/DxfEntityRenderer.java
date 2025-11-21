@@ -14,6 +14,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DxfEntityRenderer {
     
+    // Constants for text label positioning and sizing
+    private static final int LABEL_MARGIN = 2;
+    private static final float DEFAULT_LABEL_FONT_SIZE = 8.0f;
+    private static final int LABEL_BOTTOM_OFFSET = 10;
+    private static final int LABEL_VERTICAL_CENTER_OFFSET = 14;
+    
     private final Map<String, BlockEntity> blockRegistry;
     
     /**
@@ -270,7 +276,7 @@ public class DxfEntityRenderer {
             
             // Add XREF label
             String filename = new java.io.File(xref.getFilePath()).getName();
-            renderer.addText(x + 2, y + 14, "XREF: " + filename, 8.0f);
+            renderer.addText(x + LABEL_MARGIN, y + LABEL_VERTICAL_CENTER_OFFSET, "XREF: " + filename, 8.0f);
             
         } else if (entity instanceof WipeoutEntity) {
             // WIPEOUT - Render filled white polygon as mask
@@ -393,7 +399,7 @@ public class DxfEntityRenderer {
             renderer.stroke();
             
             // Add placeholder label
-            renderer.addText(offsetX + 2, offsetY + 2, "NURBS SURFACE", 8.0f);
+            renderer.addText(offsetX + LABEL_MARGIN, offsetY + LABEL_MARGIN, "NURBS SURFACE", DEFAULT_LABEL_FONT_SIZE);
             
             renderer.restoreState();
             
@@ -452,7 +458,7 @@ public class DxfEntityRenderer {
             renderer.stroke();
             
             // Add viewport label
-            renderer.addText(x + 2, y + height - 10, String.format("VIEWPORT (scale:%.2f)", viewport.getScale()), 8.0f);
+            renderer.addText(x + LABEL_MARGIN, y + height - LABEL_BOTTOM_OFFSET, String.format("VIEWPORT (scale:%.2f)", viewport.getScale()), 8.0f);
             
             renderer.restoreState();
             
@@ -503,7 +509,7 @@ public class DxfEntityRenderer {
             // Add underlay label
             String filename = new java.io.File(underlay.getUnderlayPath()).getName();
             String label = underlay.getUnderlayType() + " UNDERLAY: " + filename;
-            renderer.addText(x + 2, y + height - 10, label, 8.0f);
+            renderer.addText(x + LABEL_MARGIN, y + height - LABEL_BOTTOM_OFFSET, label, 8.0f);
             
             renderer.restoreState();
             
