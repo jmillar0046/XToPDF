@@ -15,7 +15,7 @@ import java.util.List;
  * Service to convert DXF (Drawing Exchange Format) files to PDF.
  * 
  * This implementation parses DXF entities and renders them as actual graphics
- * in the PDF using PDFBox.
+ * in the PDF using a custom renderer that works with a PDF backend abstraction (such as PDFBox).
  * 
  * Supported entities: LINE, CIRCLE, ARC, ELLIPSE, POINT, POLYLINE, SOLID/TRACE, and many more.
  */
