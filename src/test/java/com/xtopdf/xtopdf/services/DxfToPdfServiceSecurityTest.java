@@ -18,7 +18,11 @@ class DxfToPdfServiceSecurityTest {
 
     @BeforeEach
     void setUp() {
-        dxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
+        dxfToPdfService = new DxfToPdfService(
+            new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend(),
+            new DxfEntityParser(),
+            new DxfCoordinateCalculator()
+        );
     }
 
     @Test

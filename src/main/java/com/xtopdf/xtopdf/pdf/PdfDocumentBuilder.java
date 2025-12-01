@@ -8,7 +8,7 @@ import java.io.IOException;
  * This interface provides a backend-agnostic API for creating PDF documents,
  * allowing the underlying PDF library to be swapped without changing client code.
  * 
- * <p>Implementations can use different PDF libraries (e.g., iText, PDFBox, OpenPDF)
+ * <p>Implementations can use different PDF libraries (e.g., PDFBox, OpenPDF)
  * while maintaining the same API for all services.</p>
  * 
  * @see PdfBackendProvider

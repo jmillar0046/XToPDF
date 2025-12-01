@@ -65,7 +65,7 @@ class DwgToPdfServiceTest {
     @Test
     void testConvertDwgToPdf_RealServices_SimpleLine() throws Exception {
         DwgToDxfService realDwgToDxfService = new DwgToDxfService();
-        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
+        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend(), new DxfEntityParser(), new DxfCoordinateCalculator());
         DwgToPdfService realService = new DwgToPdfService(realDwgToDxfService, realDxfToPdfService);
         
         var resource = new org.springframework.core.io.ClassPathResource("test-files/simple_line.dwg");
@@ -87,7 +87,7 @@ class DwgToPdfServiceTest {
     @Test
     void testConvertDwgToPdf_RealServices_MultipleEntities() throws Exception {
         DwgToDxfService realDwgToDxfService = new DwgToDxfService();
-        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
+        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend(), new DxfEntityParser(), new DxfCoordinateCalculator());
         DwgToPdfService realService = new DwgToPdfService(realDwgToDxfService, realDxfToPdfService);
         
         var resource = new org.springframework.core.io.ClassPathResource("test-files/multi_entity.dwg");
@@ -109,7 +109,7 @@ class DwgToPdfServiceTest {
     @Test
     void testConvertDwgToPdf_RealServices_ComplexFile() throws Exception {
         DwgToDxfService realDwgToDxfService = new DwgToDxfService();
-        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
+        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend(), new DxfEntityParser(), new DxfCoordinateCalculator());
         DwgToPdfService realService = new DwgToPdfService(realDwgToDxfService, realDxfToPdfService);
         
         var resource = new org.springframework.core.io.ClassPathResource("test-files/complex.dwg");
@@ -131,7 +131,7 @@ class DwgToPdfServiceTest {
     @Test
     void testConvertDwgToPdf_RealServices_InvalidFile() {
         DwgToDxfService realDwgToDxfService = new DwgToDxfService();
-        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
+        DxfToPdfService realDxfToPdfService = new DxfToPdfService(new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend(), new DxfEntityParser(), new DxfCoordinateCalculator());
         DwgToPdfService realService = new DwgToPdfService(realDwgToDxfService, realDxfToPdfService);
         
         var dwgFile = new MockMultipartFile("test.dwg", "test.dwg",
