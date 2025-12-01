@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.xtopdf.xtopdf.dto.ConversionRequest;
 import com.xtopdf.xtopdf.dto.MergeRequest;
 import com.xtopdf.xtopdf.dto.PageNumberRequest;
@@ -14,7 +14,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.services.FileConversionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
