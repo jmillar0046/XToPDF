@@ -85,8 +85,7 @@ java -jar xtopdf-VERSION.jar
 - Spring Boot 3.5.7
 - Apache POI (for Microsoft Office formats)
 - ODF Toolkit (for OpenDocument formats)
-- iText 7 (for PDF generation)
-- PDFBox (for PDF manipulation)
+- PDFBox (for PDF generation and manipulation)
 - Commonmark (Markdown parser)
 - Gradle
 
@@ -312,6 +311,4 @@ XToPDF is available for commercial use under the Apache 2.0 license, which allow
 - ✅ Modification
 - ✅ Distribution
 - ✅ Private use
-
-**Note:** This project is currently in the process of migrating from iText 7 (AGPL) to Apache PDFBox (Apache 2.0) to ensure full license compatibility for commercial deployments. See [TECHNICAL_ANALYSIS.md](TECHNICAL_ANALYSIS.md) for details.
 
