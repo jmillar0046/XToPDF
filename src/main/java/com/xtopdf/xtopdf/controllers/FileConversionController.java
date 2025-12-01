@@ -13,7 +13,7 @@ import com.xtopdf.xtopdf.enums.WatermarkLayer;
 import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
