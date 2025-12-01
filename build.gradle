@@ -43,7 +43,7 @@ dependencies {
   implementation 'org.apache.poi:poi-ooxml:5.4.1'
   implementation 'org.apache.poi:poi-scratchpad:5.4.1'
 	implementation 'org.apache.pdfbox:pdfbox:3.0.6'
-	implementation 'org.jsoup:jsoup:1.18.1'
+	implementation 'org.jsoup:jsoup:1.21.2'
   implementation 'com.github.jai-imageio:jai-imageio-core:1.4.0'
   implementation 'org.commonmark:commonmark:0.24.0'
   implementation('org.odftoolkit:odfdom-java:0.12.0') {
