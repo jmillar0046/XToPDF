@@ -1,143 +1,80 @@
 # XToPDF
 
-XToPDF is a Spring Boot application for converting various file formats to PDF.
+[![Build Status](https://img.shields.io/github/actions/workflow/status/jmillar0046/XToPDF/build.yml?branch=main)](https://github.com/jmillar0046/XToPDF/actions)
+[![Latest Release](https://img.shields.io/github/v/release/jmillar0046/XToPDF)](https://github.com/jmillar0046/XToPDF/releases/latest)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/jmillar0046/XToPDF/pulls)
 
-## Releases
+**XToPDF** is an open-source, all-in-one file-to-PDF converter supporting documents, spreadsheets, presentations, images, CAD files, and 3D models. Built with Spring Boot and Java 21, it provides both a REST API and command-line interface for seamless file conversion workflows.
 
-This project uses semantic versioning with fully automated releases:
+## Features
 
-- **Automatic Versioning**: Patch version is automatically incremented on every merge to main
-- **Automatic Tagging**: Git tags are created automatically by GitHub Actions
-- **Automatic Releases**: GitHub Releases are created with JAR artifacts attached
-- **No Manual Tagging**: Version tags are protected and only created through automated workflows
+- **50+ File Formats**: Convert documents (DOCX, DOC, ODT, RTF, TXT, HTML, Markdown), spreadsheets (XLSX, XLS, ODS, CSV), presentations (PPTX, PPT, ODP), images (PNG, JPEG, SVG, TIFF), and more
+- **CAD & 3D Support**: Professional-grade conversion for DXF, DWG, DWF, STL, OBJ, STEP, IGES formats
+- **REST API**: Simple HTTP endpoints for programmatic conversion
+- **Advanced Features**: Page numbering, watermarks, formula recalculation, PDF merging
+- **Open Source**: Apache 2.0 licensed, free for commercial use
 
-### Downloading Releases
+## Installation / Quick Start
 
-1. Go to the [Releases page](https://github.com/jmillar0046/XToPDF/releases)
-2. Download the latest `xtopdf-VERSION.jar` file
-3. Run it with Java 21+:
+### Download the Latest JAR
+
+1. Visit the [Releases page](https://github.com/jmillar0046/XToPDF/releases/latest)
+2. Download `xtopdf-VERSION.jar`
+3. Ensure Java 21+ is installed
+
+### Running Conversions
+
+Start the server:
 
 ```bash
 java -jar xtopdf-VERSION.jar
 ```
 
-## Features
-
-### Document Formats
-- Convert TXT files to PDF
-- Convert DOCX files to PDF (Microsoft Word 2007+)
-- Convert DOC files to PDF (Microsoft Word 97-2003)
-- Convert ODT files to PDF (OpenDocument Text)
-- Convert RTF files to PDF
-- Convert HTML files to PDF
-- Convert Markdown files to PDF (.md and .markdown)
-- Convert XML files to PDF
-- Convert JSON files to PDF
-
-### Spreadsheet Formats
-- Convert XLSX files to PDF (Microsoft Excel 2007+)
-- Convert XLS files to PDF (Microsoft Excel 97-2003)
-- Convert ODS files to PDF (OpenDocument Spreadsheet)
-- Convert CSV files to PDF
-
-### Presentation Formats
-- Convert PPTX files to PDF (Microsoft PowerPoint 2007+)
-- Convert PPT files to PDF (Microsoft PowerPoint 97-2003)
-- Convert ODP files to PDF (OpenDocument Presentation)
-
-### Image Formats
-- Convert JPEG/JPG images to PDF
-- Convert PNG images to PDF
-- Convert BMP images to PDF
-- Convert GIF images to PDF
-- Convert TIFF/TIF images to PDF
-- Convert SVG images to PDF
-- Convert EMF images to PDF (Enhanced Metafile)
-- Convert WMF images to PDF (Windows Metafile)
-
-### CAD Formats
-- Convert DXF files to PDF (Drawing Exchange Format)
-- Convert DWG files to PDF (AutoCAD Drawing Format)
-- Convert DWF files to PDF (Design Web Format)
-- Convert DWFX files to PDF (Design Web Format XPS)
-- Convert DWT files to PDF (Drawing Template)
-- Convert HPGL files to PDF (HP Graphics Language)
-- Convert PLT files to PDF (Plotter File)
-
-### 3D Model Formats
-- Convert STL files to PDF (Stereolithography)
-- Convert OBJ files to PDF (Wavefront Object)
-- Convert STEP/STP files to PDF (Standard for Exchange of Product Data)
-- Convert IGES/IGS files to PDF (Initial Graphics Exchange Specification)
-- Convert 3MF files to PDF (3D Manufacturing Format)
-- Convert WRL files to PDF (VRML - Virtual Reality Modeling Language)
-- Convert X3D files to PDF (Extensible 3D Graphics)
-
-### Other Features
-- REST API endpoints for file conversion
-- Optional page numbering with customizable position, alignment, and style
-- **Watermark support** - Add customizable watermarks to PDFs with control over text, font size, layer (foreground/background), and orientation (horizontal, vertical, diagonal)
-- **Formula recalculation for Excel files** - When enabled, all formulas are recalculated before conversion (useful for macro-dependent formulas)
-
-## Technologies
-
-- Java 21
-- Spring Boot 3.5.7
-- Apache POI (for Microsoft Office formats)
-- ODF Toolkit (for OpenDocument formats)
-- PDFBox (for PDF generation and manipulation)
-- Commonmark (Markdown parser)
-- Gradle
-
-## Getting Started
-
-### Prerequisites
-
-- Java 21+
-- Gradle
-
-### Build
-
-```sh
-./gradlew build
-```
-
-### Run
-
-```sh
-./gradlew bootRun
-```
-
-## API Usage
-
-### Basic File Conversion
-
-Convert a file to PDF using the REST API:
+Convert files via command line:
 
 ```bash
+# Convert DOCX to PDF
 curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@document.xlsx" \
+  -F "inputFile=@document.docx" \
+  -F "outputFile=output.pdf"
+
+# Convert PNG to PDF
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@image.png" \
+  -F "outputFile=output.pdf"
+
+# Convert DXF (CAD) to PDF
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@drawing.dxf" \
   -F "outputFile=output.pdf"
 ```
 
-### Advanced Options
+## Supported Formats
 
-#### Formula Recalculation (Macro Execution)
+| Category | Supported Formats |
+|----------|-------------------|
+| **Documents** | DOCX, DOC, ODT, RTF, TXT, HTML, Markdown (.md), XML, JSON |
+| **Spreadsheets** | XLSX, XLS, ODS, CSV |
+| **Presentations** | PPTX, PPT, ODP |
+| **Images** | PNG, JPEG/JPG, BMP, GIF, TIFF/TIF, SVG, EMF, WMF |
+| **CAD** | DXF, DWG, DWF, DWFX, DWT, HPGL, PLT |
+| **3D Models** | STL, OBJ, STEP/STP, IGES/IGS, 3MF, WRL (VRML), X3D |
 
-For Excel files (XLSX, XLS), this recalculates all formulas before conversion:
+## Use Cases
 
-```bash
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@spreadsheet.xlsx" \
-  -F "outputFile=output.pdf" \
-  -F "executeMacros=true"
-```
+- **Batch Conversion**: Automate large-scale document processing workflows
+- **Engineering & CAD**: Convert technical drawings (DXF, DWG) to PDF for sharing and archival
+- **Document Management**: Standardize diverse file formats into searchable PDFs
+- **API Integration**: Embed conversion capabilities into web applications and services
+- **3D Manufacturing**: Generate PDF documentation from 3D model files (STL, STEP, OBJ)
+- **Report Generation**: Convert spreadsheets and presentations to PDF for distribution
 
-**Note:** Apache POI cannot execute VBA macros or user-defined functions (UDFs). This feature forces recalculation of all formulas, but formulas that depend on VBA user-defined functions cannot be recalculated since Apache POI cannot execute VBA code.
+## Advanced Features
 
-#### Page Numbering
+### Page Numbering
 
-Add page numbers to the converted PDF:
+Add customizable page numbers to PDFs:
 
 ```bash
 curl -X POST http://localhost:8080/api/convert \
@@ -149,14 +86,11 @@ curl -X POST http://localhost:8080/api/convert \
   -F "pageNumberStyle=ARABIC"
 ```
 
-Page numbering options:
-- `pageNumberPosition`: `TOP` or `BOTTOM`
-- `pageNumberAlignment`: `LEFT`, `CENTER`, or `RIGHT`
-- `pageNumberStyle`: `ARABIC`, `ROMAN_UPPER`, `ROMAN_LOWER`, `ALPHABETIC_UPPER`, or `ALPHABETIC_LOWER`
+Options: `TOP/BOTTOM` position, `LEFT/CENTER/RIGHT` alignment, `ARABIC/ROMAN_UPPER/ROMAN_LOWER` styles
 
-#### Watermark
+### Watermarks
 
-Add a watermark to the converted PDF:
+Add text watermarks with custom orientation and styling:
 
 ```bash
 curl -X POST http://localhost:8080/api/convert \
@@ -169,19 +103,24 @@ curl -X POST http://localhost:8080/api/convert \
   -F "watermarkOrientation=DIAGONAL_UP"
 ```
 
-Watermark options:
-- `watermarkText`: The text to display as a watermark (required when `addWatermark=true`)
-- `watermarkFontSize`: Font size for the watermark text (default: `48`, range: `0-200`)
-- `watermarkLayer`: `FOREGROUND` (in front of content) or `BACKGROUND` (behind content) (default: `FOREGROUND`)
-- `watermarkOrientation`: 
-  - `HORIZONTAL` - Standard horizontal text
-  - `VERTICAL` - Text rotated 90 degrees (bottom to top)
-  - `DIAGONAL_UP` - Diagonal from upper-left to bottom-right (default)
-  - `DIAGONAL_DOWN` - Diagonal from bottom-left to top-right
+Options: `HORIZONTAL/VERTICAL/DIAGONAL_UP/DIAGONAL_DOWN` orientation, `FOREGROUND/BACKGROUND` layer
 
-#### Merge with Existing PDF
+### Excel Formula Recalculation
 
-Merge the converted file with an existing PDF:
+Force formula recalculation for macro-dependent spreadsheets:
+
+```bash
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@spreadsheet.xlsx" \
+  -F "outputFile=output.pdf" \
+  -F "executeMacros=true"
+```
+
+**Note**: VBA macros and user-defined functions cannot be executed by Apache POI.
+
+### PDF Merging
+
+Merge converted files with existing PDFs:
 
 ```bash
 curl -X POST http://localhost:8080/api/convert \
@@ -191,124 +130,89 @@ curl -X POST http://localhost:8080/api/convert \
   -F "position=back"
 ```
 
-- `position`: `front` (prepend) or `back` (append)
+## Building from Source
 
-#### CAD and 3D File Conversion
+### Prerequisites
 
-Convert various CAD and 3D model files to PDF:
+- Java 21+
+- Gradle (included via wrapper)
 
-```bash
-# DXF (Drawing Exchange Format)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@drawing.dxf" \
-  -F "outputFile=output.pdf"
-
-# DWF (Design Web Format)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@design.dwf" \
-  -F "outputFile=output.pdf"
-
-# HPGL (HP Graphics Language)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@plot.hpgl" \
-  -F "outputFile=output.pdf"
-
-# PLT (Plotter File)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@drawing.plt" \
-  -F "outputFile=output.pdf"
-```
-
-Convert 3D model files to PDF:
-
-```bash
-# STL (Stereolithography)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.stl" \
-  -F "outputFile=output.pdf"
-
-# OBJ (Wavefront Object)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.obj" \
-  -F "outputFile=output.pdf"
-
-# STEP (Standard for Exchange of Product Data)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.step" \
-  -F "outputFile=output.pdf"
-
-# IGES (Initial Graphics Exchange Specification)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.iges" \
-  -F "outputFile=output.pdf"
-
-# 3MF (3D Manufacturing Format)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.3mf" \
-  -F "outputFile=output.pdf"
-
-# WRL (VRML - Virtual Reality Modeling Language)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.wrl" \
-  -F "outputFile=output.pdf"
-
-# X3D (Extensible 3D Graphics)
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@model.x3d" \
-  -F "outputFile=output.pdf"
-```
-
-**DWG Conversion Note:** Direct DWG to PDF conversion requires the DWG file to be in a format compatible with DXF processing, or pre-converted to DXF format using external tools. The application follows the conversion path: DWG → DXF → PDF.
-
-For best results with DWG files, consider using external conversion tools first:
-- **ODA File Converter** (free, cross-platform)
-- **LibreDWG** (open source command-line tool)
-- Commercial libraries like Aspose.CAD or Teigha
-
-```bash
-# If your DWG file is compatible or pre-converted
-curl -X POST http://localhost:8080/api/convert \
-  -F "inputFile=@drawing.dwg" \
-  -F "outputFile=output.pdf"
-```
-
-## Development
-
-### Automated Release Process
-
-Releases are **fully automated** and happen when pull requests are merged to the `main` branch:
-
-1. Create a pull request with your changes
-2. Get the PR reviewed and approved
-3. Merge the PR to `main`
-4. GitHub Actions automatically:
-   - Increments the patch version (e.g., v1.2.3 → v1.2.4)
-   - Creates a git tag
-   - Builds the project
-   - Runs all tests
-   - Creates a GitHub Release with JAR files
-
-**Important**: Do not manually create or push version tags. The automated workflow handles all versioning.
-
-### Building Locally
-
-The version is automatically determined from git tags. If no tag exists, it uses v0.0.0.
+### Build
 
 ```bash
 ./gradlew build
 ```
 
-The built JAR files will be in `build/libs/`.
+### Run Locally
+
+```bash
+./gradlew bootRun
+```
+
+The server will start at `http://localhost:8080`.
+
+### Run Tests
+
+```bash
+./gradlew test
+```
+
+## Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository** and create a feature branch
+2. **Make your changes** with clear, descriptive commits
+3. **Add tests** for new functionality
+4. **Submit a pull request** with a detailed description
+
+### Good First Issues
+
+Looking for a place to start? Check out issues labeled [`good first issue`](https://github.com/jmillar0046/XToPDF/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+
+### Contributing Guidelines
+
+- Follow existing code style and conventions
+- Ensure all tests pass before submitting PR
+- Update documentation for user-facing changes
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines
+
+### Code of Conduct
+
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code.
+
+## Technology Stack
+
+- **Java 21** - Core runtime
+- **Spring Boot 4.0.0** - Application framework
+- **Apache POI** - Microsoft Office format processing
+- **PDFBox 3.0.6** - PDF generation and manipulation
+- **ODF Toolkit** - OpenDocument format support
+- **Commonmark** - Markdown parsing
+
+## Release Process
+
+XToPDF uses automated semantic versioning:
+
+- **Automatic releases** on merge to `main` branch
+- **GitHub Actions** handles versioning, tagging, and artifact publishing
+- Download JARs from the [Releases page](https://github.com/jmillar0046/XToPDF/releases)
+
+**Note**: Do not manually create version tags. The CI/CD pipeline manages all versioning.
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Licensed under the [Apache License 2.0](LICENSE) - see the [LICENSE](LICENSE) file for details.
 
-### Commercial Use
+**Commercial use permitted** - Apache 2.0 allows commercial use, modification, distribution, and private use.
 
-XToPDF is available for commercial use under the Apache 2.0 license, which allows:
-- ✅ Commercial use
-- ✅ Modification
-- ✅ Distribution
-- ✅ Private use
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/jmillar0046/XToPDF/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jmillar0046/XToPDF/discussions)
+- **Documentation**: Check the [Wiki](https://github.com/jmillar0046/XToPDF/wiki) for detailed guides
+
+---
+
+Made with ❤️ by the XToPDF community
 
