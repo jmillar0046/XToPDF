@@ -43,9 +43,17 @@ public class ContainerOrchestrationService {
     }
     
     /**
-     * Get Docker client info for diagnostics
+     * Get container runtime information for diagnostics
      */
-    public String getDockerInfo() {
+    public String getRuntimeInfo() {
         return containerRuntime.getRuntimeInfo();
+    }
+    
+    /**
+     * @deprecated Use getRuntimeInfo() instead
+     */
+    @Deprecated
+    public String getDockerInfo() {
+        return getRuntimeInfo();
     }
 }

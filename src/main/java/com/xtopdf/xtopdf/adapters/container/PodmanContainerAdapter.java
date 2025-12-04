@@ -246,16 +246,13 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
             stopProcess.waitFor();
             log.debug("Stopped Podman container {}", containerId);
             
-            // Remove container if not using --rm flag
-            if (!config.isCleanupEnabled()) {
-                // Container was created without --rm, so we need to explicitly remove it
-                ProcessBuilder rmPb = new ProcessBuilder("podman", "rm", containerId);
-                Process rmProcess = rmPb.start();
-                rmProcess.waitFor();
-                log.info("Removed Podman container {}", containerId);
+            // If cleanup is enabled, the container was created WITH --rm flag and will auto-remove
+            // If cleanup is disabled, the container was created WITHOUT --rm flag and won't auto-remove
+            // So we don't need to do anything here - either way it's handled correctly
+            if (config.isCleanupEnabled()) {
+                log.info("Stopped Podman container {} (will auto-remove due to --rm flag)", containerId);
             } else {
-                // Container will auto-remove due to --rm flag
-                log.info("Stopped Podman container {} (will auto-remove)", containerId);
+                log.info("Stopped Podman container {} (persisted, not removed)", containerId);
             }
         } catch (Exception e) {
             log.warn("Failed to cleanup Podman container {}: {}", containerId, e.getMessage());

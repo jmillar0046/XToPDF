@@ -36,6 +36,8 @@ class ContainerOrchestrationServiceTest {
         when(containerRuntime.getRuntimeInfo()).thenReturn("Runtime disabled");
         
         assertFalse(service.isEnabled(), "Service should not be enabled");
+        assertEquals("Runtime disabled", service.getRuntimeInfo());
+        // Test deprecated method still works
         assertEquals("Runtime disabled", service.getDockerInfo());
     }
     
@@ -87,12 +89,12 @@ class ContainerOrchestrationServiceTest {
     }
     
     @Test
-    void testGetDockerInfoWithDifferentRuntimes() {
+    void testGetRuntimeInfoWithDifferentRuntimes() {
         when(containerRuntime.getRuntimeInfo()).thenReturn("Docker version: 20.10.0");
-        assertEquals("Docker version: 20.10.0", service.getDockerInfo());
+        assertEquals("Docker version: 20.10.0", service.getRuntimeInfo());
         
         when(containerRuntime.getRuntimeInfo()).thenReturn("Podman version: 4.0.0");
-        assertEquals("Podman version: 4.0.0", service.getDockerInfo());
+        assertEquals("Podman version: 4.0.0", service.getRuntimeInfo());
     }
     
     @Test
