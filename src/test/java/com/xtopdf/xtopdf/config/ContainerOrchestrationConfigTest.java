@@ -13,7 +13,7 @@ class ContainerOrchestrationConfigTest {
         ContainerOrchestrationConfig config = new ContainerOrchestrationConfig();
         
         assertFalse(config.isEnabled(), "Container orchestration should be disabled by default");
-        assertEquals("docker", config.getRuntime(), "Default runtime should be docker");
+        assertEquals("podman", config.getRuntime(), "Default runtime should be podman");
         assertEquals("512m", config.getMemoryLimit(), "Default memory limit should be 512m");
         assertEquals(1, config.getCpuLimit(), "Default CPU limit should be 1");
         assertEquals(300, config.getTimeoutSeconds(), "Default timeout should be 300 seconds");

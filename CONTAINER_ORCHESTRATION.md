@@ -21,8 +21,8 @@ Core Domain (FileConversionService)
     Port (ContainerRuntimePort interface)
         ↓
     Adapters:
-    - DockerContainerAdapter (default)
-    - PodmanContainerAdapter
+    - PodmanContainerAdapter (default)
+    - DockerContainerAdapter
     - [Your custom adapter]
 ```
 
@@ -41,20 +41,8 @@ This architecture ensures that:
 
 ## Container Runtime Options
 
-### Docker (Default)
-Docker is the default and most widely used container runtime.
-
-**Pros:**
-- Mature ecosystem
-- Excellent documentation
-- Wide adoption
-
-**Cons:**
-- Requires daemon
-- Requires root or docker group membership
-
-### Podman (Recommended Alternative)
-Podman is a daemonless, rootless container engine that's Docker-compatible.
+### Podman (Default - Recommended)
+Podman is a daemonless, rootless container engine that's Docker-compatible and is the default runtime.
 
 **Pros:**
 - Daemonless architecture (better security)
@@ -67,6 +55,18 @@ Podman is a daemonless, rootless container engine that's Docker-compatible.
 - Less mature ecosystem than Docker
 - Some Docker Compose features may not be fully supported
 
+### Docker (Alternative)
+Docker is a mature and widely used container runtime.
+
+**Pros:**
+- Mature ecosystem
+- Excellent documentation
+- Wide adoption
+
+**Cons:**
+- Requires daemon
+- Requires root or docker group membership
+
 ### Other Options
 The architecture supports adding adapters for:
 - **containerd**: Low-level runtime, ideal for Kubernetes
@@ -75,12 +75,12 @@ The architecture supports adding adapters for:
 
 ## Configuration
 
-### Basic Setup (Docker - Default)
+### Basic Setup (Podman - Default)
 
 ```properties
-# Enable container isolation
+# Enable container isolation with Podman (default)
 container.orchestration.enabled=true
-container.orchestration.runtime=docker
+container.orchestration.runtime=podman
 container.orchestration.image.name=xtopdf-converter
 container.orchestration.image.tag=latest
 container.orchestration.memory.limit=512m
@@ -90,14 +90,14 @@ container.orchestration.timeout.seconds=300
 container.orchestration.cleanup.enabled=true
 ```
 
-### Using Podman Instead of Docker
+### Using Docker Instead of Podman
 
 Simply change the runtime configuration:
 
 ```properties
-# Enable container isolation with Podman
+# Enable container isolation with Docker
 container.orchestration.enabled=true
-container.orchestration.runtime=podman
+container.orchestration.runtime=docker
 container.orchestration.image.name=xtopdf-converter
 container.orchestration.image.tag=latest
 container.orchestration.memory.limit=512m

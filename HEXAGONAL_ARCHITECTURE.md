@@ -78,9 +78,9 @@
 @Bean
 public ContainerRuntimePort containerRuntimePort(config) {
     return switch (config.getRuntime()) {
-        case "docker" -> new DockerContainerAdapter(...);
         case "podman" -> new PodmanContainerAdapter(...);
-        default -> new DockerContainerAdapter(...);
+        case "docker" -> new DockerContainerAdapter(...);
+        default -> new PodmanContainerAdapter(...);
     };
 }
 ```
@@ -98,11 +98,11 @@ public ContainerRuntimePort containerRuntimePort(config) {
 Switch between runtimes by changing configuration:
 
 ```properties
-# Use Docker (default)
-container.orchestration.runtime=docker
-
-# Use Podman
+# Use Podman (default - recommended)
 container.orchestration.runtime=podman
+
+# Use Docker
+container.orchestration.runtime=docker
 ```
 
 No code changes required!

@@ -23,9 +23,9 @@ public class ContainerOrchestrationConfig {
     
     /**
      * Container runtime to use: "docker" or "podman"
-     * Default is "docker" for backward compatibility.
+     * Default is "podman" (recommended for better security).
      */
-    private String runtime = "docker";
+    private String runtime = "podman";
     
     /**
      * Container image configuration

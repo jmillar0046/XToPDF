@@ -13,8 +13,8 @@ import org.springframework.context.annotation.Configuration;
  * Uses hexagonal architecture to allow easy switching between different
  * container runtimes (Docker, Podman, etc.) without changing business logic.
  * 
- * To switch from Docker to Podman, simply change the configuration:
- * container.orchestration.runtime=podman
+ * To switch from Podman to Docker, simply change the configuration:
+ * container.orchestration.runtime=docker
  */
 @Configuration
 @Slf4j
@@ -31,8 +31,8 @@ public class ContainerRuntimeConfiguration {
             case "podman" -> new PodmanContainerAdapter(containerConfig, config.isEnabled());
             case "docker" -> new DockerContainerAdapter(containerConfig, config.isEnabled());
             default -> {
-                log.warn("Unknown runtime '{}', falling back to Docker", runtime);
-                yield new DockerContainerAdapter(containerConfig, config.isEnabled());
+                log.warn("Unknown runtime '{}', falling back to Podman", runtime);
+                yield new PodmanContainerAdapter(containerConfig, config.isEnabled());
             }
         };
     }
