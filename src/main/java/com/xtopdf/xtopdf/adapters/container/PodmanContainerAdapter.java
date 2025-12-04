@@ -132,7 +132,10 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
         command.add("podman");
         command.add("run");
         command.add("-d"); // Detached mode
-        command.add("--rm"); // Auto-remove when stopped (if cleanup enabled)
+        // Only auto-remove if cleanup is enabled
+        if (config.isCleanupEnabled()) {
+            command.add("--rm");
+        }
         command.add("-p");
         command.add(hostPort + ":" + config.getContainerPort());
         command.add("--memory=" + config.getMemoryLimit());
@@ -237,10 +240,23 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
      */
     private void cleanupContainer(String containerId) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("podman", "stop", containerId);
-            Process process = pb.start();
-            process.waitFor();
-            log.info("Stopped and removed Podman container {}", containerId);
+            // Stop container
+            ProcessBuilder stopPb = new ProcessBuilder("podman", "stop", containerId);
+            Process stopProcess = stopPb.start();
+            stopProcess.waitFor();
+            log.debug("Stopped Podman container {}", containerId);
+            
+            // Remove container if not using --rm flag
+            if (!config.isCleanupEnabled()) {
+                // Container was created without --rm, so we need to explicitly remove it
+                ProcessBuilder rmPb = new ProcessBuilder("podman", "rm", containerId);
+                Process rmProcess = rmPb.start();
+                rmProcess.waitFor();
+                log.info("Removed Podman container {}", containerId);
+            } else {
+                // Container will auto-remove due to --rm flag
+                log.info("Stopped Podman container {} (will auto-remove)", containerId);
+            }
         } catch (Exception e) {
             log.warn("Failed to cleanup Podman container {}: {}", containerId, e.getMessage());
         }
