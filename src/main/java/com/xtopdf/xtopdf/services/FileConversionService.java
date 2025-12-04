@@ -99,6 +99,7 @@ public class FileConversionService {
     private final PdfMergeService pdfMergeService;
     private final PageNumberService pageNumberService;
     private final WatermarkService watermarkService;
+    private final ContainerOrchestrationService containerOrchestrationService;
 
     public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
         convertFile(inputFile, outputFile, null, null, PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
@@ -120,38 +121,55 @@ public class FileConversionService {
         FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
 
         if (Objects.nonNull(factory)) {
-            FileConverter converter = factory.createFileConverter();
-            // Convert the file using the conversion method with macro support
-            converter.convertToPDF(inputFile, outputFile, executeMacros);
-            
-            // Add page numbers centrally if enabled
-            if (pageNumberConfig.isEnabled()) {
+            // Define the conversion logic as a Runnable
+            Runnable conversionLogic = () -> {
                 try {
-                    java.io.File outputPdfFile = new java.io.File(outputFile);
-                    pageNumberService.addPageNumbers(outputPdfFile, pageNumberConfig);
-                } catch (java.io.IOException e) {
-                    throw new FileConversionException("Failed to add page numbers: " + e.getMessage());
+                    FileConverter converter = factory.createFileConverter();
+                    // Convert the file using the conversion method with macro support
+                    converter.convertToPDF(inputFile, outputFile, executeMacros);
+                    
+                    // Add page numbers centrally if enabled
+                    if (pageNumberConfig.isEnabled()) {
+                        try {
+                            java.io.File outputPdfFile = new java.io.File(outputFile);
+                            pageNumberService.addPageNumbers(outputPdfFile, pageNumberConfig);
+                        } catch (java.io.IOException e) {
+                            throw new FileConversionException("Failed to add page numbers: " + e.getMessage());
+                        }
+                    }
+                    
+                    // Add watermark if enabled
+                    if (watermarkConfig.isEnabled()) {
+                        try {
+                            java.io.File outputPdfFile = new java.io.File(outputFile);
+                            watermarkService.addWatermark(outputPdfFile, watermarkConfig);
+                        } catch (java.io.IOException e) {
+                            throw new FileConversionException("Failed to add watermark: " + e.getMessage());
+                        }
+                    }
+                    
+                    // If an existing PDF is provided, merge it with the converted PDF
+                    if (existingPdf != null && !existingPdf.isEmpty()) {
+                        try {
+                            java.io.File outputPdfFile = new java.io.File(outputFile);
+                            pdfMergeService.mergePdfs(outputPdfFile, existingPdf, position);
+                        } catch (java.io.IOException e) {
+                            throw new FileConversionException("Failed to merge PDF files: " + e.getMessage());
+                        }
+                    }
+                } catch (FileConversionException e) {
+                    throw new RuntimeException(e);
                 }
-            }
+            };
             
-            // Add watermark if enabled
-            if (watermarkConfig.isEnabled()) {
-                try {
-                    java.io.File outputPdfFile = new java.io.File(outputFile);
-                    watermarkService.addWatermark(outputPdfFile, watermarkConfig);
-                } catch (java.io.IOException e) {
-                    throw new FileConversionException("Failed to add watermark: " + e.getMessage());
+            // Execute conversion either in container or locally
+            try {
+                containerOrchestrationService.executeInContainer(inputFile, outputFile, conversionLogic);
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof FileConversionException) {
+                    throw (FileConversionException) e.getCause();
                 }
-            }
-            
-            // If an existing PDF is provided, merge it with the converted PDF
-            if (existingPdf != null && !existingPdf.isEmpty()) {
-                try {
-                    java.io.File outputPdfFile = new java.io.File(outputFile);
-                    pdfMergeService.mergePdfs(outputPdfFile, existingPdf, position);
-                } catch (java.io.IOException e) {
-                    throw new FileConversionException("Failed to merge PDF files: " + e.getMessage());
-                }
+                throw e;
             }
         } else {
             throw new FileConversionException("Failed to convert file: " + inputFile.getName());
