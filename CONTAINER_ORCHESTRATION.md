@@ -2,56 +2,203 @@
 
 ## Overview
 
-XToPDF now supports running each file conversion in an isolated Docker container. This feature ensures that:
-- Each conversion job is completely isolated from others
+XToPDF now supports running each file conversion in an isolated container using **hexagonal architecture** (ports and adapters pattern). This design allows you to easily switch between different container runtimes (Docker, Podman, etc.) without changing the core business logic.
+
+### Features
+- Each conversion job runs in complete isolation
 - Resources are allocated and cleaned up per job
 - Failed conversions don't affect the main application or other jobs
+- **Runtime-agnostic**: Easily switch between Docker, Podman, or other runtimes
+- **Decoupled architecture**: Container logic is separated from business logic
+
+## Architecture
+
+The implementation follows **hexagonal architecture** (also known as ports and adapters pattern):
+
+```
+Core Domain (FileConversionService)
+        ↓
+    Port (ContainerRuntimePort interface)
+        ↓
+    Adapters:
+    - DockerContainerAdapter (default)
+    - PodmanContainerAdapter
+    - [Your custom adapter]
+```
+
+### Components
+
+1. **Port (Interface)**: `ContainerRuntimePort` - Defines the contract for container operations
+2. **Adapters (Implementations)**:
+   - `DockerContainerAdapter` - Docker implementation using docker-java library
+   - `PodmanContainerAdapter` - Podman implementation using CLI commands
+3. **Configuration**: `ContainerRuntimeConfiguration` - Selects the appropriate adapter based on configuration
+
+This architecture ensures that:
+- The core application doesn't depend on any specific container runtime
+- You can add new runtime adapters without changing existing code
+- Testing is easier with mock implementations
+
+## Container Runtime Options
+
+### Docker (Default)
+Docker is the default and most widely used container runtime.
+
+**Pros:**
+- Mature ecosystem
+- Excellent documentation
+- Wide adoption
+
+**Cons:**
+- Requires daemon
+- Requires root or docker group membership
+
+### Podman (Recommended Alternative)
+Podman is a daemonless, rootless container engine that's Docker-compatible.
+
+**Pros:**
+- Daemonless architecture (better security)
+- Rootless containers (no elevated privileges needed)
+- Docker CLI compatible (drop-in replacement)
+- Apache License 2.0 (free and open source)
+- Better security features
+
+**Cons:**
+- Less mature ecosystem than Docker
+- Some Docker Compose features may not be fully supported
+
+### Other Options
+The architecture supports adding adapters for:
+- **containerd**: Low-level runtime, ideal for Kubernetes
+- **CRI-O**: Kubernetes-optimized runtime
+- Any other OCI-compliant runtime
 
 ## Configuration
 
-Container orchestration is disabled by default. To enable it, configure the following properties in `application.properties`:
+### Basic Setup (Docker - Default)
 
 ```properties
-# Enable container orchestration
+# Enable container isolation
 container.orchestration.enabled=true
-
-# Docker image configuration
+container.orchestration.runtime=docker
 container.orchestration.image.name=xtopdf-converter
 container.orchestration.image.tag=latest
-
-# Resource limits
 container.orchestration.memory.limit=512m
 container.orchestration.cpu.limit=1
-
-# Timeout settings
+container.orchestration.container.port=8080
 container.orchestration.timeout.seconds=300
-
-# Cleanup settings
 container.orchestration.cleanup.enabled=true
 ```
 
-## Building the Docker Image
+### Using Podman Instead of Docker
 
-Before enabling container orchestration, you need to build the Docker image:
+Simply change the runtime configuration:
 
+```properties
+# Enable container isolation with Podman
+container.orchestration.enabled=true
+container.orchestration.runtime=podman
+container.orchestration.image.name=xtopdf-converter
+container.orchestration.image.tag=latest
+container.orchestration.memory.limit=512m
+container.orchestration.cpu.limit=1
+container.orchestration.container.port=8080
+container.orchestration.timeout.seconds=300
+container.orchestration.cleanup.enabled=true
+```
+
+**Note**: Ensure Podman is installed:
+```bash
+# Fedora/RHEL/CentOS
+sudo dnf install podman
+
+# Ubuntu/Debian
+sudo apt-get install podman
+
+# macOS
+brew install podman
+```
+
+## Building the Container Image
+
+### For Docker:
 ```bash
 docker build -t xtopdf-converter:latest .
 ```
 
-The Dockerfile is included in the repository root.
+### For Podman:
+```bash
+podman build -t xtopdf-converter:latest .
+```
+
+The Dockerfile is compatible with both Docker and Podman.
 
 ## How It Works
 
 When container orchestration is enabled:
 
 1. **Request arrives**: A file conversion request is received via the REST API
-2. **Container created**: A new Docker container is spun up from the configured image
-3. **Resources allocated**: Memory and CPU limits are applied to the container
-4. **Conversion executed**: The file is sent to the container for conversion
-5. **Result retrieved**: The converted PDF is retrieved from the container
-6. **Container cleaned up**: The container is stopped and removed (if cleanup is enabled)
+2. **Adapter selected**: The configured runtime adapter (Docker/Podman) is used
+3. **Container created**: A new container is spun up from the configured image
+4. **Resources allocated**: Memory and CPU limits are applied to the container
+5. **Conversion executed**: The file is sent to the container for conversion
+6. **Result retrieved**: The converted PDF is retrieved from the container
+7. **Container cleaned up**: The container is stopped and removed (if cleanup is enabled)
 
 When container orchestration is disabled (default), conversions run in the main application process as before.
+
+## Adding a Custom Runtime Adapter
+
+To add support for a new container runtime:
+
+1. **Create a new adapter class** implementing `ContainerRuntimePort`:
+
+```java
+@Slf4j
+public class MyCustomContainerAdapter implements ContainerRuntimePort {
+    private final ContainerConfig config;
+    private final boolean enabled;
+    
+    public MyCustomContainerAdapter(ContainerConfig config, boolean enabled) {
+        this.config = config;
+        this.enabled = enabled;
+        // Initialize your runtime client
+    }
+    
+    @Override
+    public void executeInContainer(MultipartFile inputFile, String outputFile, 
+                                   Runnable converterLogic) throws FileConversionException {
+        // Implement container execution logic
+    }
+    
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    @Override
+    public String getRuntimeInfo() {
+        // Return runtime information
+    }
+}
+```
+
+2. **Register the adapter** in `ContainerRuntimeConfiguration`:
+
+```java
+return switch (runtime) {
+    case "podman" -> new PodmanContainerAdapter(containerConfig, config.isEnabled());
+    case "docker" -> new DockerContainerAdapter(containerConfig, config.isEnabled());
+    case "mycustom" -> new MyCustomContainerAdapter(containerConfig, config.isEnabled());
+    default -> // ... fallback
+};
+```
+
+3. **Configure** in `application.properties`:
+
+```properties
+container.orchestration.runtime=mycustom
+```
 
 ## Benefits
 

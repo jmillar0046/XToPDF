@@ -13,9 +13,11 @@ class ContainerOrchestrationConfigTest {
         ContainerOrchestrationConfig config = new ContainerOrchestrationConfig();
         
         assertFalse(config.isEnabled(), "Container orchestration should be disabled by default");
+        assertEquals("docker", config.getRuntime(), "Default runtime should be docker");
         assertEquals("512m", config.getMemoryLimit(), "Default memory limit should be 512m");
         assertEquals(1, config.getCpuLimit(), "Default CPU limit should be 1");
         assertEquals(300, config.getTimeoutSeconds(), "Default timeout should be 300 seconds");
+        assertEquals(8080, config.getContainerPort(), "Default container port should be 8080");
         assertTrue(config.isCleanupEnabled(), "Cleanup should be enabled by default");
     }
     
@@ -36,15 +38,19 @@ class ContainerOrchestrationConfigTest {
         ContainerOrchestrationConfig config = new ContainerOrchestrationConfig();
         
         config.setEnabled(true);
+        config.setRuntime("podman");
         config.setMemoryLimit("1g");
         config.setCpuLimit(2);
         config.setTimeoutSeconds(600);
+        config.setContainerPort(9090);
         config.setCleanupEnabled(false);
         
         assertTrue(config.isEnabled());
+        assertEquals("podman", config.getRuntime());
         assertEquals("1g", config.getMemoryLimit());
         assertEquals(2, config.getCpuLimit());
         assertEquals(600, config.getTimeoutSeconds());
+        assertEquals(9090, config.getContainerPort());
         assertFalse(config.isCleanupEnabled());
     }
     
@@ -72,5 +78,19 @@ class ContainerOrchestrationConfigTest {
         image.setName("prod-service");
         image.setTag("stable");
         assertEquals("prod-service:stable", image.getFullName());
+    }
+    
+    @Test
+    void testRuntimeConfiguration() {
+        ContainerOrchestrationConfig config = new ContainerOrchestrationConfig();
+        
+        config.setRuntime("docker");
+        assertEquals("docker", config.getRuntime());
+        
+        config.setRuntime("podman");
+        assertEquals("podman", config.getRuntime());
+        
+        config.setRuntime("containerd");
+        assertEquals("containerd", config.getRuntime());
     }
 }

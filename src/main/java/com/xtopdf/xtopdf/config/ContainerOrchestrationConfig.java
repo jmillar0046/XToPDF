@@ -6,7 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Configuration properties for container orchestration settings.
- * Controls how conversion jobs are executed in isolated Docker containers.
+ * Controls how conversion jobs are executed in isolated containers.
+ * Supports multiple container runtimes (Docker, Podman, etc.) via hexagonal architecture.
  */
 @Configuration
 @ConfigurationProperties(prefix = "container.orchestration")
@@ -21,7 +22,13 @@ public class ContainerOrchestrationConfig {
     private boolean enabled = false;
     
     /**
-     * Docker image configuration
+     * Container runtime to use: "docker" or "podman"
+     * Default is "docker" for backward compatibility.
+     */
+    private String runtime = "docker";
+    
+    /**
+     * Container image configuration
      */
     private Image image = new Image();
     
@@ -45,15 +52,20 @@ public class ContainerOrchestrationConfig {
      */
     private boolean cleanupEnabled = true;
     
+    /**
+     * Port to expose from the container
+     */
+    private int containerPort = 8080;
+    
     @Data
     public static class Image {
         /**
-         * Docker image name
+         * Container image name
          */
         private String name = "xtopdf-converter";
         
         /**
-         * Docker image tag
+         * Container image tag
          */
         private String tag = "latest";
         
