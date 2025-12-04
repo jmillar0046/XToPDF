@@ -13,6 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -78,29 +81,41 @@ class ContainerOrchestrationServiceTest {
     }
     
     @Test
-    void testParseMemoryLimit() {
+    void testParseMemoryLimit() throws Exception {
         service = new ContainerOrchestrationService(config);
         
-        // Test different memory formats using reflection or by testing the behavior
-        // Since parseMemoryLimit is private, we test it indirectly through config
-        config.setMemoryLimit("512m");
-        assertEquals("512m", config.getMemoryLimit());
+        // Test parseMemoryLimit via reflection
+        Method method = ContainerOrchestrationService.class.getDeclaredMethod("parseMemoryLimit", String.class);
+        method.setAccessible(true);
         
-        config.setMemoryLimit("1g");
-        assertEquals("1g", config.getMemoryLimit());
+        // Test various memory formats
+        long result512m = (long) method.invoke(service, "512m");
+        assertEquals(512L * 1024L * 1024L, result512m);
         
-        config.setMemoryLimit("2048k");
-        assertEquals("2048k", config.getMemoryLimit());
+        long result1g = (long) method.invoke(service, "1g");
+        assertEquals(1024L * 1024L * 1024L, result1g);
+        
+        long result2048k = (long) method.invoke(service, "2048k");
+        assertEquals(2048L * 1024L, result2048k);
+        
+        long resultBytes = (long) method.invoke(service, "1024");
+        assertEquals(1024L, resultBytes);
+        
+        // Test invalid format - should return default 512MB
+        long resultInvalid = (long) method.invoke(service, "invalid");
+        assertEquals(512L * 1024L * 1024L, resultInvalid);
     }
     
     @Test
-    void testFindAvailablePort() {
+    void testFindAvailablePort() throws Exception {
         service = new ContainerOrchestrationService(config);
         
-        // The findAvailablePort method should return a valid port
-        // We can't test this directly as it's private, but we know it works
-        // because it uses ServerSocket(0) which always finds an available port
-        assertTrue(true, "Port finding functionality is internal and tested via integration");
+        // Test findAvailablePort via reflection
+        Method method = ContainerOrchestrationService.class.getDeclaredMethod("findAvailablePort");
+        method.setAccessible(true);
+        
+        int port = (int) method.invoke(service);
+        assertTrue(port > 0 && port < 65536, "Port should be in valid range");
     }
     
     @Test
@@ -211,5 +226,89 @@ class ContainerOrchestrationServiceTest {
         
         config.setCpuLimit(8);
         assertEquals(8, config.getCpuLimit());
+    }
+    
+    @Test
+    void testGetDockerInfoWhenDisabled() {
+        service = new ContainerOrchestrationService(config);
+        String info = service.getDockerInfo();
+        assertEquals("Docker client not initialized (orchestration disabled)", info);
+    }
+    
+    @Test
+    void testGetDockerInfoWhenEnabled() throws Exception {
+        // Create service with mocked Docker client
+        service = new ContainerOrchestrationService(config);
+        
+        // Inject mocked Docker client via reflection
+        Field dockerClientField = ContainerOrchestrationService.class.getDeclaredField("dockerClient");
+        dockerClientField.setAccessible(true);
+        dockerClientField.set(service, dockerClient);
+        
+        // Mock Docker info
+        Info dockerInfo = mock(Info.class);
+        when(dockerInfo.getServerVersion()).thenReturn("20.10.0");
+        when(dockerInfo.getContainers()).thenReturn(5);
+        when(dockerInfo.getImages()).thenReturn(10);
+        when(dockerClient.infoCmd()).thenReturn(infoCmd);
+        when(infoCmd.exec()).thenReturn(dockerInfo);
+        
+        String info = service.getDockerInfo();
+        assertTrue(info.contains("20.10.0"));
+        assertTrue(info.contains("5"));
+        assertTrue(info.contains("10"));
+    }
+    
+    @Test
+    void testGetDockerInfoWithException() throws Exception {
+        service = new ContainerOrchestrationService(config);
+        
+        // Inject mocked Docker client via reflection
+        Field dockerClientField = ContainerOrchestrationService.class.getDeclaredField("dockerClient");
+        dockerClientField.setAccessible(true);
+        dockerClientField.set(service, dockerClient);
+        
+        // Mock Docker info to throw exception
+        when(dockerClient.infoCmd()).thenReturn(infoCmd);
+        when(infoCmd.exec()).thenThrow(new RuntimeException("Docker not available"));
+        
+        String info = service.getDockerInfo();
+        assertTrue(info.contains("Failed to get Docker info"));
+        assertTrue(info.contains("Docker not available"));
+    }
+    
+    @Test
+    void testMemoryLimitParsing() throws Exception {
+        service = new ContainerOrchestrationService(config);
+        Method method = ContainerOrchestrationService.class.getDeclaredMethod("parseMemoryLimit", String.class);
+        method.setAccessible(true);
+        
+        // Test uppercase
+        long resultM = (long) method.invoke(service, "512M");
+        assertEquals(512L * 1024L * 1024L, resultM);
+        
+        long resultG = (long) method.invoke(service, "2G");
+        assertEquals(2L * 1024L * 1024L * 1024L, resultG);
+        
+        long resultK = (long) method.invoke(service, "1024K");
+        assertEquals(1024L * 1024L, resultK);
+    }
+    
+    @Test
+    void testExecuteInContainerExceptionHandling() {
+        service = new ContainerOrchestrationService(config);
+        
+        MultipartFile inputFile = new MockMultipartFile(
+                "test.txt", "test.txt", "text/plain", "test content".getBytes());
+        String outputFile = "/tmp/output.pdf";
+        
+        // Test with logic that throws exception
+        Runnable converterLogic = () -> {
+            throw new RuntimeException("Conversion failed");
+        };
+        
+        assertThrows(RuntimeException.class, () -> 
+            service.executeInContainer(inputFile, outputFile, converterLogic)
+        );
     }
 }
