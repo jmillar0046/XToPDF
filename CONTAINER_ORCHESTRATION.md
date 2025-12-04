@@ -246,9 +246,15 @@ The implementation consists of:
 ## Troubleshooting
 
 ### Container fails to start
-- Check if Docker is installed and running: `docker info`
-- Verify the image exists: `docker images | grep xtopdf-converter`
-- Check Docker logs: `docker logs <container-id>`
+- Check if your container runtime is installed and running:
+    - For **Podman** (default): `podman info`
+    - For **Docker**: `docker info`
+- Verify the image exists:
+    - For **Podman** (default): `podman images | grep xtopdf-converter`
+    - For **Docker**: `docker images | grep xtopdf-converter`
+- Check container logs:
+    - For **Podman** (default): `podman logs <container-id>`
+    - For **Docker**: `docker logs <container-id>`
 
 ### Conversion times out
 - Increase `container.orchestration.timeout.seconds`

@@ -32,6 +32,10 @@ import java.io.IOException;
 @Slf4j
 public class DockerContainerAdapter implements ContainerRuntimePort {
     
+    // Port range configuration for fallback when dynamic port allocation fails
+    private static final int PORT_RANGE_START = 30000;
+    private static final int PORT_RANGE_SIZE = 10000;
+    
     private final ContainerConfig config;
     private final DockerClient dockerClient;
     private final RestTemplate restTemplate;
@@ -266,7 +270,7 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
             return socket.getLocalPort();
         } catch (IOException e) {
             // Fallback to random port in range
-            return 30000 + (int) (Math.random() * 10000);
+            return PORT_RANGE_START + (int) (Math.random() * PORT_RANGE_SIZE);
         }
     }
     

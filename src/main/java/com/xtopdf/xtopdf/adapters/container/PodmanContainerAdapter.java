@@ -34,6 +34,10 @@ import java.util.List;
 @Slf4j
 public class PodmanContainerAdapter implements ContainerRuntimePort {
     
+    // Port range configuration for fallback when dynamic port allocation fails
+    private static final int PORT_RANGE_START = 30000;
+    private static final int PORT_RANGE_SIZE = 10000;
+    
     private final ContainerConfig config;
     private final RestTemplate restTemplate;
     private final boolean enabled;
@@ -266,7 +270,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
         try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {
             return socket.getLocalPort();
         } catch (IOException e) {
-            return 30000 + (int) (Math.random() * 10000);
+            return PORT_RANGE_START + (int) (Math.random() * PORT_RANGE_SIZE);
         }
     }
 }

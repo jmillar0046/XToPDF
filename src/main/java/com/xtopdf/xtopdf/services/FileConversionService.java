@@ -158,7 +158,9 @@ public class FileConversionService {
                         }
                     }
                 } catch (FileConversionException e) {
-                    throw new RuntimeException(e);
+                    // Wrap in RuntimeException to comply with Runnable interface
+                    // The exception will be unwrapped and rethrown below
+                    throw new RuntimeException("Conversion failed: " + e.getMessage(), e);
                 }
             };
             
@@ -166,6 +168,7 @@ public class FileConversionService {
             try {
                 containerOrchestrationService.executeInContainer(inputFile, outputFile, conversionLogic);
             } catch (RuntimeException e) {
+                // Unwrap FileConversionException if it was wrapped
                 if (e.getCause() instanceof FileConversionException) {
                     throw (FileConversionException) e.getCause();
                 }
