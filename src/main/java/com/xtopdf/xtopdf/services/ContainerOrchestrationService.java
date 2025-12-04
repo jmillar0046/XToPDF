@@ -19,9 +19,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 
 /**
  * Service for orchestrating Docker containers for file conversion jobs.
@@ -176,7 +175,15 @@ public class ContainerOrchestrationService {
     }
     
     /**
-     * Execute the conversion via container's REST API
+     * Execute the conversion via container's REST API.
+     * The container must expose the same /api/convert endpoint as the main application,
+     * accepting multipart form data with "inputFile" and "outputFile" parameters.
+     * 
+     * @param containerUrl Base URL of the container (e.g., http://localhost:30000)
+     * @param inputFile The file to convert
+     * @param outputFile The output file path (only the filename is sent to the container)
+     * @throws IOException if there's an error reading the input file or communicating with the container
+     * @throws FileConversionException if the container returns a non-2xx status
      */
     private void executeConversionInContainer(String containerUrl, 
                                              MultipartFile inputFile, 
@@ -195,8 +202,12 @@ public class ContainerOrchestrationService {
             }
         };
         
+        // Extract just the filename for the container's output path
+        File outputFileObj = new File(outputFile);
+        String outputFileName = outputFileObj.getName();
+        
         body.add("inputFile", fileResource);
-        body.add("outputFile", Paths.get(outputFile).getFileName().toString());
+        body.add("outputFile", outputFileName);
         
         HttpEntity<MultiValueMap<String, Object>> requestEntity = 
                 new HttpEntity<>(body, headers);

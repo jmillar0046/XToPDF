@@ -57,10 +57,10 @@ class ContainerOrchestrationServiceTest {
         service = new ContainerOrchestrationService(config);
         assertFalse(service.isEnabled());
         
-        // Create new instance with enabled config
-        ContainerOrchestrationConfig enabledConfig = new ContainerOrchestrationConfig();
-        enabledConfig.setEnabled(false); // Keep false to avoid Docker initialization in tests
-        service = new ContainerOrchestrationService(enabledConfig);
+        // Create new instance with different configuration
+        ContainerOrchestrationConfig anotherConfig = new ContainerOrchestrationConfig();
+        anotherConfig.setEnabled(false); // Keep disabled to avoid Docker initialization in unit tests
+        service = new ContainerOrchestrationService(anotherConfig);
         assertFalse(service.isEnabled());
     }
     
