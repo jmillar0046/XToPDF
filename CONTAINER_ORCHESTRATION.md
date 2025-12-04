@@ -121,3 +121,6 @@ Potential improvements:
 - Integration with Kubernetes for production deployments
 - Monitoring and metrics for container operations
 - Support for GPU-accelerated conversions
+- Dedicated health check endpoint for container readiness detection
+- More robust port allocation strategy to handle concurrent container creation
+- Extract memory parsing logic to a utility class for better testability
