@@ -72,12 +72,20 @@ class FileConversionServiceTest {
     @Mock private PdfMergeService pdfMergeService;
     @Mock private PageNumberService pageNumberService;
     @Mock private WatermarkService watermarkService;
+    @Mock private ContainerOrchestrationService containerOrchestrationService;
     @Mock private FileConverter mockConverter;
 
     private FileConversionService fileConversionService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Setup container orchestration to execute locally by default
+        lenient().doAnswer(invocation -> {
+            Runnable logic = invocation.getArgument(2);
+            logic.run();
+            return null;
+        }).when(containerOrchestrationService).executeInContainer(any(), any(), any());
+        
         fileConversionService = new FileConversionService(
             txtFileConverterFactory, docxFileConverterFactory, docFileConverterFactory, htmlFileConverterFactory,
             jpegFileConverterFactory, pngFileConverterFactory, xlsxFileConverterFactory, xlsFileConverterFactory,
@@ -90,7 +98,7 @@ class FileConversionServiceTest {
             threeMfFileConverterFactory, wrlFileConverterFactory, x3dFileConverterFactory,
             dwfFileConverterFactory, dwfxFileConverterFactory, pltFileConverterFactory,
             hpglFileConverterFactory, emfFileConverterFactory, wmfFileConverterFactory,
-            pdfMergeService, pageNumberService, watermarkService
+            pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService
         );
     }
 
