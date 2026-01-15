@@ -195,6 +195,139 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 - **ODF Toolkit** - OpenDocument format support
 - **Commonmark** - Markdown parsing
 
+## Performance Characteristics
+
+### File Size Limits
+
+| Limit | Value | Configurable |
+|-------|-------|--------------|
+| Maximum file size | 100 MB | Yes (MAX_FILE_SIZE) |
+| Maximum line length (CSV/TSV) | 1 MB | Yes (MAX_LINE_LENGTH) |
+| Maximum fields per row (CSV/TSV) | 10,000 | Yes (MAX_FIELDS) |
+| Streaming threshold | 10 MB | Yes (STREAMING_THRESHOLD) |
+
+### Memory Usage
+
+- **Small files (<10MB)**: ~2x file size in memory
+- **Large files (>10MB)**: ~1.5x file size in memory (streaming mode)
+- **Maximum memory**: Should not exceed 3x file size
+
+### Conversion Times (Approximate)
+
+| File Size | Format | Expected Time |
+|-----------|--------|---------------|
+| 1 MB | CSV/TSV | ~500ms |
+| 10 MB | CSV/TSV | ~2s |
+| 50 MB | CSV/TSV | ~10s |
+| 100 MB | CSV/TSV | ~20s |
+
+*Note: Times vary based on hardware and data complexity*
+
+### Streaming Mode
+
+For CSV/TSV files larger than 10MB, XToPDF automatically uses streaming mode to minimize memory usage:
+- Processes files in chunks of 1,000 rows
+- Reduces memory footprint by ~33%
+- Enables conversion of files up to 100MB
+
+## Error Codes and Meanings
+
+When a conversion fails, the API returns a structured error response with:
+- **errorCode**: Type of error
+- **message**: Human-readable description
+- **correlationId**: Unique ID for tracking in logs
+
+### Common Error Codes
+
+| Error Code | HTTP Status | Meaning | Solution |
+|------------|-------------|---------|----------|
+| `CONVERSION_ERROR` | 400 | File conversion failed | Check file format, ensure file is not corrupted |
+| `IO_ERROR` | 500 | File read/write failed | Check file permissions, disk space |
+| `INTERNAL_ERROR` | 500 | Unexpected server error | Contact support with correlation ID |
+
+### Example Error Response
+
+```json
+{
+  "errorCode": "CONVERSION_ERROR",
+  "message": "Line 100 exceeds maximum length: 1000000",
+  "correlationId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### "File size exceeds maximum allowed"
+
+**Cause**: Input file is larger than 100MB  
+**Solution**: 
+- Split the file into smaller chunks
+- Increase MAX_FILE_SIZE in application configuration
+- Use streaming mode (automatic for CSV/TSV >10MB)
+
+#### "Line exceeds maximum length"
+
+**Cause**: CSV/TSV file has a line longer than 1MB  
+**Solution**:
+- Check for malformed data (unclosed quotes, missing delimiters)
+- Increase MAX_LINE_LENGTH if legitimate
+- Split data into multiple rows
+
+#### "Line exceeds maximum field count"
+
+**Cause**: CSV/TSV file has more than 10,000 columns  
+**Solution**:
+- Verify file format is correct
+- Increase MAX_FIELDS if legitimate
+- Consider alternative data format
+
+#### "Failed to delete temporary file"
+
+**Cause**: Temporary file cleanup failed (permissions, disk full)  
+**Solution**:
+- Check disk space: `df -h`
+- Check file permissions in temp directory
+- Manually clean up: `find /tmp -name "temp_*" -mtime +1 -delete`
+
+#### "Conversion timeout"
+
+**Cause**: Large or complex file taking too long  
+**Solution**:
+- Increase server timeout settings
+- Use streaming mode for large files
+- Simplify file content (remove complex formatting)
+
+### Getting Help
+
+If you encounter an error:
+
+1. **Note the correlation ID** from the error response
+2. **Check application logs** for detailed stack trace:
+   ```bash
+   grep "correlationId=YOUR_ID" application.log
+   ```
+3. **Search existing issues** on GitHub
+4. **Create a new issue** with:
+   - Error message and correlation ID
+   - File type and size
+   - Steps to reproduce
+   - Relevant log excerpts
+
+For more detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+## Monitoring and Observability
+
+XToPDF includes comprehensive logging and monitoring capabilities:
+
+- **Structured logging** with correlation IDs for request tracking
+- **Performance metrics** for conversion duration and memory usage
+- **Error tracking** with detailed stack traces
+- **Temporary file monitoring** to prevent disk space issues
+
+For detailed monitoring setup and metrics, see [MONITORING.md](MONITORING.md).
+
 ## Release Process
 
 XToPDF uses automated semantic versioning:
