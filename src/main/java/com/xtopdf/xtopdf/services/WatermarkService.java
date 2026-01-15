@@ -17,12 +17,70 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Service for adding watermarks to PDF documents.
+ * Uses Apache PDFBox to overlay or underlay text watermarks on existing PDF files
+ * with configurable opacity, orientation, and layer placement.
+ * 
+ * <p>Supported features:
+ * <ul>
+ *   <li>Layer: Foreground (overlay) or background (underlay)</li>
+ *   <li>Orientation: Horizontal, vertical, diagonal up, diagonal down</li>
+ *   <li>Configurable font size and text</li>
+ *   <li>Fixed opacity (30%) for subtle watermarking</li>
+ *   <li>Automatic temporary file cleanup on error</li>
+ * </ul>
+ * 
+ * <p>Limitations:
+ * <ul>
+ *   <li>Fixed font (Helvetica)</li>
+ *   <li>Fixed opacity (0.3)</li>
+ *   <li>Text only (no image watermarks)</li>
+ *   <li>Centered positioning only</li>
+ * </ul>
+ * 
+ * <p>Example usage:
+ * <pre>
+ * WatermarkConfig config = WatermarkConfig.builder()
+ *     .enabled(true)
+ *     .text("CONFIDENTIAL")
+ *     .fontSize(48)
+ *     .layer(WatermarkLayer.BACKGROUND)
+ *     .orientation(WatermarkOrientation.DIAGONAL_UP)
+ *     .build();
+ * watermarkService.addWatermark(pdfFile, config);
+ * </pre>
+ * 
+ * @see WatermarkConfig
+ * @see WatermarkLayer
+ * @see WatermarkOrientation
+ */
 @Service
 @Slf4j
 public class WatermarkService {
     
     private static final float DEFAULT_OPACITY = 0.3f;
     
+    /**
+     * Adds a watermark to a PDF file according to the provided configuration.
+     * 
+     * <p>This method modifies the PDF file in-place by:
+     * <ol>
+     *   <li>Creating a temporary copy of the PDF</li>
+     *   <li>Adding the watermark to each page</li>
+     *   <li>Replacing the original file with the modified version</li>
+     *   <li>Cleaning up the temporary file</li>
+     * </ol>
+     * 
+     * <p>The watermark is centered on each page and rotated according to the
+     * specified orientation. The temporary file is guaranteed to be cleaned up
+     * even if an error occurs.
+     * 
+     * @param pdfFile the PDF file to modify (must exist and be readable)
+     * @param config the watermark configuration (text, size, layer, orientation)
+     * @throws IOException if the file cannot be read, modified, or replaced
+     * @throws IllegalArgumentException if pdfFile is null or doesn't exist
+     */
     public void addWatermark(File pdfFile, WatermarkConfig config) throws IOException {
         if (!config.isEnabled() || config.getText() == null || config.getText().trim().isEmpty()) {
             return; // Watermark not enabled or no text provided
@@ -113,6 +171,14 @@ public class WatermarkService {
         }
     }
     
+    /**
+     * Calculates the rotation angle for the watermark based on orientation and page dimensions.
+     * 
+     * @param orientation the desired watermark orientation
+     * @param pageWidth the width of the page in points
+     * @param pageHeight the height of the page in points
+     * @return the rotation angle in degrees
+     */
     private float getRotationAngle(WatermarkOrientation orientation, float pageWidth, float pageHeight) {
         return switch (orientation) {
             case HORIZONTAL -> 0f;

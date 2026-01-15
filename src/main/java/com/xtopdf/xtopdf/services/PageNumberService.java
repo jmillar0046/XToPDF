@@ -16,6 +16,42 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Service for adding page numbers to PDF documents.
+ * Uses Apache PDFBox to modify existing PDF files and add page numbers
+ * with configurable position, alignment, and style.
+ * 
+ * <p>Supported features:
+ * <ul>
+ *   <li>Position: Top or bottom of page</li>
+ *   <li>Alignment: Left, center, or right</li>
+ *   <li>Style: Arabic (1, 2, 3), Roman (I, II, III), Alphabetic (A, B, C)</li>
+ *   <li>Automatic temporary file cleanup on error</li>
+ * </ul>
+ * 
+ * <p>Limitations:
+ * <ul>
+ *   <li>Roman numerals limited to 1-3999</li>
+ *   <li>Fixed font (Helvetica) and size (12pt)</li>
+ *   <li>Fixed margin (0.5 inch)</li>
+ * </ul>
+ * 
+ * <p>Example usage:
+ * <pre>
+ * PageNumberConfig config = PageNumberConfig.builder()
+ *     .enabled(true)
+ *     .position(PageNumberPosition.BOTTOM)
+ *     .alignment(PageNumberAlignment.CENTER)
+ *     .style(PageNumberStyle.ARABIC)
+ *     .build();
+ * pageNumberService.addPageNumbers(pdfFile, config);
+ * </pre>
+ * 
+ * @see PageNumberConfig
+ * @see PageNumberPosition
+ * @see PageNumberAlignment
+ * @see PageNumberStyle
+ */
 @Service
 @Slf4j
 public class PageNumberService {
@@ -23,6 +59,25 @@ public class PageNumberService {
     private static final float MARGIN = 36; // 0.5 inch margin
     private static final float DEFAULT_FONT_SIZE = 12;
     
+    /**
+     * Adds page numbers to a PDF file according to the provided configuration.
+     * 
+     * <p>This method modifies the PDF file in-place by:
+     * <ol>
+     *   <li>Creating a temporary copy of the PDF</li>
+     *   <li>Adding page numbers to each page</li>
+     *   <li>Replacing the original file with the modified version</li>
+     *   <li>Cleaning up the temporary file</li>
+     * </ol>
+     * 
+     * <p>The temporary file is guaranteed to be cleaned up even if an error occurs,
+     * using a try-finally block.
+     * 
+     * @param pdfFile the PDF file to modify (must exist and be readable)
+     * @param config the page number configuration (position, alignment, style)
+     * @throws IOException if the file cannot be read, modified, or replaced
+     * @throws IllegalArgumentException if pdfFile is null or doesn't exist
+     */
     public void addPageNumbers(File pdfFile, PageNumberConfig config) throws IOException {
         if (!config.isEnabled()) {
             return; // Page numbering not enabled
@@ -108,6 +163,13 @@ public class PageNumberService {
         }
     }
     
+    /**
+     * Formats a page number according to the specified style.
+     * 
+     * @param pageNum the page number to format (1-based)
+     * @param style the numbering style to use
+     * @return the formatted page number string
+     */
     private String formatPageNumber(int pageNum, PageNumberStyle style) {
         return switch (style) {
             case ARABIC -> String.valueOf(pageNum);
@@ -118,6 +180,13 @@ public class PageNumberService {
         };
     }
     
+    /**
+     * Converts an integer to Roman numeral notation.
+     * 
+     * @param num the number to convert (1-3999)
+     * @param uppercase true for uppercase (I, II, III), false for lowercase (i, ii, iii)
+     * @return the Roman numeral string, or the original number as string if out of range
+     */
     private String toRomanNumeral(int num, boolean uppercase) {
         if (num <= 0 || num > 3999) {
             return String.valueOf(num); // Fallback for out-of-range values
@@ -134,6 +203,13 @@ public class PageNumberService {
         return uppercase ? roman : roman.toLowerCase();
     }
     
+    /**
+     * Converts an integer to alphabetic notation (A, B, C... Z, AA, AB...).
+     * 
+     * @param num the number to convert (must be positive)
+     * @param uppercase true for uppercase (A, B, C), false for lowercase (a, b, c)
+     * @return the alphabetic string, or the original number as string if invalid
+     */
     private String toAlphabetic(int num, boolean uppercase) {
         if (num <= 0) {
             return String.valueOf(num); // Fallback
