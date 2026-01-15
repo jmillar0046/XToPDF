@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +15,7 @@ import java.nio.file.Files;
  * Service to convert DWG files to PDF by going through DXF intermediate format.
  * This follows the conversion path: DWG → DXF → PDF
  */
+@Slf4j
 @AllArgsConstructor
 @Service
 public class DwgToPdfService {
@@ -21,10 +23,13 @@ public class DwgToPdfService {
     private final DxfToPdfService dxfToPdfService;
     
     public void convertDwgToPdf(MultipartFile dwgFile, File pdfFile) throws IOException {
-        // Create a temporary DXF file for the intermediate conversion
-        File tempDxfFile = File.createTempFile("temp_dwg_to_dxf_", ".dxf");
+        File tempDxfFile = null;
         
         try {
+            // Create a temporary DXF file for the intermediate conversion
+            tempDxfFile = File.createTempFile("temp_dwg_to_dxf_", ".dxf");
+            final File finalTempDxfFile = tempDxfFile; // Make effectively final for inner class
+            
             // Step 1: Convert DWG to DXF
             dwgToDxfService.convertDwgToDxf(dwgFile, tempDxfFile);
             
@@ -38,7 +43,7 @@ public class DwgToPdfService {
                 
                 @Override
                 public String getOriginalFilename() {
-                    return tempDxfFile.getName();
+                    return finalTempDxfFile.getName();
                 }
                 
                 @Override
@@ -48,29 +53,29 @@ public class DwgToPdfService {
                 
                 @Override
                 public boolean isEmpty() {
-                    return tempDxfFile.length() == 0;
+                    return finalTempDxfFile.length() == 0;
                 }
                 
                 @Override
                 public long getSize() {
-                    return tempDxfFile.length();
+                    return finalTempDxfFile.length();
                 }
                 
                 @Override
                 public byte[] getBytes() throws IOException {
-                    try (FileInputStream fis = new FileInputStream(tempDxfFile)) {
+                    try (FileInputStream fis = new FileInputStream(finalTempDxfFile)) {
                         return fis.readAllBytes();
                     }
                 }
                 
                 @Override
                 public InputStream getInputStream() throws IOException {
-                    return new FileInputStream(tempDxfFile);
+                    return new FileInputStream(finalTempDxfFile);
                 }
                 
                 @Override
                 public void transferTo(File dest) throws IOException {
-                    try (FileInputStream fis = new FileInputStream(tempDxfFile);
+                    try (FileInputStream fis = new FileInputStream(finalTempDxfFile);
                          java.io.FileOutputStream fos = new java.io.FileOutputStream(dest)) {
                         fis.transferTo(fos);
                     }
@@ -79,12 +84,11 @@ public class DwgToPdfService {
             
             dxfToPdfService.convertDxfToPdf(dxfMultipartFile, pdfFile);
         } finally {
-            // Clean up temporary file securely
-            try {
-                Files.deleteIfExists(tempDxfFile.toPath());
-            } catch (IOException e) {
-                // Log the error but don't fail the conversion
-                System.err.println("Warning: Failed to delete temporary file: " + tempDxfFile.getAbsolutePath());
+            // Guaranteed cleanup of temporary file
+            if (tempDxfFile != null && tempDxfFile.exists()) {
+                if (!tempDxfFile.delete()) {
+                    log.warn("Failed to delete temporary DXF file: {}", tempDxfFile.getAbsolutePath());
+                }
             }
         }
     }

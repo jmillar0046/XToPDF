@@ -43,7 +43,7 @@ public class DocToPdfService {
             builder.save(pdfFile);
         } catch (Exception e) {
             log.error("Error processing DOC file: {}", e.getMessage(), e);
-            throw new IOException("Error processing DOC file: " + e.getMessage());
+            throw new IOException("Error processing DOC file: " + e.getMessage(), e);
         }
     }
 }

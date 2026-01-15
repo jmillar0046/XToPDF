@@ -28,67 +28,88 @@ public class WatermarkService {
             return; // Watermark not enabled or no text provided
         }
         
-        // Create a temporary file for the modified PDF
-        File tempFile = File.createTempFile("temp_", ".pdf");
-        
-        try (PDDocument document = Loader.loadPDF(pdfFile)) {
-            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        File tempFile = null;
+        try {
+            // Create a temporary file for the modified PDF
+            tempFile = File.createTempFile("temp_", ".pdf");
             
-            for (PDPage page : document.getPages()) {
-                float pageWidth = page.getMediaBox().getWidth();
-                float pageHeight = page.getMediaBox().getHeight();
+            try (PDDocument document = Loader.loadPDF(pdfFile)) {
+                PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
                 
-                // Determine if we're adding to background or foreground
-                boolean append = (config.getLayer() == WatermarkLayer.FOREGROUND);
+                for (PDPage page : document.getPages()) {
+                    float pageWidth = page.getMediaBox().getWidth();
+                    float pageHeight = page.getMediaBox().getHeight();
+                    
+                    // Determine if we're adding to background or foreground
+                    boolean append = (config.getLayer() == WatermarkLayer.FOREGROUND);
+                    
+                    try (PDPageContentStream contentStream = new PDPageContentStream(
+                            document, page, 
+                            append ? PDPageContentStream.AppendMode.APPEND : PDPageContentStream.AppendMode.PREPEND,
+                            true)) {
+                        
+                        // Set transparency
+                        PDExtendedGraphicsState gs = new PDExtendedGraphicsState();
+                        gs.setNonStrokingAlphaConstant(DEFAULT_OPACITY);
+                        gs.setStrokingAlphaConstant(DEFAULT_OPACITY);
+                        contentStream.setGraphicsStateParameters(gs);
+                        
+                        // Calculate position (center of page)
+                        float centerX = pageWidth / 2;
+                        float centerY = pageHeight / 2;
+                        
+                        // Get rotation angle
+                        float rotationAngle = getRotationAngle(config.getOrientation(), pageWidth, pageHeight);
+                        
+                        // Set up transformation matrix for rotation around center
+                        contentStream.saveGraphicsState();
+                        contentStream.transform(Matrix.getTranslateInstance(centerX, centerY));
+                        contentStream.transform(Matrix.getRotateInstance(Math.toRadians(rotationAngle), 0, 0));
+                        
+                        // Draw watermark text
+                        contentStream.beginText();
+                        contentStream.setFont(font, config.getFontSize());
+                        
+                        // Calculate text width for centering
+                        float textWidth = font.getStringWidth(config.getText()) / 1000 * config.getFontSize();
+                        contentStream.newLineAtOffset(-textWidth / 2, 0);
+                        contentStream.showText(config.getText());
+                        contentStream.endText();
+                        
+                        contentStream.restoreGraphicsState();
+                    }
+                }
                 
-                try (PDPageContentStream contentStream = new PDPageContentStream(
-                        document, page, 
-                        append ? PDPageContentStream.AppendMode.APPEND : PDPageContentStream.AppendMode.PREPEND,
-                        true)) {
-                    
-                    // Set transparency
-                    PDExtendedGraphicsState gs = new PDExtendedGraphicsState();
-                    gs.setNonStrokingAlphaConstant(DEFAULT_OPACITY);
-                    gs.setStrokingAlphaConstant(DEFAULT_OPACITY);
-                    contentStream.setGraphicsStateParameters(gs);
-                    
-                    // Calculate position (center of page)
-                    float centerX = pageWidth / 2;
-                    float centerY = pageHeight / 2;
-                    
-                    // Get rotation angle
-                    float rotationAngle = getRotationAngle(config.getOrientation(), pageWidth, pageHeight);
-                    
-                    // Set up transformation matrix for rotation around center
-                    contentStream.saveGraphicsState();
-                    contentStream.transform(Matrix.getTranslateInstance(centerX, centerY));
-                    contentStream.transform(Matrix.getRotateInstance(Math.toRadians(rotationAngle), 0, 0));
-                    
-                    // Draw watermark text
-                    contentStream.beginText();
-                    contentStream.setFont(font, config.getFontSize());
-                    
-                    // Calculate text width for centering
-                    float textWidth = font.getStringWidth(config.getText()) / 1000 * config.getFontSize();
-                    contentStream.newLineAtOffset(-textWidth / 2, 0);
-                    contentStream.showText(config.getText());
-                    contentStream.endText();
-                    
-                    contentStream.restoreGraphicsState();
+                document.save(tempFile);
+            }
+            
+            // Replace original file with the modified one
+            if (!pdfFile.delete()) {
+                throw new IOException("Failed to delete original PDF");
+            }
+            
+            if (!tempFile.renameTo(pdfFile)) {
+                // If rename fails, try to copy the content
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(tempFile);
+                     java.io.FileOutputStream fos = new java.io.FileOutputStream(pdfFile)) {
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                    }
                 }
             }
             
-            document.save(tempFile);
-        }
-        
-        // Replace original file with the modified one
-        if (pdfFile.delete()) {
-            if (!tempFile.renameTo(pdfFile)) {
-                throw new IOException("Failed to replace original PDF with watermarked version");
+            // Mark temp file for deletion (will be cleaned up in finally)
+            tempFile = null;
+            
+        } finally {
+            // Guaranteed cleanup of temporary file
+            if (tempFile != null && tempFile.exists()) {
+                if (!tempFile.delete()) {
+                    log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
+                }
             }
-        } else {
-            tempFile.delete();
-            throw new IOException("Failed to delete original PDF");
         }
     }
     

@@ -1,24 +1,36 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Element;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Node;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.NodeList;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.xml.parsers.DocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import java.io.*;
+import lombok.extern.slf4j.Slf4j;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert X3D files to PDF.
  * X3D is an XML-based 3D scene format (successor to VRML).
  * This converter parses the X3D file and provides scene statistics.
  */
+@Slf4j
 @Service
 public class X3dToPdfService {
     

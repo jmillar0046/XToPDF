@@ -1,18 +1,30 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XSLFShape;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class PptxToPdfService {
     

@@ -1,23 +1,34 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import lombok.extern.slf4j.Slf4j;
 import java.nio.charset.StandardCharsets;
+import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
+import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import java.util.regex.Matcher;
+import lombok.extern.slf4j.Slf4j;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert STEP/STP files to PDF.
  * STEP (Standard for the Exchange of Product Data) is a text-based CAD format.
  * This converter parses the STEP file and extracts entity information.
  */
+@Slf4j
 @Service
 public class StepToPdfService {
     

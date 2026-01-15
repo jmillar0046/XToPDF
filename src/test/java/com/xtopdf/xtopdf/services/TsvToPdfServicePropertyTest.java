@@ -34,15 +34,16 @@ class TsvToPdfServicePropertyTest {
         int maxColumns = rows.stream().mapToInt(List::size).max().orElse(0);
         
         // Parse each row
-        for (List<String> row : rows) {
+        for (int i = 0; i < rows.size(); i++) {
+            List<String> row = rows.get(i);
             String tsvLine = String.join("\t", row);
-            String[] parsed = tsvToPdfService.parseTsvLine(tsvLine);
+            String[] parsed = tsvToPdfService.parseTsvLine(tsvLine, i + 1);
             
             // Verify parsing splits correctly on tabs
             assertEquals(row.size(), parsed.length, "Parsed row should have correct number of fields");
             
-            for (int i = 0; i < row.size(); i++) {
-                assertEquals(row.get(i), parsed[i], "Field values should match");
+            for (int j = 0; j < row.size(); j++) {
+                assertEquals(row.get(j), parsed[j], "Field values should match");
             }
         }
         
@@ -101,7 +102,7 @@ class TsvToPdfServicePropertyTest {
         }
         String tsvLine = String.join("\t", emptyFields);
         
-        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine);
+        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine, 1);
         
         // Verify correct number of empty fields
         assertEquals(fieldCount, parsed.length, "Should parse correct number of fields");
@@ -120,7 +121,7 @@ class TsvToPdfServicePropertyTest {
         // Create TSV line with quoted fields
         String tsvLine = field1 + "\t\"" + field2 + "\"\t" + field3;
         
-        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine);
+        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine, 1);
         
         // Verify parsing handles quotes correctly
         assertEquals(3, parsed.length, "Should have 3 fields");
@@ -138,7 +139,7 @@ class TsvToPdfServicePropertyTest {
         // Create TSV line with escaped quotes
         String tsvLine = "field1\t\"" + prefix + "\"\"" + suffix + "\"\tfield3";
         
-        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine);
+        String[] parsed = tsvToPdfService.parseTsvLine(tsvLine, 1);
         
         // Verify escaped quotes are handled correctly
         assertEquals(3, parsed.length, "Should have 3 fields");

@@ -235,4 +235,77 @@ class CsvToPdfServiceTest {
         assertThrows(IOException.class, 
             () -> csvToPdfService.convertCsvToPdf(csvFile, null));
     }
+
+    @Test
+    void testConvertCsvToPdf_ExceedsMaxFileSize_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a mock file that reports size larger than MAX_FILE_SIZE (100MB)
+        MockMultipartFile largeCsvFile = new MockMultipartFile(
+                "file", 
+                "large.csv", 
+                "text/csv", 
+                new byte[0]
+        ) {
+            @Override
+            public long getSize() {
+                return 100_000_001L; // Just over 100MB
+            }
+        };
+
+        File pdfFile = tempDir.resolve("large_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            csvToPdfService.convertCsvToPdf(largeCsvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("File size exceeds maximum allowed"));
+    }
+
+    @Test
+    void testConvertCsvToPdf_ExceedsMaxLineLength_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a line that exceeds MAX_LINE_LENGTH (1MB)
+        StringBuilder longLine = new StringBuilder();
+        for (int i = 0; i < 1_000_001; i++) {
+            longLine.append('a');
+        }
+        
+        MockMultipartFile csvFile = new MockMultipartFile(
+                "file", 
+                "long_line.csv", 
+                "text/csv", 
+                longLine.toString().getBytes()
+        );
+
+        File pdfFile = tempDir.resolve("long_line_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            csvToPdfService.convertCsvToPdf(csvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("exceeds maximum length"));
+    }
+
+    @Test
+    void testConvertCsvToPdf_ExceedsMaxFields_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a line with more than MAX_FIELDS (10,000) fields
+        StringBuilder manyFields = new StringBuilder();
+        for (int i = 0; i < 10_001; i++) {
+            if (i > 0) manyFields.append(',');
+            manyFields.append("field").append(i);
+        }
+        
+        MockMultipartFile csvFile = new MockMultipartFile(
+                "file", 
+                "many_fields.csv", 
+                "text/csv", 
+                manyFields.toString().getBytes()
+        );
+
+        File pdfFile = tempDir.resolve("many_fields_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            csvToPdfService.convertCsvToPdf(csvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("exceeds maximum field count"));
+    }
 }

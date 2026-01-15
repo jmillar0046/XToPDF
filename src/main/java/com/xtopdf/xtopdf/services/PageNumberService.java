@@ -28,62 +28,83 @@ public class PageNumberService {
             return; // Page numbering not enabled
         }
         
-        // Create a temporary file for the modified PDF
-        File tempFile = File.createTempFile("temp_", ".pdf");
-        
-        try (PDDocument document = Loader.loadPDF(pdfFile)) {
-            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-            int pageNum = 1;
-            int totalPages = document.getNumberOfPages();
+        File tempFile = null;
+        try {
+            // Create a temporary file for the modified PDF
+            tempFile = File.createTempFile("temp_", ".pdf");
             
-            for (PDPage page : document.getPages()) {
-                float pageWidth = page.getMediaBox().getWidth();
-                float pageHeight = page.getMediaBox().getHeight();
+            try (PDDocument document = Loader.loadPDF(pdfFile)) {
+                PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                int pageNum = 1;
+                int totalPages = document.getNumberOfPages();
                 
-                // Determine position
-                float yPosition;
-                if (config.getPosition() == PageNumberPosition.TOP) {
-                    yPosition = pageHeight - MARGIN;
-                } else {
-                    yPosition = MARGIN;
-                }
-                
-                // Format page number based on style
-                String pageNumberText = formatPageNumber(pageNum, config.getStyle());
-                
-                // Calculate x position based on alignment
-                float textWidth = font.getStringWidth(pageNumberText) / 1000 * DEFAULT_FONT_SIZE;
-                float xPosition = switch (config.getAlignment()) {
-                    case LEFT -> MARGIN;
-                    case RIGHT -> pageWidth - MARGIN - textWidth;
-                    case CENTER -> (pageWidth - textWidth) / 2;
-                };
-                
-                try (PDPageContentStream contentStream = new PDPageContentStream(
-                        document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+                for (PDPage page : document.getPages()) {
+                    float pageWidth = page.getMediaBox().getWidth();
+                    float pageHeight = page.getMediaBox().getHeight();
                     
-                    // Draw page number
-                    contentStream.beginText();
-                    contentStream.setFont(font, DEFAULT_FONT_SIZE);
-                    contentStream.newLineAtOffset(xPosition, yPosition);
-                    contentStream.showText(pageNumberText);
-                    contentStream.endText();
+                    // Determine position
+                    float yPosition;
+                    if (config.getPosition() == PageNumberPosition.TOP) {
+                        yPosition = pageHeight - MARGIN;
+                    } else {
+                        yPosition = MARGIN;
+                    }
+                    
+                    // Format page number based on style
+                    String pageNumberText = formatPageNumber(pageNum, config.getStyle());
+                    
+                    // Calculate x position based on alignment
+                    float textWidth = font.getStringWidth(pageNumberText) / 1000 * DEFAULT_FONT_SIZE;
+                    float xPosition = switch (config.getAlignment()) {
+                        case LEFT -> MARGIN;
+                        case RIGHT -> pageWidth - MARGIN - textWidth;
+                        case CENTER -> (pageWidth - textWidth) / 2;
+                    };
+                    
+                    try (PDPageContentStream contentStream = new PDPageContentStream(
+                            document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+                        
+                        // Draw page number
+                        contentStream.beginText();
+                        contentStream.setFont(font, DEFAULT_FONT_SIZE);
+                        contentStream.newLineAtOffset(xPosition, yPosition);
+                        contentStream.showText(pageNumberText);
+                        contentStream.endText();
+                    }
+                    
+                    pageNum++;
                 }
                 
-                pageNum++;
+                document.save(tempFile);
             }
             
-            document.save(tempFile);
-        }
-        
-        // Replace original file with the modified one
-        if (pdfFile.delete()) {
-            if (!tempFile.renameTo(pdfFile)) {
-                throw new IOException("Failed to replace original PDF with page numbers");
+            // Replace original file with the modified one
+            if (!pdfFile.delete()) {
+                throw new IOException("Failed to delete original PDF");
             }
-        } else {
-            tempFile.delete();
-            throw new IOException("Failed to delete original PDF");
+            
+            if (!tempFile.renameTo(pdfFile)) {
+                // If rename fails, try to copy the content
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(tempFile);
+                     java.io.FileOutputStream fos = new java.io.FileOutputStream(pdfFile)) {
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                    }
+                }
+            }
+            
+            // Mark temp file for deletion (will be cleaned up in finally)
+            tempFile = null;
+            
+        } finally {
+            // Guaranteed cleanup of temporary file
+            if (tempFile != null && tempFile.exists()) {
+                if (!tempFile.delete()) {
+                    log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
+                }
+            }
         }
     }
     

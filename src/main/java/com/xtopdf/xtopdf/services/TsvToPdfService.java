@@ -21,6 +21,11 @@ import java.util.List;
 @Service
 public class TsvToPdfService {
     
+    // Security: Maximum allowed values to prevent DoS attacks
+    private static final int MAX_LINE_LENGTH = 1_000_000;  // 1MB per line
+    private static final int MAX_FIELDS = 10_000;          // 10k fields per row
+    private static final long MAX_FILE_SIZE = 100_000_000; // 100MB
+    
     private final PdfBackendProvider pdfBackend;
     
     public TsvToPdfService(PdfBackendProvider pdfBackend) {
@@ -30,14 +35,40 @@ public class TsvToPdfService {
     public void convertTsvToPdf(MultipartFile tsvFile, File pdfFile) throws IOException {
         log.debug("Starting TSV to PDF conversion for file: {}", tsvFile.getOriginalFilename());
         
-        // Read TSV content
+        // Validate file size
+        long fileSize = tsvFile.getSize();
+        if (fileSize > MAX_FILE_SIZE) {
+            log.warn("TSV file exceeds maximum size: {} bytes (max: {})", fileSize, MAX_FILE_SIZE);
+            throw new IOException("File size exceeds maximum allowed: " + MAX_FILE_SIZE + " bytes");
+        }
+        
+        // Read TSV content with validation
         List<String[]> rows = new ArrayList<>();
         int maxColumns = 0;
         
         try (BufferedReader br = new BufferedReader(new InputStreamReader(tsvFile.getInputStream()))) {
             String line;
+            int lineNumber = 0;
+            
             while ((line = br.readLine()) != null) {
-                String[] values = parseTsvLine(line);
+                lineNumber++;
+                
+                // Validate line length
+                if (line.length() > MAX_LINE_LENGTH) {
+                    log.warn("Line {} exceeds maximum length: {} chars (max: {})", 
+                             lineNumber, line.length(), MAX_LINE_LENGTH);
+                    throw new IOException("Line " + lineNumber + " exceeds maximum length: " + MAX_LINE_LENGTH);
+                }
+                
+                String[] values = parseTsvLine(line, lineNumber);
+                
+                // Validate field count
+                if (values.length > MAX_FIELDS) {
+                    log.warn("Line {} exceeds maximum field count: {} fields (max: {})", 
+                             lineNumber, values.length, MAX_FIELDS);
+                    throw new IOException("Line " + lineNumber + " exceeds maximum field count: " + MAX_FIELDS);
+                }
+                
                 rows.add(values);
                 maxColumns = Math.max(maxColumns, values.length);
             }
@@ -73,7 +104,7 @@ public class TsvToPdfService {
     /**
      * Parse a TSV line handling quoted values and escaped quotes
      */
-    String[] parseTsvLine(String line) {
+    String[] parseTsvLine(String line, int lineNumber) {
         List<String> values = new ArrayList<>();
         StringBuilder currentValue = new StringBuilder();
         boolean inQuotes = false;
@@ -97,6 +128,11 @@ public class TsvToPdfService {
             } else {
                 currentValue.append(c);
             }
+        }
+        
+        // Handle unclosed quotes at end of line
+        if (inQuotes) {
+            log.warn("Unclosed quote in line {}, treating as literal", lineNumber);
         }
         
         // Add last value

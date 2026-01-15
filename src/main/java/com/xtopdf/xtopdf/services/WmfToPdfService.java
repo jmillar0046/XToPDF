@@ -1,13 +1,20 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteBuffer;
+import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteOrder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert Windows Metafile files (WMF) to PDF.
@@ -15,6 +22,7 @@ import java.nio.ByteOrder;
  * This converter parses the WMF header and provides file statistics.
  * Uses the PDF backend abstraction layer with Apache PDFBox.
  */
+@Slf4j
 @Service
 public class WmfToPdfService {
     

@@ -52,7 +52,7 @@ public class DocxToPdfService {
             builder.save(pdfFile);
         } catch (Exception e) {
             log.error("Error processing DOCX file: {}", e.getMessage(), e);
-            throw new IOException("Error processing DOCX file: " + e.getMessage());
+            throw new IOException("Error processing DOCX file: " + e.getMessage(), e);
         }
     }
     

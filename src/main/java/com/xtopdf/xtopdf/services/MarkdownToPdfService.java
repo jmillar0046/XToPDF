@@ -1,17 +1,28 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.commonmark.node.Node;
+import lombok.extern.slf4j.Slf4j;
 import org.commonmark.parser.Parser;
+import lombok.extern.slf4j.Slf4j;
 import org.commonmark.renderer.text.TextContentRenderer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
+import lombok.extern.slf4j.Slf4j;
 import java.io.File;
+import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import java.io.InputStreamReader;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert Markdown files to PDF.
@@ -22,6 +33,7 @@ import java.io.InputStreamReader;
  * For HTML-based rendering with better formatting, consider using
  * a specialized HTML-to-PDF library.
  */
+@Slf4j
 @Service
 public class MarkdownToPdfService {
     

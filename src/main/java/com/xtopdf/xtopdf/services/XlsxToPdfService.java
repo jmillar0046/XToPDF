@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,7 @@ import java.text.SimpleDateFormat;
  * Service to convert XLSX (Excel) files to PDF.
  * Uses Apache POI to parse XLSX and PDFBox to generate PDF.
  */
+@Slf4j
 @Service
 public class XlsxToPdfService {
     
