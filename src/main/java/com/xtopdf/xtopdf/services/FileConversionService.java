@@ -120,7 +120,8 @@ public class FileConversionService {
     }
 
     public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, WatermarkConfig watermarkConfig, boolean executeMacros) throws FileConversionException {
-        FileConverterFactory factory = getFactoryForFile(Objects.requireNonNull(inputFile.getOriginalFilename()));
+        String fileName = Objects.requireNonNull(inputFile.getOriginalFilename());
+        FileConverterFactory factory = getFactoryForFile(fileName);
 
         if (Objects.nonNull(factory)) {
             // Define the conversion logic as a Runnable
@@ -136,7 +137,8 @@ public class FileConversionService {
                             java.io.File outputPdfFile = new java.io.File(outputFile);
                             pageNumberService.addPageNumbers(outputPdfFile, pageNumberConfig);
                         } catch (java.io.IOException e) {
-                            throw new FileConversionException("Failed to add page numbers: " + e.getMessage());
+                            throw new ConversionRuntimeException(
+                                new FileConversionException("Failed to add page numbers to " + fileName + ": " + e.getMessage(), e));
                         }
                     }
                     
@@ -146,7 +148,8 @@ public class FileConversionService {
                             java.io.File outputPdfFile = new java.io.File(outputFile);
                             watermarkService.addWatermark(outputPdfFile, watermarkConfig);
                         } catch (java.io.IOException e) {
-                            throw new FileConversionException("Failed to add watermark: " + e.getMessage());
+                            throw new ConversionRuntimeException(
+                                new FileConversionException("Failed to add watermark to " + fileName + ": " + e.getMessage(), e));
                         }
                     }
                     
@@ -156,28 +159,51 @@ public class FileConversionService {
                             java.io.File outputPdfFile = new java.io.File(outputFile);
                             pdfMergeService.mergePdfs(outputPdfFile, existingPdf, position);
                         } catch (java.io.IOException e) {
-                            throw new FileConversionException("Failed to merge PDF files: " + e.getMessage());
+                            throw new ConversionRuntimeException(
+                                new FileConversionException("Failed to merge PDF files for " + fileName + ": " + e.getMessage(), e));
                         }
                     }
-                } catch (FileConversionException e) {
-                    // Wrap in RuntimeException to comply with Runnable interface
-                    // The exception will be unwrapped and rethrown below
-                    throw new RuntimeException("Conversion failed: " + e.getMessage(), e);
+                } catch (ConversionRuntimeException e) {
+                    // Re-throw our wrapped exceptions
+                    throw e;
+                } catch (Exception e) {
+                    // Wrap unexpected exceptions
+                    log.error("Unexpected error during conversion of {}: {}", fileName, e.getMessage(), e);
+                    throw new ConversionRuntimeException(
+                        new FileConversionException("Unexpected error converting " + fileName + ": " + e.getMessage(), e));
                 }
             };
             
             // Execute conversion either in container or locally
             try {
                 containerOrchestrationService.executeInContainer(inputFile, outputFile, conversionLogic);
+            } catch (ConversionRuntimeException e) {
+                // Unwrap and rethrow the FileConversionException
+                throw e.getFileConversionException();
             } catch (RuntimeException e) {
-                // Unwrap FileConversionException if it was wrapped
-                if (e.getCause() instanceof FileConversionException) {
-                    throw (FileConversionException) e.getCause();
-                }
-                throw e;
+                // Handle unexpected runtime exceptions
+                log.error("Unexpected runtime error during conversion of {}: {}", fileName, e.getMessage(), e);
+                throw new FileConversionException("Unexpected error converting " + fileName + ": " + e.getMessage(), e);
             }
         } else {
-            throw new FileConversionException("Failed to convert file: " + inputFile.getName());
+            throw new FileConversionException("Unsupported file format: " + fileName);
+        }
+    }
+    
+    /**
+     * Helper exception class for wrapping FileConversionException in RuntimeException.
+     * This is necessary because the Runnable interface doesn't allow checked exceptions.
+     */
+    private static class ConversionRuntimeException extends RuntimeException {
+        private final FileConversionException fileConversionException;
+        
+        public ConversionRuntimeException(FileConversionException cause) {
+            super(cause);
+            this.fileConversionException = cause;
+        }
+        
+        public FileConversionException getFileConversionException() {
+            return fileConversionException;
         }
     }
 
