@@ -26,6 +26,10 @@ public class CsvToPdfService {
     private static final int MAX_FIELDS = 10_000;          // 10k fields per row
     private static final long MAX_FILE_SIZE = 100_000_000; // 100MB
     
+    // Performance: Streaming thresholds for large files
+    private static final long STREAMING_THRESHOLD = 10_000_000; // 10MB
+    private static final int CHUNK_SIZE = 1000; // Process 1000 rows at a time
+    
     private final PdfBackendProvider pdfBackend;
     
     public CsvToPdfService(PdfBackendProvider pdfBackend) {
@@ -42,6 +46,21 @@ public class CsvToPdfService {
             throw new IOException("File size exceeds maximum allowed: " + MAX_FILE_SIZE + " bytes");
         }
         
+        // Route to streaming or in-memory processing based on file size
+        if (fileSize > STREAMING_THRESHOLD) {
+            log.debug("Using streaming mode for large file: {} bytes", fileSize);
+            convertCsvToPdfStreaming(csvFile, pdfFile);
+        } else {
+            log.debug("Using in-memory mode for file: {} bytes", fileSize);
+            convertCsvToPdfInMemory(csvFile, pdfFile);
+        }
+    }
+    
+    /**
+     * Convert CSV to PDF using in-memory processing for smaller files.
+     * Loads entire file into memory for faster processing.
+     */
+    private void convertCsvToPdfInMemory(MultipartFile csvFile, File pdfFile) throws IOException {
         // Read CSV content with validation
         List<String[]> rows = new ArrayList<>();
         int maxColumns = 0;
@@ -82,13 +101,7 @@ public class CsvToPdfService {
         log.debug("Parsed {} rows with max {} columns from CSV file", rows.size(), maxColumns);
 
         // Normalize rows to have same number of columns
-        String[][] tableData = new String[rows.size()][maxColumns];
-        for (int i = 0; i < rows.size(); i++) {
-            String[] row = rows.get(i);
-            for (int j = 0; j < maxColumns; j++) {
-                tableData[i][j] = j < row.length ? row[j] : "";
-            }
-        }
+        String[][] tableData = normalizeRows(rows, maxColumns);
 
         // Create PDF using abstraction layer (PDFBox backend)
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
@@ -99,6 +112,92 @@ public class CsvToPdfService {
             log.error("Error creating PDF from CSV: {}", e.getMessage(), e);
             throw new IOException("Error creating PDF from CSV: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Convert CSV to PDF using streaming for large files.
+     * Processes file in chunks to minimize memory usage.
+     */
+    private void convertCsvToPdfStreaming(MultipartFile csvFile, File pdfFile) throws IOException {
+        try (PdfDocumentBuilder builder = pdfBackend.createBuilder();
+             BufferedReader br = new BufferedReader(new InputStreamReader(csvFile.getInputStream()))) {
+            
+            List<String[]> chunk = new ArrayList<>();
+            String line;
+            int maxColumns = 0;
+            int lineNumber = 0;
+            int totalRows = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                // Validate line length
+                if (line.length() > MAX_LINE_LENGTH) {
+                    log.warn("Line {} exceeds maximum length: {} chars (max: {})", 
+                             lineNumber, line.length(), MAX_LINE_LENGTH);
+                    throw new IOException("Line " + lineNumber + " exceeds maximum length: " + MAX_LINE_LENGTH);
+                }
+                
+                String[] values = parseCsvLine(line, lineNumber);
+                
+                // Validate field count
+                if (values.length > MAX_FIELDS) {
+                    log.warn("Line {} exceeds maximum field count: {} fields (max: {})", 
+                             lineNumber, values.length, MAX_FIELDS);
+                    throw new IOException("Line " + lineNumber + " exceeds maximum field count: " + MAX_FIELDS);
+                }
+                
+                chunk.add(values);
+                maxColumns = Math.max(maxColumns, values.length);
+                
+                // Process chunk when it reaches CHUNK_SIZE
+                if (chunk.size() >= CHUNK_SIZE) {
+                    String[][] tableData = normalizeRows(chunk, maxColumns);
+                    builder.addTable(tableData);
+                    totalRows += chunk.size();
+                    log.debug("Processed chunk of {} rows (total: {})", chunk.size(), totalRows);
+                    chunk.clear();
+                }
+            }
+            
+            // Process remaining rows
+            if (!chunk.isEmpty()) {
+                String[][] tableData = normalizeRows(chunk, maxColumns);
+                builder.addTable(tableData);
+                totalRows += chunk.size();
+                log.debug("Processed final chunk of {} rows (total: {})", chunk.size(), totalRows);
+            }
+            
+            if (totalRows == 0) {
+                log.warn("CSV file is empty: {}", csvFile.getOriginalFilename());
+                throw new IOException("CSV file is empty");
+            }
+            
+            builder.save(pdfFile);
+            log.info("Successfully converted CSV to PDF using streaming: {} -> {} ({} rows)", 
+                     csvFile.getOriginalFilename(), pdfFile.getName(), totalRows);
+                     
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error creating PDF from CSV: {}", e.getMessage(), e);
+            throw new IOException("Error creating PDF from CSV: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Normalize rows to have the same number of columns.
+     * Fills missing columns with empty strings.
+     */
+    private String[][] normalizeRows(List<String[]> rows, int maxColumns) {
+        String[][] tableData = new String[rows.size()][maxColumns];
+        for (int i = 0; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            for (int j = 0; j < maxColumns; j++) {
+                tableData[i][j] = j < row.length ? row[j] : "";
+            }
+        }
+        return tableData;
     }
     
     /**
