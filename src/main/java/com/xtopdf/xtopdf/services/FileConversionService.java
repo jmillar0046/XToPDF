@@ -6,6 +6,7 @@ import com.xtopdf.xtopdf.config.WatermarkConfig;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.factories.BmpFileConverterFactory;
 import com.xtopdf.xtopdf.factories.CsvFileConverterFactory;
+import com.xtopdf.xtopdf.factories.TsvFileConverterFactory;
 import com.xtopdf.xtopdf.factories.DocFileConverterFactory;
 import com.xtopdf.xtopdf.factories.GifFileConverterFactory;
 import com.xtopdf.xtopdf.factories.HtmlFileConverterFactory;
@@ -65,6 +66,7 @@ public class FileConversionService {
     private final XlsxFileConverterFactory xlsxFileConverterFactory;
     private final XlsFileConverterFactory xlsFileConverterFactory;
     private final CsvFileConverterFactory csvFileConverterFactory;
+    private final TsvFileConverterFactory tsvFileConverterFactory;
     private final BmpFileConverterFactory bmpFileConverterFactory;
     private final GifFileConverterFactory gifFileConverterFactory;
     private final PptxFileConverterFactory pptxFileConverterFactory;
@@ -200,6 +202,7 @@ public class FileConversionService {
             case ".xlsx" -> xlsxFileConverterFactory;
             case ".xls" -> xlsFileConverterFactory;
             case ".csv" -> csvFileConverterFactory;
+            case ".tsv", ".tab" -> tsvFileConverterFactory;
             case ".bmp" -> bmpFileConverterFactory;
             case ".gif" -> gifFileConverterFactory;
             case ".pptx" -> pptxFileConverterFactory;

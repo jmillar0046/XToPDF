@@ -35,6 +35,7 @@ class FileConversionServiceTest {
     @Mock private XlsxFileConverterFactory xlsxFileConverterFactory;
     @Mock private XlsFileConverterFactory xlsFileConverterFactory;
     @Mock private CsvFileConverterFactory csvFileConverterFactory;
+    @Mock private TsvFileConverterFactory tsvFileConverterFactory;
     @Mock private BmpFileConverterFactory bmpFileConverterFactory;
     @Mock private GifFileConverterFactory gifFileConverterFactory;
     @Mock private PptxFileConverterFactory pptxFileConverterFactory;
@@ -89,7 +90,7 @@ class FileConversionServiceTest {
         fileConversionService = new FileConversionService(
             txtFileConverterFactory, docxFileConverterFactory, docFileConverterFactory, htmlFileConverterFactory,
             jpegFileConverterFactory, pngFileConverterFactory, xlsxFileConverterFactory, xlsFileConverterFactory,
-            csvFileConverterFactory, bmpFileConverterFactory, gifFileConverterFactory, pptxFileConverterFactory,
+            csvFileConverterFactory, tsvFileConverterFactory, bmpFileConverterFactory, gifFileConverterFactory, pptxFileConverterFactory,
             pptFileConverterFactory, rtfFileConverterFactory, svgFileConverterFactory, tiffFileConverterFactory,
             markdownFileConverterFactory, odtFileConverterFactory, odsFileConverterFactory, odpFileConverterFactory,
             xmlFileConverterFactory, jsonFileConverterFactory, dxfFileConverterFactory, dwgFileConverterFactory,
@@ -132,12 +133,33 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
     }
 
+    @Test
+    void testConvertFile_TsvFile() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("file", "test.tsv", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
+        when(tsvFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, "output.pdf");
+        
+        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
+    }
+
+    @Test
+    void testConvertFile_TabFile() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("file", "test.tab", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
+        when(tsvFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
+        
+        fileConversionService.convertFile(inputFile, "output.pdf");
+        
+        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
+    }
+
     @ParameterizedTest
     @CsvSource({
         "test.txt,txt", "test.docx,docx", "test.xlsx,xlsx", "test.pptx,pptx",
         "test.step,step", "test.stl,stl", "test.obj,obj", "test.dwt,dwt",
         "test.3mf,3mf", "test.wrl,wrl", "test.x3d,x3d",
-        "test.dwf,dwf", "test.plt,plt", "test.emf,emf"
+        "test.dwf,dwf", "test.plt,plt", "test.emf,emf",
+        "test.tsv,tsv", "test.tab,tab", "test.TSV,TSV", "test.TAB,TAB"
     })
     void testGetFactoryForFile_ValidExtensions(String filename, String format) {
         var factory = fileConversionService.getFactoryForFile(filename);
