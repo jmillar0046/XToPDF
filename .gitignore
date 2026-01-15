@@ -36,3 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 *.pdf
+
+### jqwik ###
+.jqwik-database
+
+### Kiro ###
+.kiro/

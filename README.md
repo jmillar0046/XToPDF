@@ -9,7 +9,7 @@
 
 ## Features
 
-- **50+ File Formats**: Convert documents (DOCX, DOC, ODT, RTF, TXT, HTML, Markdown), spreadsheets (XLSX, XLS, ODS, CSV), presentations (PPTX, PPT, ODP), images (PNG, JPEG, SVG, TIFF), and more
+- **50+ File Formats**: Convert documents (DOCX, DOC, ODT, RTF, TXT, HTML, Markdown), spreadsheets (XLSX, XLS, ODS, CSV, TSV), presentations (PPTX, PPT, ODP), images (PNG, JPEG, SVG, TIFF), and more
 - **CAD & 3D Support**: Professional-grade conversion for DXF, DWG, DWF, STL, OBJ, STEP, IGES formats
 - **REST API**: Simple HTTP endpoints for programmatic conversion
 - **Advanced Features**: Page numbering, watermarks, formula recalculation, PDF merging
@@ -44,6 +44,11 @@ curl -X POST http://localhost:8080/api/convert \
   -F "inputFile=@image.png" \
   -F "outputFile=output.pdf"
 
+# Convert TSV to PDF
+curl -X POST http://localhost:8080/api/convert \
+  -F "inputFile=@data.tsv" \
+  -F "outputFile=output.pdf"
+
 # Convert DXF (CAD) to PDF
 curl -X POST http://localhost:8080/api/convert \
   -F "inputFile=@drawing.dxf" \
@@ -55,7 +60,7 @@ curl -X POST http://localhost:8080/api/convert \
 | Category | Supported Formats |
 |----------|-------------------|
 | **Documents** | DOCX, DOC, ODT, RTF, TXT, HTML, Markdown (.md), XML, JSON |
-| **Spreadsheets** | XLSX, XLS, ODS, CSV |
+| **Spreadsheets** | XLSX, XLS, ODS, CSV, TSV/TAB |
 | **Presentations** | PPTX, PPT, ODP |
 | **Images** | PNG, JPEG/JPG, BMP, GIF, TIFF/TIF, SVG, EMF, WMF |
 | **CAD** | DXF, DWG, DWF, DWFX, DWT, HPGL, PLT |
