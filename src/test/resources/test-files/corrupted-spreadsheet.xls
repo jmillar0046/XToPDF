@@ -1,0 +1,1 @@
+ÐÏàThis is not a valid XLS file content. It has the OLE2 signature at the start but corrupted data after that. This should cause parsing errors when trying to read it as an XLS file.

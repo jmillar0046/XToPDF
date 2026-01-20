@@ -14,7 +14,6 @@ import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
 import tools.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
@@ -28,14 +27,21 @@ import org.springframework.web.bind.annotation.RestController;
 import com.xtopdf.xtopdf.services.FileConversionService;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/convert")
-@AllArgsConstructor
 @Slf4j
 public class FileConversionController {
      private final FileConversionService fileConversionService;
      private final ObjectMapper objectMapper;
+
+     public FileConversionController(
+             FileConversionService fileConversionService,
+             ObjectMapper objectMapper) {
+         this.fileConversionService = fileConversionService;
+         this.objectMapper = objectMapper;
+     }
 
      @PostMapping
      public ResponseEntity<String> convertFile(

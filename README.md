@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/jmillar0046/XToPDF/pulls)
 
-**XToPDF** is an open-source, all-in-one file-to-PDF converter supporting documents, spreadsheets, presentations, images, CAD files, and 3D models. Built with Spring Boot and Java 21, it provides both a REST API and command-line interface for seamless file conversion workflows.
+**XToPDF** is an open-source, all-in-one file-to-PDF converter supporting documents, spreadsheets, presentations, images, CAD files, and 3D models. Built with Spring Boot and Java 25, it provides both a REST API and command-line interface for seamless file conversion workflows.
 
 ## Features
 
@@ -21,7 +21,7 @@
 
 1. Visit the [Releases page](https://github.com/jmillar0046/XToPDF/releases/latest)
 2. Download `xtopdf-VERSION.jar`
-3. Ensure Java 21+ is installed
+3. Ensure Java 25+ is installed
 
 ### Running Conversions
 

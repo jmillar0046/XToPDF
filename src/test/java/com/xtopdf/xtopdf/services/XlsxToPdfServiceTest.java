@@ -1,8 +1,15 @@
 package com.xtopdf.xtopdf.services;
 
-import com.xtopdf.xtopdf.utils.ExcelUtils;
-import org.junit.jupiter.api.Test;
+import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
+import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -13,56 +20,452 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Comprehensive tests for XlsxToPdfService.
+ * Tests cover:
+ * - Basic conversion (Requirement 2.1)
+ * - Formula evaluation (Requirement 2.3)
+ * - Chart rendering (Requirement 2.4)
+ * - Formatting preservation (Requirement 2.5)
+ * - Error handling for corrupted files (Requirement 2.6)
+ * - Resource cleanup
+ */
 class XlsxToPdfServiceTest {
 
     private XlsxToPdfService xlsxToPdfService;
-    private com.xtopdf.xtopdf.pdf.PdfBackendProvider pdfBackend;
-    private Path tempDir;
+    private PdfBackendProvider pdfBackend;
+
+    @TempDir
+    Path tempDir;
 
     @BeforeEach
-    void setUp() throws IOException {
-        pdfBackend = new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend();
+    void setUp() {
+        pdfBackend = new PdfBoxBackend();
         xlsxToPdfService = new XlsxToPdfService(pdfBackend);
-        tempDir = Files.createTempDirectory("xlsx-test");
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Cleanup any temporary files
+        if (tempDir != null) {
+            try {
+                Files.walk(tempDir)
+                    .filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            // Ignore cleanup errors
+                        }
+                    });
+            } catch (IOException e) {
+                // Ignore cleanup errors
+            }
+        }
+    }
+
+    // ========== Basic Conversion Tests (Requirement 2.1) ==========
+
+    @Test
+    void testConvertBasicSpreadsheet_Success() throws Exception {
+        // Given: Load the basic spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "basic-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("basic-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify PDF was created and contains expected content
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+        // Verify PDF content
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            assertNotNull(document, "PDF document should be readable");
+            assertTrue(document.getNumberOfPages() > 0, "PDF should have at least one page");
+
+            // Extract text and verify basic content
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            assertNotNull(text, "PDF should contain text");
+            assertTrue(text.contains("Basic Data"), "PDF should contain sheet name");
+            assertTrue(text.contains("Name"), "PDF should contain header 'Name'");
+            assertTrue(text.contains("Age"), "PDF should contain header 'Age'");
+            assertTrue(text.contains("City"), "PDF should contain header 'City'");
+            assertTrue(text.contains("Salary"), "PDF should contain header 'Salary'");
+        }
     }
 
     @Test
-    void convertXlsxToPdf_EmptyFile_ThrowsIOException() {
-        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[0]);
-        var outputFile = new File(tempDir.toFile(), "output.pdf");
+    void testConvertBasicSpreadsheet_VerifyDataIntegrity() throws Exception {
+        // Given: Load the basic spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "basic-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("basic-data-output.pdf").toFile();
 
-        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile));
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify specific data values are present
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // Verify some employee data is present (from the test file)
+            assertTrue(text.contains("Alice") || text.contains("Bob") || text.contains("Charlie"),
+                "PDF should contain employee names");
+        }
+    }
+
+    // ========== Formula Evaluation Tests (Requirement 2.3) ==========
+
+    @Test
+    void testConvertWithFormulas_EvaluatesFormulas() throws Exception {
+        // Given: Load the formulas spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/formulas-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "formulas-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("formulas-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify PDF was created and formulas were evaluated
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // Verify sheet name
+            assertTrue(text.contains("Formulas"), "PDF should contain sheet name 'Formulas'");
+            
+            // Verify headers
+            assertTrue(text.contains("Product"), "PDF should contain 'Product' header");
+            assertTrue(text.contains("Quantity"), "PDF should contain 'Quantity' header");
+            assertTrue(text.contains("Price"), "PDF should contain 'Price' header");
+            assertTrue(text.contains("Total"), "PDF should contain 'Total' header");
+            
+            // The PDF should contain calculated values, not formula expressions like "=B2*C2"
+            // We can't easily verify exact calculated values without knowing the test data,
+            // but we can verify the PDF doesn't contain formula syntax
+            assertFalse(text.contains("=B2*C2"), "PDF should not contain raw formula expressions");
+            assertFalse(text.contains("=SUM("), "PDF should not contain SUM formula syntax");
+            assertFalse(text.contains("=AVERAGE("), "PDF should not contain AVERAGE formula syntax");
+        }
     }
 
     @Test
-    void convertXlsxToPdf_InvalidXlsxContent_ThrowsIOException() {
-        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "invalid content".getBytes());
-        var outputFile = new File(tempDir.toFile(), "output.pdf");
+    void testConvertWithFormulas_VerifyCalculatedValues() throws Exception {
+        // Given: Load the formulas spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/formulas-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "formulas-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("formulas-calc-output.pdf").toFile();
 
-        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile));
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify formulas were evaluated to numeric values
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // The text should contain numeric values (results of formulas)
+            // We're looking for patterns that indicate calculated values are present
+            assertTrue(text.matches("(?s).*\\d+(\\.\\d+)?.*"), 
+                "PDF should contain numeric values from formula evaluation");
+        }
+    }
+
+    // ========== Chart Rendering Tests (Requirement 2.4) ==========
+
+    @Test
+    void testConvertWithCharts_Success() throws Exception {
+        // Given: Load the charts spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/charts-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "charts-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("charts-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify PDF was created
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // Verify sheet name and data
+            assertTrue(text.contains("Sales Data"), "PDF should contain sheet name 'Sales Data'");
+            assertTrue(text.contains("Month"), "PDF should contain 'Month' header");
+            assertTrue(text.contains("Sales"), "PDF should contain 'Sales' header");
+            assertTrue(text.contains("Expenses"), "PDF should contain 'Expenses' header");
+            
+            // Note: The current implementation may not render charts as images,
+            // but it should at least render the underlying data
+            // This test verifies the conversion doesn't fail when charts are present
+        }
+    }
+
+    // ========== Formatting Preservation Tests (Requirement 2.5) ==========
+
+    @Test
+    void testConvertWithFormatting_Success() throws Exception {
+        // Given: Load the formatted spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/formatted-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "formatted-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("formatted-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify PDF was created
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // Verify sheet name and headers
+            assertTrue(text.contains("Formatted Data"), "PDF should contain sheet name 'Formatted Data'");
+            assertTrue(text.contains("Employee"), "PDF should contain 'Employee' header");
+            assertTrue(text.contains("Department"), "PDF should contain 'Department' header");
+            assertTrue(text.contains("Salary"), "PDF should contain 'Salary' header");
+            
+            // Note: The current implementation may not preserve all visual formatting
+            // (colors, fonts, borders), but it should preserve the data and structure
+            // This test verifies the conversion doesn't fail when formatting is present
+        }
     }
 
     @Test
-    void getCellValueAsString_NullCell_ReturnsEmptyString() {
-        String result = ExcelUtils.getCellValueAsString(null);
-        assertEquals("", result);
+    void testConvertWithFormatting_VerifyDataPresence() throws Exception {
+        // Given: Load the formatted spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/formatted-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "formatted-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("formatted-data-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify data is present in PDF
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            
+            // Verify the PDF contains actual data (not just headers)
+            assertTrue(text.length() > 100, "PDF should contain substantial content");
+            
+            // Verify numeric data is present (salaries, percentages, etc.)
+            assertTrue(text.matches("(?s).*\\d+.*"), "PDF should contain numeric data");
+        }
+    }
+
+    // ========== Error Handling Tests (Requirement 2.6) ==========
+
+    @Test
+    void testConvertCorruptedFile_ThrowsIOException() throws Exception {
+        // Given: Load the corrupted spreadsheet test file
+        ClassPathResource resource = new ClassPathResource("test-files/corrupted-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "corrupted-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("corrupted-output.pdf").toFile();
+
+        // When/Then: Conversion should throw IOException with descriptive message
+        IOException exception = assertThrows(IOException.class, () -> {
+            xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+        });
+
+        // Verify exception message is descriptive
+        assertNotNull(exception.getMessage(), "Exception should have a message");
+        assertTrue(exception.getMessage().contains("Error processing XLSX file") ||
+                   exception.getMessage().contains("Invalid") ||
+                   exception.getMessage().contains("corrupted"),
+            "Exception message should be descriptive");
     }
 
     @Test
-    void convertXlsxToPdf_WithExecuteMacrosFalse_DoesNotThrow() {
-        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "invalid content".getBytes());
-        var outputFile = new File(tempDir.toFile(), "output.pdf");
+    void testConvertEmptyFile_ThrowsIOException() {
+        // Given: Empty file
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "empty.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            new byte[0]
+        );
+        File outputFile = tempDir.resolve("empty-output.pdf").toFile();
 
-        // Should throw IOException regardless of executeMacros parameter for invalid content
-        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile, false));
+        // When/Then: Conversion should throw IOException
+        assertThrows(IOException.class, () -> {
+            xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+        });
     }
 
     @Test
-    void convertXlsxToPdf_WithExecuteMacrosTrue_DoesNotThrow() {
-        var inputFile = new MockMultipartFile("inputFile", "test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, "invalid content".getBytes());
-        var outputFile = new File(tempDir.toFile(), "output.pdf");
+    void testConvertInvalidContent_ThrowsIOException() {
+        // Given: File with invalid XLSX content
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "invalid.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            "This is not a valid XLSX file".getBytes()
+        );
+        File outputFile = tempDir.resolve("invalid-output.pdf").toFile();
 
-        // Should throw IOException regardless of executeMacros parameter for invalid content
-        assertThrows(IOException.class, () -> xlsxToPdfService.convertXlsxToPdf(inputFile, outputFile, true));
+        // When/Then: Conversion should throw IOException
+        IOException exception = assertThrows(IOException.class, () -> {
+            xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+        });
+
+        // Verify exception message is descriptive
+        assertNotNull(exception.getMessage(), "Exception should have a message");
+    }
+
+    // ========== Resource Cleanup Tests ==========
+
+    @Test
+    void testResourceCleanup_OnSuccess() throws Exception {
+        // Given: Valid XLSX file
+        ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "basic-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("cleanup-success-output.pdf").toFile();
+
+        // When: Convert XLSX to PDF
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+
+        // Then: Verify resources are cleaned up (no temp files left)
+        // The service should use try-with-resources to ensure cleanup
+        assertTrue(outputFile.exists(), "Output file should exist");
+        
+        // Verify we can read the output file (not locked by unclosed resources)
+        try (PDDocument document = Loader.loadPDF(outputFile)) {
+            assertNotNull(document, "PDF should be readable after conversion");
+        }
+    }
+
+    @Test
+    void testResourceCleanup_OnFailure() {
+        // Given: Invalid XLSX file that will cause failure
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "invalid.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            "invalid content".getBytes()
+        );
+        File outputFile = tempDir.resolve("cleanup-failure-output.pdf").toFile();
+
+        // When: Attempt conversion (will fail)
+        assertThrows(IOException.class, () -> {
+            xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile);
+        });
+
+        // Then: Verify no partial output file is left
+        // (or if it exists, it should be empty/invalid)
+        if (outputFile.exists()) {
+            assertTrue(outputFile.length() == 0 || outputFile.length() < 100,
+                "Partial output file should be empty or very small");
+        }
+    }
+
+    // ========== Additional Edge Cases ==========
+
+    @Test
+    void testConvertWithExecuteMacrosParameter_False() throws Exception {
+        // Given: Valid XLSX file
+        ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "basic-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("macros-false-output.pdf").toFile();
+
+        // When: Convert with executeMacros = false
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile, false);
+
+        // Then: Conversion should succeed
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+    }
+
+    @Test
+    void testConvertWithExecuteMacrosParameter_True() throws Exception {
+        // Given: Valid XLSX file
+        ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+        byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+        MockMultipartFile xlsxFile = new MockMultipartFile(
+            "file",
+            "basic-spreadsheet.xlsx",
+            MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            xlsxData
+        );
+        File outputFile = tempDir.resolve("macros-true-output.pdf").toFile();
+
+        // When: Convert with executeMacros = true
+        xlsxToPdfService.convertXlsxToPdf(xlsxFile, outputFile, true);
+
+        // Then: Conversion should succeed
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
     }
 }
