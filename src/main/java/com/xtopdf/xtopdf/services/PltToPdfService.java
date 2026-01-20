@@ -1,20 +1,14 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
-import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
-import lombok.extern.slf4j.Slf4j;
 import java.util.*;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert HPGL Plotter files (PLT) to PDF.

@@ -3,22 +3,14 @@ package com.xtopdf.xtopdf.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
-import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
-import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
-import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.entities.*;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
-import lombok.extern.slf4j.Slf4j;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert DXF (Drawing Exchange Format) files to PDF.

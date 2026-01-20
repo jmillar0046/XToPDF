@@ -1,31 +1,20 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
-import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
-import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Element;
-import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.NodeList;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.xml.parsers.DocumentBuilder;
-import lombok.extern.slf4j.Slf4j;
 import javax.xml.parsers.DocumentBuilderFactory;
-import lombok.extern.slf4j.Slf4j;
 import java.io.*;
-import lombok.extern.slf4j.Slf4j;
 import java.util.*;
-import lombok.extern.slf4j.Slf4j;
 import java.util.zip.ZipEntry;
-import lombok.extern.slf4j.Slf4j;
 import java.util.zip.ZipInputStream;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service to convert 3D Manufacturing Format files (3MF) to PDF.
