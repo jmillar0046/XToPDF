@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.services.EmfToPdfService;
+import com.xtopdf.xtopdf.services.conversion.image.EmfToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;

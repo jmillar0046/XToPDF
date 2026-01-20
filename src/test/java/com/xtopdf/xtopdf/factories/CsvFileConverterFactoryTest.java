@@ -1,7 +1,7 @@
 package com.xtopdf.xtopdf.factories;
 
 import com.xtopdf.xtopdf.converters.CsvFileConverter;
-import com.xtopdf.xtopdf.services.CsvToPdfService;
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.CsvToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 

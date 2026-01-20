@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.services.DwgToPdfService;
+import com.xtopdf.xtopdf.services.conversion.cad.DwgToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;

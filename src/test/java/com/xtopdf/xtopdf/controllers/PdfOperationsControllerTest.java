@@ -2,9 +2,9 @@ package com.xtopdf.xtopdf.controllers;
 
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
-import com.xtopdf.xtopdf.services.PageNumberService;
-import com.xtopdf.xtopdf.services.PdfMergeService;
-import com.xtopdf.xtopdf.services.WatermarkService;
+import com.xtopdf.xtopdf.services.operations.PageNumberService;
+import com.xtopdf.xtopdf.services.operations.PdfMergeService;
+import com.xtopdf.xtopdf.services.operations.WatermarkService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;

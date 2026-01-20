@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.services.StlToPdfService;
+import com.xtopdf.xtopdf.services.conversion.threed.StlToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;

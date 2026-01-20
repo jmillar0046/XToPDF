@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.services.GifToPdfService;
+import com.xtopdf.xtopdf.services.conversion.image.GifToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;

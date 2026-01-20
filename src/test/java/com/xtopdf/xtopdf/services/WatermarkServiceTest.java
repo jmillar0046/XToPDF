@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.operations.WatermarkService;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
 import com.xtopdf.xtopdf.enums.WatermarkLayer;
 import com.xtopdf.xtopdf.enums.WatermarkOrientation;

@@ -1,5 +1,5 @@
 # Multi-stage build for XToPDF conversion service
-FROM gradle:8.12-jdk21-alpine AS build
+FROM gradle:8.12-jdk25-alpine AS build
 
 # Set working directory
 WORKDIR /app
@@ -14,11 +14,11 @@ RUN gradle dependencies --no-daemon || true
 # Copy source code
 COPY src ./src
 
-# Build the application
+# Build the application with preview features enabled
 RUN gradle bootJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 # Install required packages for PDF conversion
 RUN apk add --no-cache \
@@ -46,5 +46,5 @@ USER appuser
 # Expose port
 EXPOSE 8080
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the application with preview features enabled
+ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]

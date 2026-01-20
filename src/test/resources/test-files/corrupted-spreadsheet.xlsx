@@ -1,0 +1,1 @@
+PKThis is not a valid Excel file content. It has the ZIP signature at the start but corrupted data after that. This should cause parsing errors when trying to read it as an Excel file.

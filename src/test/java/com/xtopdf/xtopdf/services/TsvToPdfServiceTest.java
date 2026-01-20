@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.TsvToPdfService;
 import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -257,7 +258,7 @@ class TsvToPdfServiceTest {
     @Test
     void testParseTsvLine_SimpleFields() {
         String line = "field1\tfield2\tfield3";
-        String[] result = tsvToPdfService.parseTsvLine(line);
+        String[] result = tsvToPdfService.parseTsvLine(line, 1);
         
         assertArrayEquals(new String[]{"field1", "field2", "field3"}, result);
     }
@@ -265,7 +266,7 @@ class TsvToPdfServiceTest {
     @Test
     void testParseTsvLine_QuotedFieldWithTab() {
         String line = "field1\t\"field\twith\ttab\"\tfield3";
-        String[] result = tsvToPdfService.parseTsvLine(line);
+        String[] result = tsvToPdfService.parseTsvLine(line, 1);
         
         assertArrayEquals(new String[]{"field1", "field\twith\ttab", "field3"}, result);
     }
@@ -273,7 +274,7 @@ class TsvToPdfServiceTest {
     @Test
     void testParseTsvLine_EscapedQuotes() {
         String line = "field1\t\"field \"\"with\"\" quotes\"\tfield3";
-        String[] result = tsvToPdfService.parseTsvLine(line);
+        String[] result = tsvToPdfService.parseTsvLine(line, 1);
         
         assertArrayEquals(new String[]{"field1", "field \"with\" quotes", "field3"}, result);
     }
@@ -281,8 +282,81 @@ class TsvToPdfServiceTest {
     @Test
     void testParseTsvLine_EmptyFields() {
         String line = "\t\t";
-        String[] result = tsvToPdfService.parseTsvLine(line);
+        String[] result = tsvToPdfService.parseTsvLine(line, 1);
         
         assertArrayEquals(new String[]{"", "", ""}, result);
+    }
+
+    @Test
+    void testConvertTsvToPdf_ExceedsMaxFileSize_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a mock file that reports size larger than MAX_FILE_SIZE (100MB)
+        MockMultipartFile largeTsvFile = new MockMultipartFile(
+                "file", 
+                "large.tsv", 
+                "text/tab-separated-values", 
+                new byte[0]
+        ) {
+            @Override
+            public long getSize() {
+                return 100_000_001L; // Just over 100MB
+            }
+        };
+
+        File pdfFile = tempDir.resolve("large_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            tsvToPdfService.convertTsvToPdf(largeTsvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("File size exceeds maximum allowed"));
+    }
+
+    @Test
+    void testConvertTsvToPdf_ExceedsMaxLineLength_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a line that exceeds MAX_LINE_LENGTH (1MB)
+        StringBuilder longLine = new StringBuilder();
+        for (int i = 0; i < 1_000_001; i++) {
+            longLine.append('a');
+        }
+        
+        MockMultipartFile tsvFile = new MockMultipartFile(
+                "file", 
+                "long_line.tsv", 
+                "text/tab-separated-values", 
+                longLine.toString().getBytes()
+        );
+
+        File pdfFile = tempDir.resolve("long_line_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            tsvToPdfService.convertTsvToPdf(tsvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("exceeds maximum length"));
+    }
+
+    @Test
+    void testConvertTsvToPdf_ExceedsMaxFields_ThrowsIOException(@TempDir Path tempDir) {
+        // Create a line with more than MAX_FIELDS (10,000) fields
+        StringBuilder manyFields = new StringBuilder();
+        for (int i = 0; i < 10_001; i++) {
+            if (i > 0) manyFields.append('\t');
+            manyFields.append("field").append(i);
+        }
+        
+        MockMultipartFile tsvFile = new MockMultipartFile(
+                "file", 
+                "many_fields.tsv", 
+                "text/tab-separated-values", 
+                manyFields.toString().getBytes()
+        );
+
+        File pdfFile = tempDir.resolve("many_fields_output.pdf").toFile();
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            tsvToPdfService.convertTsvToPdf(tsvFile, pdfFile);
+        });
+        
+        assertTrue(exception.getMessage().contains("exceeds maximum field count"));
     }
 }

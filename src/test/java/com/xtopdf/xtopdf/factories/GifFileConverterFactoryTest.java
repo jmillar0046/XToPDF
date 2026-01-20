@@ -1,7 +1,7 @@
 package com.xtopdf.xtopdf.factories;
 
 import com.xtopdf.xtopdf.converters.GifFileConverter;
-import com.xtopdf.xtopdf.services.GifToPdfService;
+import com.xtopdf.xtopdf.services.conversion.image.GifToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 

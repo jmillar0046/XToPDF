@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.services.TsvToPdfService;
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.TsvToPdfService;
 import net.jqwik.api.*;
 import org.junit.jupiter.api.Tag;
 import org.springframework.mock.web.MockMultipartFile;

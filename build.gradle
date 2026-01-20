@@ -14,8 +14,17 @@ version = providers.exec {
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(25)
 	}
+}
+
+// Enable preview features for Java 25
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ['--enable-preview']
+}
+
+tasks.withType(Test).configureEach {
+	jvmArgs += ['--enable-preview']
 }
 
 configurations {

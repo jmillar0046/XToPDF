@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.operations.PageNumberService;
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.enums.PageNumberAlignment;
 import com.xtopdf.xtopdf.enums.PageNumberPosition;
