@@ -127,14 +127,4 @@ public class X3dToPdfService {
             countNodes(children.item(i), data);
         }
     }
-    
-    private static class X3dFileData {
-        String version = "Unknown";
-        int totalNodes = 0;
-        int shapeCount = 0;
-        int transformCount = 0;
-        int materialCount = 0;
-        int geometryCount = 0;
-        Map<String, Integer> nodeTypes = new HashMap<>();
-    }
 }

@@ -157,13 +157,4 @@ public class ThreeMfToPdfService {
             // If parsing fails, just continue with what we have
         }
     }
-    
-    private static class ThreeMfFileData {
-        int objectCount = 0;
-        int meshCount = 0;
-        int vertexCount = 0;
-        int triangleCount = 0;
-        List<String> files = new ArrayList<>();
-        Set<String> components = new HashSet<>();
-    }
 }

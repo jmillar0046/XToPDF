@@ -103,12 +103,4 @@ public class IgesToPdfService {
         
         return data;
     }
-    
-    private static class IgesFileData {
-        List<String> startSection = new ArrayList<>();
-        List<String> globalSection = new ArrayList<>();
-        List<String> terminateSection = new ArrayList<>();
-        int directoryEntryCount = 0;
-        int parameterDataCount = 0;
-    }
 }

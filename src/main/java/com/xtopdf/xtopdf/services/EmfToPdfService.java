@@ -113,13 +113,4 @@ public class EmfToPdfService {
         if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
         return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
     }
-    
-    private static class EmfFileData {
-        int recordCount = 0;
-        boolean boundsValid = false;
-        int boundsLeft = 0;
-        int boundsTop = 0;
-        int boundsRight = 0;
-        int boundsBottom = 0;
-    }
 }

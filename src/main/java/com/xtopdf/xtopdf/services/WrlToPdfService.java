@@ -112,13 +112,4 @@ public class WrlToPdfService {
         
         return data;
     }
-    
-    private static class VrmlFileData {
-        String version = "Unknown";
-        int totalNodes = 0;
-        int shapeCount = 0;
-        int transformCount = 0;
-        int materialCount = 0;
-        Map<String, Integer> nodeTypes = new HashMap<>();
-    }
 }

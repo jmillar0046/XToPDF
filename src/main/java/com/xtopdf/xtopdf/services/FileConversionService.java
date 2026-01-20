@@ -189,23 +189,6 @@ public class FileConversionService {
             throw new FileConversionException("Unsupported file format: " + fileName);
         }
     }
-    
-    /**
-     * Helper exception class for wrapping FileConversionException in RuntimeException.
-     * This is necessary because the Runnable interface doesn't allow checked exceptions.
-     */
-    private static class ConversionRuntimeException extends RuntimeException {
-        private final FileConversionException fileConversionException;
-        
-        public ConversionRuntimeException(FileConversionException cause) {
-            super(cause);
-            this.fileConversionException = cause;
-        }
-        
-        public FileConversionException getFileConversionException() {
-            return fileConversionException;
-        }
-    }
 
     FileConverterFactory getFactoryForFile(String inputFile) {
         String lowerCaseFileName = inputFile.toLowerCase();

@@ -110,10 +110,4 @@ public class StepToPdfService {
         
         return data;
     }
-    
-    private static class StepFileData {
-        List<String> header = new ArrayList<>();
-        List<String> entities = new ArrayList<>();
-        int entityCount = 0;
-    }
 }

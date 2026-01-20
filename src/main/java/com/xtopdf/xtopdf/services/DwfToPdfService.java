@@ -88,10 +88,4 @@ public class DwfToPdfService {
         
         return data;
     }
-    
-    private static class DwfFileData {
-        int totalFiles = 0;
-        List<String> sections = new ArrayList<>();
-        boolean hasDescriptor = false;
-    }
 }

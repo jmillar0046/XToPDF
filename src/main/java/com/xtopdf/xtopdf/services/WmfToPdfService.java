@@ -124,14 +124,4 @@ public class WmfToPdfService {
         if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
         return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
     }
-    
-    private static class WmfFileData {
-        boolean isPlaceable = false;
-        boolean boundsValid = false;
-        int boundsLeft = 0;
-        int boundsTop = 0;
-        int boundsRight = 0;
-        int boundsBottom = 0;
-        int maxRecordSize = 0;
-    }
 }
