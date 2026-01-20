@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.conversion.cad.HpglToPdfService;
+import com.xtopdf.xtopdf.services.conversion.cad.PltToPdfService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

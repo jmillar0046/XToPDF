@@ -1,5 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsxToPdfService;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.apache.pdfbox.Loader;

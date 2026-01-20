@@ -6,7 +6,7 @@ import java.io.IOException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import com.xtopdf.xtopdf.services.WmfToPdfService;
+import com.xtopdf.xtopdf.services.conversion.image.WmfToPdfService;
 import org.springframework.web.multipart.MultipartFile;
 
 @AllArgsConstructor

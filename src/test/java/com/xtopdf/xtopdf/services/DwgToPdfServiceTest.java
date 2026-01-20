@@ -1,5 +1,10 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.dxf.DxfEntityParser;
+import com.xtopdf.xtopdf.services.dxf.DxfCoordinateCalculator;
+import com.xtopdf.xtopdf.services.conversion.cad.DwgToDxfService;
+import com.xtopdf.xtopdf.services.conversion.cad.DwgToPdfService;
+import com.xtopdf.xtopdf.services.conversion.cad.DxfToPdfService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

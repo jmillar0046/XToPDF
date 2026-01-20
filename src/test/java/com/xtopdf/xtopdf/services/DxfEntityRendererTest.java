@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.services;
 
+import com.xtopdf.xtopdf.services.dxf.DxfPdfRenderer;
+import com.xtopdf.xtopdf.services.dxf.DxfEntityRenderer;
 import com.xtopdf.xtopdf.entities.*;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import org.junit.jupiter.api.BeforeEach;

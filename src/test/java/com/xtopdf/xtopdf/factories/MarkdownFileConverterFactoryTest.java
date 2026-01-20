@@ -1,7 +1,7 @@
 package com.xtopdf.xtopdf.factories;
 
 import com.xtopdf.xtopdf.converters.MarkdownFileConverter;
-import com.xtopdf.xtopdf.services.MarkdownToPdfService;
+import com.xtopdf.xtopdf.services.conversion.document.MarkdownToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
