@@ -37,6 +37,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     private PDPageContentStream contentStream;
     private float currentY;
     private final PDFont defaultFont;
+    private boolean fontsLoaded = false;
     
     /**
      * Creates a new PDFBox document builder.
@@ -233,6 +234,16 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         document.save(outputFile);
     }
     
+    /**
+     * Returns whether NotoSans fonts were successfully loaded from the classpath.
+     * Package-private for testing.
+     *
+     * @return true if NotoSans fonts are loaded, false if using Helvetica fallback
+     */
+    boolean isFontsLoaded() {
+        return fontsLoaded;
+    }
+
     @Override
     public void close() throws IOException {
         if (contentStream != null) {
