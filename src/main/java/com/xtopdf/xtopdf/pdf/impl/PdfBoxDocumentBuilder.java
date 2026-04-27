@@ -482,6 +482,30 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     }
     
     @Override
+    public void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException {
+        // Stub implementation — will be properly implemented in task 2.6
+        throw new UnsupportedOperationException("addFormattedText not yet implemented");
+    }
+
+    @Override
+    public void endParagraph() throws IOException {
+        // Stub implementation — will be properly implemented in task 2.6
+        throw new UnsupportedOperationException("endParagraph not yet implemented");
+    }
+
+    @Override
+    public void addHeaderText(String text) throws IOException {
+        // Stub implementation — will be properly implemented in task 2.7
+        throw new UnsupportedOperationException("addHeaderText not yet implemented");
+    }
+
+    @Override
+    public void addFooterText(String text) throws IOException {
+        // Stub implementation — will be properly implemented in task 2.7
+        throw new UnsupportedOperationException("addFooterText not yet implemented");
+    }
+
+    @Override
     public void saveState() throws IOException {
         contentStream.saveGraphicsState();
     }

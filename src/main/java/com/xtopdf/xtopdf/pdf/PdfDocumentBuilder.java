@@ -202,6 +202,43 @@ public interface PdfDocumentBuilder extends AutoCloseable {
     void restoreState() throws IOException;
     
     /**
+     * Adds formatted text at the current cursor position within a paragraph.
+     * Multiple calls build up a single line before advancing. The accumulated
+     * text is flushed when {@link #endParagraph()} is called.
+     *
+     * @param text     the text fragment to add
+     * @param bold     whether the text should be rendered in bold
+     * @param italic   whether the text should be rendered in italic
+     * @param fontSize font size in points; use 0 or a negative value for the default size (12pt)
+     * @throws IOException if an I/O error occurs
+     */
+    void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException;
+
+    /**
+     * Signals the end of a paragraph, flushing any accumulated formatted text
+     * added via {@link #addFormattedText} and advancing the cursor to the next line.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    void endParagraph() throws IOException;
+
+    /**
+     * Adds header text at the top of the current page.
+     *
+     * @param text the header text to render
+     * @throws IOException if an I/O error occurs
+     */
+    void addHeaderText(String text) throws IOException;
+
+    /**
+     * Adds footer text at the bottom of the current page.
+     *
+     * @param text the footer text to render
+     * @throws IOException if an I/O error occurs
+     */
+    void addFooterText(String text) throws IOException;
+
+    /**
      * Saves the PDF document to the specified file.
      * 
      * @param outputFile The file to save the PDF to
