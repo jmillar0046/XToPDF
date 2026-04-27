@@ -42,6 +42,9 @@ configurations.configureEach {
 		force 'org.apache.jena:jena-base:6.0.0'
 		force 'org.apache.jena:jena-iri3986:6.0.0'
 		force 'org.apache.jena:jena-langtag:6.0.0'
+		force 'org.bouncycastle:bcprov-jdk18on:1.84' // Fix CVE-2026-0636, CVE-2025-14813, CVE-2025-8885
+		force 'org.bouncycastle:bcpkix-jdk18on:1.84'
+		force 'org.bouncycastle:bcutil-jdk18on:1.84'
 	}
 }
 
