@@ -20,7 +20,11 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -546,6 +550,172 @@ public class DocxToPdfServiceTest {
         String pdfText = extractPdfText(pdfFile);
         assertTrue(pdfText.contains("Before break"), "PDF should contain 'Before break'");
         assertTrue(pdfText.contains("After break"), "PDF should contain 'After break'");
+    }
+
+    // ---------------------------------------------------------------
+    // Integration tests for all five features (Task 11.1)
+    // Validates: Requirements 1.3, 2.1, 2.2, 3.1, 3.4, 4.1, 4.2
+    // ---------------------------------------------------------------
+
+    @Test
+    void testIntegrationCenteredAndRightAlignedParagraphsAppearInPdf() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        XWPFParagraph centered = document.createParagraph();
+        centered.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.CENTER);
+        centered.createRun().setText("Centered Title");
+
+        XWPFParagraph rightAligned = document.createParagraph();
+        rightAligned.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.RIGHT);
+        rightAligned.createRun().setText("Right Aligned Date");
+
+        XWPFParagraph leftAligned = document.createParagraph();
+        leftAligned.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.LEFT);
+        leftAligned.createRun().setText("Left Body Text");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "alignment-integration.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("alignment-integration.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Centered Title"),
+                "PDF should contain centered text 'Centered Title'");
+        assertTrue(pdfText.contains("Right Aligned Date"),
+                "PDF should contain right-aligned text 'Right Aligned Date'");
+        assertTrue(pdfText.contains("Left Body Text"),
+                "PDF should contain left-aligned text 'Left Body Text'");
+    }
+
+    @Test
+    void testIntegrationColoredTextAppearsInPdf() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        // Red heading
+        XWPFParagraph heading = document.createParagraph();
+        XWPFRun redRun = heading.createRun();
+        redRun.setText("Red Heading");
+        redRun.setColor("FF0000");
+        redRun.setBold(true);
+        redRun.setFontSize(18);
+
+        // Blue body text
+        XWPFParagraph body = document.createParagraph();
+        XWPFRun blueRun = body.createRun();
+        blueRun.setText("Blue body text content");
+        blueRun.setColor("0000FF");
+
+        // Default (black) text
+        XWPFParagraph defaultPara = document.createParagraph();
+        defaultPara.createRun().setText("Default black text");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "color-integration.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("color-integration.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Red Heading"),
+                "PDF should contain red heading text");
+        assertTrue(pdfText.contains("Blue body text content"),
+                "PDF should contain blue body text");
+        assertTrue(pdfText.contains("Default black text"),
+                "PDF should contain default black text");
+    }
+
+    @Test
+    void testIntegrationExplicitPageBreaksProduceCorrectPageCount() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        // Page 1 content
+        document.createParagraph().createRun().setText("Page one content");
+
+        // Page break via run-level break
+        XWPFParagraph breakPara1 = document.createParagraph();
+        breakPara1.createRun().addBreak(BreakType.PAGE);
+
+        // Page 2 content
+        document.createParagraph().createRun().setText("Page two content");
+
+        // Another page break
+        XWPFParagraph breakPara2 = document.createParagraph();
+        breakPara2.createRun().addBreak(BreakType.PAGE);
+
+        // Page 3 content
+        document.createParagraph().createRun().setText("Page three content");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "pagebreak-integration.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("pagebreak-integration.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertEquals(3, pdf.getNumberOfPages(),
+                    "DOCX with 2 explicit page breaks should produce a 3-page PDF");
+        }
+
+        // Verify all content is present
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Page one content"), "PDF should contain page 1 content");
+        assertTrue(pdfText.contains("Page two content"), "PDF should contain page 2 content");
+        assertTrue(pdfText.contains("Page three content"), "PDF should contain page 3 content");
+    }
+
+    @Test
+    void testConcurrentConversionsWithNumberedListsProduceIndependentNumbering() throws Exception {
+        int threadCount = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        try {
+            List<Future<String>> futures = new ArrayList<>();
+
+            for (int t = 0; t < threadCount; t++) {
+                final int listSize = t + 3; // Each thread gets a different list size (3..12)
+                futures.add(executor.submit(() -> {
+                    // Create items for this thread's list
+                    List<String> items = new ArrayList<>();
+                    for (int i = 1; i <= listSize; i++) {
+                        items.add("Item" + i + "T" + listSize);
+                    }
+
+                    XWPFDocument doc = createDocxWithNumberedList(items);
+                    byte[] docxBytes = toBytes(doc);
+                    var docxFile = new MockMultipartFile("file", "concurrent-" + listSize + ".docx",
+                            MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+                    var pdfFile = tempFile("concurrent-" + listSize + "-" + Thread.currentThread().getId() + ".pdf");
+
+                    docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+                    return extractPdfText(pdfFile);
+                }));
+            }
+
+            // Verify each PDF has correct sequential numbering
+            for (int t = 0; t < threadCount; t++) {
+                int listSize = t + 3;
+                String pdfText = futures.get(t).get();
+
+                // Verify numbering starts from 1 and goes up to listSize
+                assertTrue(pdfText.contains("1."),
+                        "Thread " + t + " PDF should contain '1.' (numbering starts at 1)");
+                assertTrue(pdfText.contains(listSize + "."),
+                        "Thread " + t + " PDF should contain '" + listSize + ".' (last item)");
+
+                // Verify the content items are present
+                for (int i = 1; i <= listSize; i++) {
+                    assertTrue(pdfText.contains("Item" + i + "T" + listSize),
+                            "Thread " + t + " PDF should contain 'Item" + i + "T" + listSize + "'");
+                }
+            }
+        } finally {
+            executor.shutdown();
+        }
     }
 
     // ---------------------------------------------------------------
