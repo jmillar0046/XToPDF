@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.data.HtmlToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class HtmlFileConverter implements FileConverter {
     private final HtmlToPdfService htmlToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile htmlFile, String outputFile) {
+    public void convertToPDF(MultipartFile htmlFile, String outputFile) throws FileConversionException {
         if (htmlFile == null) {
             throw new NullPointerException("Input file must not be null");
         }

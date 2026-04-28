@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.BmpToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class BmpFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
         var outputFile = "outputFile.pdf";
@@ -31,7 +33,7 @@ class BmpFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
         var outputFile = "outputFile.pdf";
@@ -43,7 +45,7 @@ class BmpFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_NullInput_ThrowsNullPointerException() {
+    void testConvertToPDF_NullInput_ThrowsNullPointerException() throws FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
 
@@ -51,7 +53,7 @@ class BmpFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_NullOutput_ThrowsNullPointerException() {
+    void testConvertToPDF_NullOutput_ThrowsNullPointerException() throws FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.bmp", MediaType.IMAGE_PNG_VALUE, "test content".getBytes());

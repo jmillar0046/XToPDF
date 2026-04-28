@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -11,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class XlsFileConverterTest {
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         XlsToPdfService service = Mockito.mock(XlsToPdfService.class);
         XlsFileConverter converter = new XlsFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.xls", "application/vnd.ms-excel", "content".getBytes());
@@ -21,7 +23,7 @@ class XlsFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         XlsToPdfService service = Mockito.mock(XlsToPdfService.class);
         XlsFileConverter converter = new XlsFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.xls", "application/vnd.ms-excel", "content".getBytes());

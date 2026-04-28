@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.OdsToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class OdsFileConverter implements FileConverter {
     private final OdsToPdfService odsToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile odsFile, String outputFile) {
+    public void convertToPDF(MultipartFile odsFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             odsToPdfService.convertOdsToPdf(odsFile, pdfFile);

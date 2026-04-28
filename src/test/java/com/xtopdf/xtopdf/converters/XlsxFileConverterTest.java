@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsxToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class XlsxFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         XlsxToPdfService xlsxToPdfService = Mockito.mock(XlsxToPdfService.class);
         XlsxFileConverter xlsxFileConverter = new XlsxFileConverter(xlsxToPdfService);
         var outputFile = "outputFile.pdf";
@@ -31,7 +33,7 @@ class XlsxFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         XlsxToPdfService xlsxToPdfService = Mockito.mock(XlsxToPdfService.class);
         XlsxFileConverter xlsxFileConverter = new XlsxFileConverter(xlsxToPdfService);
         var outputFile = "outputFile.pdf";

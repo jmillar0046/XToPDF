@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class DwfxFileConverter implements FileConverter {
     private final DwfxToPdfService dwfxToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile dwfxFile, String outputFile) {
+    public void convertToPDF(MultipartFile dwfxFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             dwfxToPdfService.convertDwfxToPdf(dwfxFile, pdfFile);

@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.TiffToPdfService;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +20,7 @@ import static org.mockito.Mockito.verify;
 class TiffFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         TiffToPdfService tiffToPdfService = Mockito.mock(TiffToPdfService.class);
         TiffFileConverter tiffFileConverter = new TiffFileConverter(tiffToPdfService);
         var outputFile = "outputFile.pdf";
@@ -32,7 +34,7 @@ class TiffFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         TiffToPdfService tiffToPdfService = Mockito.mock(TiffToPdfService.class);
         TiffFileConverter tiffFileConverter = new TiffFileConverter(tiffToPdfService);
         var outputFile = "outputFile.pdf";

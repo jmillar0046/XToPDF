@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.SvgToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -11,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class SvgFileConverterTest {
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         SvgToPdfService service = Mockito.mock(SvgToPdfService.class);
         SvgFileConverter converter = new SvgFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.svg", "image/svg+xml", "content".getBytes());
@@ -21,7 +23,7 @@ class SvgFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         SvgToPdfService service = Mockito.mock(SvgToPdfService.class);
         SvgFileConverter converter = new SvgFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.svg", "image/svg+xml", "content".getBytes());

@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.PngToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class PngFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
@@ -31,7 +33,7 @@ class PngFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
@@ -43,7 +45,7 @@ class PngFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_NullInputFile_ThrowsNullPointerException() throws IOException {
+    void testConvertToPDF_NullInputFile_ThrowsNullPointerException() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
@@ -52,7 +54,7 @@ class PngFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_NullOutputFile_ThrowsNullPointerException() throws IOException {
+    void testConvertToPDF_NullOutputFile_ThrowsNullPointerException() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());

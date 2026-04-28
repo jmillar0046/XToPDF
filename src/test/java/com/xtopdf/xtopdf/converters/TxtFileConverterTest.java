@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.document.TxtToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class TxtFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
         TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
         var outputFile = "outputFile.pdf";
@@ -31,7 +33,7 @@ class TxtFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
         TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
         var outputFile = "outputFile.pdf";
@@ -43,7 +45,7 @@ class TxtFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException {
+    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
         TxtToPdfService txtToPdfService = Mockito.mock(TxtToPdfService.class);
         TxtFileConverter txtFileConverter = new TxtFileConverter(txtToPdfService);
         var outputFile = "outputFile.pdf";
