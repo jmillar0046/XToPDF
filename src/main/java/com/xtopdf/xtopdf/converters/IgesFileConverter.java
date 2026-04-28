@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class IgesFileConverter implements FileConverter {
     private final IgesToPdfService igesToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile igesFile, String outputFile) {
+    public void convertToPDF(MultipartFile igesFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             igesToPdfService.convertIgesToPdf(igesFile, pdfFile);

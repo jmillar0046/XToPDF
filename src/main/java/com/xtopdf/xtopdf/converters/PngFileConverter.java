@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.PngToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class PngFileConverter implements FileConverter {
     private final PngToPdfService pngToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile pngFile, String outputFile) {
+    public void convertToPDF(MultipartFile pngFile, String outputFile) throws FileConversionException {
         if (pngFile == null) {
             throw new NullPointerException("Input file must not be null");
         }

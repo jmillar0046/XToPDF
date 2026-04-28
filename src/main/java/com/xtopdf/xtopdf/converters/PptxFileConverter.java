@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.presentation.PptxToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class PptxFileConverter implements FileConverter {
     private final PptxToPdfService pptxToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile pptxFile, String outputFile) {
+    public void convertToPDF(MultipartFile pptxFile, String outputFile) throws FileConversionException {
         if (pptxFile == null) {
             throw new NullPointerException("Input file must not be null");
         }

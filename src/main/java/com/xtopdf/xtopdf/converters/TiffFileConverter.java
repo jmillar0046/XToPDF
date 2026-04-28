@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.TiffToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class TiffFileConverter implements FileConverter {
     private final TiffToPdfService tiffToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile tiffFile, String outputFile) {
+    public void convertToPDF(MultipartFile tiffFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             tiffToPdfService.convertTiffToPdf(tiffFile, pdfFile);

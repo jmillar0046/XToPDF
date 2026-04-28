@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class X3dFileConverter implements FileConverter {
     private final X3dToPdfService x3dToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile x3dFile, String outputFile) {
+    public void convertToPDF(MultipartFile x3dFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             x3dToPdfService.convertX3dToPdf(x3dFile, pdfFile);

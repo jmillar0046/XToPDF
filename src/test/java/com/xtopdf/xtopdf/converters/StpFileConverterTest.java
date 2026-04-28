@@ -6,6 +6,8 @@ import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class StpFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         StpToPdfService stpToPdfService = Mockito.mock(StpToPdfService.class);
         StpFileConverter stpFileConverter = new StpFileConverter(stpToPdfService);
         var outputFile = "output.pdf";

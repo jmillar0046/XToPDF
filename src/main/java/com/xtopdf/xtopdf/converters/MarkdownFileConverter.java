@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class MarkdownFileConverter implements FileConverter {
     private final MarkdownToPdfService markdownToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile markdownFile, String outputFile) {
+    public void convertToPDF(MultipartFile markdownFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             markdownToPdfService.convertMarkdownToPdf(markdownFile, pdfFile);

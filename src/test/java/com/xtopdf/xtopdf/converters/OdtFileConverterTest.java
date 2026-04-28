@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.document.OdtToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -11,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class OdtFileConverterTest {
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         OdtToPdfService service = Mockito.mock(OdtToPdfService.class);
         OdtFileConverter converter = new OdtFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.odt", "application/vnd.oasis.opendocument.text", "content".getBytes());
@@ -21,7 +23,7 @@ class OdtFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         OdtToPdfService service = Mockito.mock(OdtToPdfService.class);
         OdtFileConverter converter = new OdtFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.odt", "application/vnd.oasis.opendocument.text", "content".getBytes());

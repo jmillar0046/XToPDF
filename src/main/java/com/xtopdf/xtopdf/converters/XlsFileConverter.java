@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,12 +16,12 @@ public class XlsFileConverter implements FileConverter {
     private final XlsToPdfService xlsToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile xlsFile, String outputFile) {
+    public void convertToPDF(MultipartFile xlsFile, String outputFile) throws FileConversionException {
         convertToPDF(xlsFile, outputFile, false);
     }
     
     @Override
-    public void convertToPDF(MultipartFile xlsFile, String outputFile, boolean executeMacros) {
+    public void convertToPDF(MultipartFile xlsFile, String outputFile, boolean executeMacros) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             xlsToPdfService.convertXlsToPdf(xlsFile, pdfFile, executeMacros);

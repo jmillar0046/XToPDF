@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class CsvFileConverter implements FileConverter {
     private final CsvToPdfService csvToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile csvFile, String outputFile) {
+    public void convertToPDF(MultipartFile csvFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             csvToPdfService.convertCsvToPdf(csvFile, pdfFile);

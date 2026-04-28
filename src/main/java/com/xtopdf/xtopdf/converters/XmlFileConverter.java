@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.data.XmlToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class XmlFileConverter implements FileConverter {
     private final XmlToPdfService xmlToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile xmlFile, String outputFile) {
+    public void convertToPDF(MultipartFile xmlFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             xmlToPdfService.convertXmlToPdf(xmlFile, pdfFile);

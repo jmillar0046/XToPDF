@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class StpFileConverter implements FileConverter {
     private final StpToPdfService stpToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile stpFile, String outputFile) {
+    public void convertToPDF(MultipartFile stpFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             stpToPdfService.convertStpToPdf(stpFile, pdfFile);

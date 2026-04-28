@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.presentation.PptxToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -11,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class PptxFileConverterTest {
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         PptxToPdfService service = Mockito.mock(PptxToPdfService.class);
         PptxFileConverter converter = new PptxFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "content".getBytes());
@@ -21,7 +23,7 @@ class PptxFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         PptxToPdfService service = Mockito.mock(PptxToPdfService.class);
         PptxFileConverter converter = new PptxFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "content".getBytes());
