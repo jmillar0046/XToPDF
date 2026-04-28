@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.TsvToPdfService;
 import net.jqwik.api.*;
 import org.junit.jupiter.api.Tag;
@@ -19,7 +21,7 @@ class TsvFileConverterPropertyTest {
 
     @Property(tries = 100)
     @Tag("Feature: tsv-file-support, Property 3: IOException Wrapping in Converter")
-    void ioExceptionWrappingInConverter(@ForAll String errorMessage) throws IOException {
+    void ioExceptionWrappingInConverter(@ForAll String errorMessage) throws IOException, FileConversionException {
         // Mock service to throw IOException with random message
         TsvToPdfService mockService = mock(TsvToPdfService.class);
         doThrow(new IOException(errorMessage)).when(mockService).convertTsvToPdf(any(), any());
@@ -50,7 +52,7 @@ class TsvFileConverterPropertyTest {
 
     @Property(tries = 100)
     @Tag("Feature: tsv-file-support, Property 3: IOException Wrapping in Converter")
-    void successfulConversionDelegates(@ForAll String filename) throws IOException {
+    void successfulConversionDelegates(@ForAll String filename) throws IOException, FileConversionException {
         // Mock service for successful conversion
         TsvToPdfService mockService = mock(TsvToPdfService.class);
         doNothing().when(mockService).convertTsvToPdf(any(), any());

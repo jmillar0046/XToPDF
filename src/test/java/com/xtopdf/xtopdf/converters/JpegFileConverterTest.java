@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.JpegToPdfService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,7 @@ class JpegFileConverterTest {
     }
 
     @Test
-    void convertToPDF_ValidJpegFile_CallsService() throws IOException {
+    void convertToPDF_ValidJpegFile_CallsService() throws IOException, FileConversionException {
         MockMultipartFile jpegFile = new MockMultipartFile("test.jpeg", "test.jpeg", "image/jpeg", "fake jpeg content".getBytes());
         String outputFile = "output.pdf";
 
@@ -39,7 +41,7 @@ class JpegFileConverterTest {
     }
 
     @Test
-    void convertToPDF_ServiceThrowsIOException_ThrowsRuntimeException() throws IOException {
+    void convertToPDF_ServiceThrowsIOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         MockMultipartFile jpegFile = new MockMultipartFile("test.jpeg", "test.jpeg", "image/jpeg", "fake jpeg content".getBytes());
         String outputFile = "output.pdf";
 

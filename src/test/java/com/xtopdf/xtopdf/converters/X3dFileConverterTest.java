@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.threed.X3dToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class X3dFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         X3dToPdfService x3dToPdfService = Mockito.mock(X3dToPdfService.class);
         X3dFileConverter x3dFileConverter = new X3dFileConverter(x3dToPdfService);
         var outputFile = "output.pdf";
@@ -31,7 +33,7 @@ class X3dFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         X3dToPdfService x3dToPdfService = Mockito.mock(X3dToPdfService.class);
         X3dFileConverter x3dFileConverter = new X3dFileConverter(x3dToPdfService);
         var outputFile = "output.pdf";

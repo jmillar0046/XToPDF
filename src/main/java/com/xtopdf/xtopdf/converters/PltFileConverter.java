@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -15,7 +17,7 @@ public class PltFileConverter implements FileConverter {
     private final PltToPdfService pltToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile pltFile, String outputFile) {
+    public void convertToPDF(MultipartFile pltFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             pltToPdfService.convertPltToPdf(pltFile, pdfFile);

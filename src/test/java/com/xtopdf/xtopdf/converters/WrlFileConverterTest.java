@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.threed.WrlToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class WrlFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         WrlToPdfService wrlToPdfService = Mockito.mock(WrlToPdfService.class);
         WrlFileConverter wrlFileConverter = new WrlFileConverter(wrlToPdfService);
         var outputFile = "output.pdf";
@@ -31,7 +33,7 @@ class WrlFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         WrlToPdfService wrlToPdfService = Mockito.mock(WrlToPdfService.class);
         WrlFileConverter wrlFileConverter = new WrlFileConverter(wrlToPdfService);
         var outputFile = "output.pdf";

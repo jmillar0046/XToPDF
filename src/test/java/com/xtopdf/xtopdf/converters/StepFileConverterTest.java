@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.threed.StepToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class StepFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         StepToPdfService stepToPdfService = Mockito.mock(StepToPdfService.class);
         StepFileConverter stepFileConverter = new StepFileConverter(stepToPdfService);
         var outputFile = "output.pdf";
@@ -31,7 +33,7 @@ class StepFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         StepToPdfService stepToPdfService = Mockito.mock(StepToPdfService.class);
         StepFileConverter stepFileConverter = new StepFileConverter(stepToPdfService);
         var outputFile = "output.pdf";

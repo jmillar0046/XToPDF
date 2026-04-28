@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.presentation.PptToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class PptFileConverter implements FileConverter {
     private final PptToPdfService pptToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile pptFile, String outputFile) {
+    public void convertToPDF(MultipartFile pptFile, String outputFile) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
             pptToPdfService.convertPptToPdf(pptFile, pdfFile);

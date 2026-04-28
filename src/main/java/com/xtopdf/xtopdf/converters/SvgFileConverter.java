@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.image.SvgToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class SvgFileConverter implements FileConverter {
     private final SvgToPdfService svgToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile svgFile, String outputFile) {
+    public void convertToPDF(MultipartFile svgFile, String outputFile) throws FileConversionException {
         if (svgFile == null) {
             throw new NullPointerException("Input file must not be null");
         }

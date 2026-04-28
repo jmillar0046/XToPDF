@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.document.RtfToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ public class RtfFileConverter implements FileConverter {
     private final RtfToPdfService rtfToPdfService;
 
     @Override
-    public void convertToPDF(MultipartFile rtfFile, String outputFile) {
+    public void convertToPDF(MultipartFile rtfFile, String outputFile) throws FileConversionException {
         if (rtfFile == null) {
             throw new NullPointerException("Input file must not be null");
         }

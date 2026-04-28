@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
+
 import com.xtopdf.xtopdf.services.conversion.cad.DwfToPdfService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class DwfFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws IOException {
+    void testConvertToPDF() throws IOException, FileConversionException {
         DwfToPdfService dwfToPdfService = Mockito.mock(DwfToPdfService.class);
         DwfFileConverter dwfFileConverter = new DwfFileConverter(dwfToPdfService);
         var outputFile = "output.pdf";
@@ -31,7 +33,7 @@ class DwfFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException {
+    void testConvertToPDF_IOException_ThrowsRuntimeException() throws IOException, FileConversionException {
         DwfToPdfService dwfToPdfService = Mockito.mock(DwfToPdfService.class);
         DwfFileConverter dwfFileConverter = new DwfFileConverter(dwfToPdfService);
         var outputFile = "output.pdf";
