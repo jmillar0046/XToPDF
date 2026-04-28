@@ -36,9 +36,6 @@ public class DocxToPdfService {
 
     private final PdfBackendProvider pdfBackend;
 
-    /** Tracks current sequence number per numbered list, keyed by numID. */
-    private Map<String, Integer> listCounters;
-
     public DocxToPdfService(PdfBackendProvider pdfBackend) {
         this.pdfBackend = pdfBackend;
     }
@@ -48,8 +45,8 @@ public class DocxToPdfService {
              XWPFDocument docxDocument = new XWPFDocument(fis);
              PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
 
-            // Reset list counters for each conversion
-            listCounters = new HashMap<>();
+            // Local variable — each invocation gets its own map (thread-safe)
+            Map<String, Integer> listCounters = new HashMap<>();
 
             // Process headers before body content
             processHeaders(docxDocument, builder);
@@ -57,7 +54,7 @@ public class DocxToPdfService {
             // Single-pass body element iteration (Task 4.6)
             for (IBodyElement element : docxDocument.getBodyElements()) {
                 if (element instanceof XWPFParagraph paragraph) {
-                    processParagraph(paragraph, builder);
+                    processParagraph(paragraph, builder, listCounters);
                 } else if (element instanceof XWPFTable table) {
                     processTable(table, builder);
                 }
@@ -77,9 +74,9 @@ public class DocxToPdfService {
      * Processes a single paragraph, extracting per-run formatting, embedded images,
      * and list detection.
      */
-    private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder) throws IOException {
+    private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder, Map<String, Integer> listCounters) throws IOException {
         // Task 4.10: List detection
-        String listPrefix = getListPrefix(paragraph);
+        String listPrefix = getListPrefix(paragraph, listCounters);
         String indentation = getListIndentation(paragraph);
 
         boolean hasContent = false;
@@ -133,7 +130,7 @@ public class DocxToPdfService {
      *
      * @return the prefix string ("• " for bullets, "N. " for numbered), or empty string
      */
-    private String getListPrefix(XWPFParagraph paragraph) {
+    private String getListPrefix(XWPFParagraph paragraph, Map<String, Integer> listCounters) {
         String numFmt = paragraph.getNumFmt();
         if (numFmt == null) {
             return "";

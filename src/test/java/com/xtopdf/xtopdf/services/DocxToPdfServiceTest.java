@@ -16,7 +16,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -324,6 +331,54 @@ public class DocxToPdfServiceTest {
     }
 
     // ---------------------------------------------------------------
+    // Thread-safe list counter tests (Requirement 1)
+    // ---------------------------------------------------------------
+
+    @Test
+    void testSequentialConversionsWithNumberedListsProduceIndependentNumbering() throws Exception {
+        // First conversion: numbered list with 3 items
+        XWPFDocument doc1 = createDocxWithNumberedList(List.of("Alpha", "Beta", "Gamma"));
+        byte[] docx1Bytes = toBytes(doc1);
+        var docxFile1 = new MockMultipartFile("file", "list1.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docx1Bytes);
+        var pdfFile1 = tempFile("list1-sequential.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile1, pdfFile1);
+        String pdfText1 = extractPdfText(pdfFile1);
+
+        // Second conversion: numbered list with 4 items on the SAME service instance
+        XWPFDocument doc2 = createDocxWithNumberedList(List.of("Delta", "Epsilon", "Zeta", "Eta"));
+        byte[] docx2Bytes = toBytes(doc2);
+        var docxFile2 = new MockMultipartFile("file", "list2.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docx2Bytes);
+        var pdfFile2 = tempFile("list2-sequential.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile2, pdfFile2);
+        String pdfText2 = extractPdfText(pdfFile2);
+
+        // First PDF should have numbering 1, 2, 3 (starting from 1)
+        assertTrue(pdfText1.contains("1."), "First PDF should contain '1.'");
+        assertTrue(pdfText1.contains("2."), "First PDF should contain '2.'");
+        assertTrue(pdfText1.contains("3."), "First PDF should contain '3.'");
+        assertTrue(pdfText1.contains("Alpha"), "First PDF should contain 'Alpha'");
+        assertTrue(pdfText1.contains("Beta"), "First PDF should contain 'Beta'");
+        assertTrue(pdfText1.contains("Gamma"), "First PDF should contain 'Gamma'");
+
+        // Second PDF should ALSO start from 1 (independent numbering)
+        assertTrue(pdfText2.contains("1."), "Second PDF should contain '1.' (independent numbering)");
+        assertTrue(pdfText2.contains("2."), "Second PDF should contain '2.'");
+        assertTrue(pdfText2.contains("3."), "Second PDF should contain '3.'");
+        assertTrue(pdfText2.contains("4."), "Second PDF should contain '4.'");
+        assertTrue(pdfText2.contains("Delta"), "Second PDF should contain 'Delta'");
+        assertTrue(pdfText2.contains("Epsilon"), "Second PDF should contain 'Epsilon'");
+
+        // Second PDF should NOT contain numbers from the first conversion's continuation
+        // (e.g., if counters leaked, second PDF might start at 4 instead of 1)
+        // Verify the numbering pattern: "1." should appear before "Delta" in the second PDF
+        int oneIdx = pdfText2.indexOf("1.");
+        int deltaIdx = pdfText2.indexOf("Delta");
+        assertTrue(oneIdx >= 0 && deltaIdx >= 0, "Second PDF should contain both '1.' and 'Delta'");
+    }
+
+    // ---------------------------------------------------------------
     // Helper methods
     // ---------------------------------------------------------------
 
@@ -343,6 +398,45 @@ public class DocxToPdfServiceTest {
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(pdf);
         }
+    }
+
+    /**
+     * Creates a DOCX document with numbered list items using numbering XML.
+     */
+    private XWPFDocument createDocxWithNumberedList(List<String> texts) throws IOException {
+        XWPFDocument document = new XWPFDocument();
+
+        var numbering = document.createNumbering();
+        var abstractNumId = numbering.addAbstractNum(createDecimalAbstractNum());
+        var numId = numbering.addNum(abstractNumId);
+
+        for (String text : texts) {
+            XWPFParagraph paragraph = document.createParagraph();
+            paragraph.setNumID(numId);
+            paragraph.getCTP().getPPr().getNumPr()
+                    .addNewIlvl().setVal(BigInteger.ZERO);
+            XWPFRun run = paragraph.createRun();
+            run.setText(text);
+        }
+
+        return document;
+    }
+
+    /**
+     * Creates an abstract numbering definition for decimal numbered lists.
+     */
+    private org.apache.poi.xwpf.usermodel.XWPFAbstractNum createDecimalAbstractNum() {
+        var ctAbstractNum = org.openxmlformats.schemas.wordprocessingml.x2006.main.CTAbstractNum.Factory.newInstance();
+        ctAbstractNum.setAbstractNumId(BigInteger.ZERO);
+        var lvl = ctAbstractNum.addNewLvl();
+        lvl.setIlvl(BigInteger.ZERO);
+        var numFmt = lvl.addNewNumFmt();
+        numFmt.setVal(org.openxmlformats.schemas.wordprocessingml.x2006.main.STNumberFormat.DECIMAL);
+        var lvlText = lvl.addNewLvlText();
+        lvlText.setVal("%1.");
+        var start = lvl.addNewStart();
+        start.setVal(BigInteger.ONE);
+        return new org.apache.poi.xwpf.usermodel.XWPFAbstractNum(ctAbstractNum);
     }
 
     private byte[] createMockDocxFileContent() throws IOException {
