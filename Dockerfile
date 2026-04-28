@@ -13,7 +13,7 @@ COPY gradle ./gradle
 RUN chmod +x ./gradlew
 
 # Initialize a minimal git repo so version resolution doesn't fail
-RUN git init && git commit --allow-empty -m "docker build"
+RUN git init && git config user.email "build@docker" && git config user.name "docker" && git commit --allow-empty -m "docker build"
 
 # Download dependencies (cached if dependencies don't change)
 RUN ./gradlew dependencies --no-daemon || true
