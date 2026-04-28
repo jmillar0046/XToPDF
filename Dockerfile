@@ -1,5 +1,5 @@
 # Multi-stage build for XToPDF conversion service
-FROM gradle:8.12-jdk25-alpine AS build
+FROM gradle:jdk25-alpine AS build
 
 # Set working directory
 WORKDIR /app
