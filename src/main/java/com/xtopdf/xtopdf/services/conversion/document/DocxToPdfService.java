@@ -15,6 +15,8 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBrType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,13 +52,17 @@ public class DocxToPdfService {
             // Local variable — each invocation gets its own map (thread-safe)
             Map<String, Integer> listCounters = new HashMap<>();
 
+            // Mutable holder for tracking whether any content has been rendered.
+            // Used to prevent blank leading pages when a page break appears before any content.
+            boolean[] contentRendered = {false};
+
             // Process headers before body content
             processHeaders(docxDocument, builder);
 
             // Single-pass body element iteration (Task 4.6)
             for (IBodyElement element : docxDocument.getBodyElements()) {
                 if (element instanceof XWPFParagraph paragraph) {
-                    processParagraph(paragraph, builder, listCounters);
+                    processParagraph(paragraph, builder, listCounters, contentRendered);
                 } else if (element instanceof XWPFTable table) {
                     processTable(table, builder);
                 }
@@ -74,9 +80,20 @@ public class DocxToPdfService {
 
     /**
      * Processes a single paragraph, extracting per-run formatting, embedded images,
-     * and list detection.
+     * list detection, and page break handling.
      */
-    private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder, Map<String, Integer> listCounters) throws IOException {
+    private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder,
+                                  Map<String, Integer> listCounters, boolean[] contentRendered) throws IOException {
+        // Check for paragraph-level page break (paragraph.isPageBreak() checks if the
+        // paragraph has a page break before it)
+        try {
+            if (paragraph.isPageBreak() && contentRendered[0]) {
+                builder.newPage();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check paragraph-level page break: {}", e.getMessage());
+        }
+
         // Set alignment for this paragraph
         builder.setAlignment(mapAlignment(paragraph.getAlignment()));
 
@@ -94,6 +111,15 @@ public class DocxToPdfService {
 
         // Task 4.7: Iterate XWPFRun objects for formatting extraction
         for (XWPFRun run : paragraph.getRuns()) {
+            // Check for run-level page break
+            try {
+                if (isRunPageBreak(run) && contentRendered[0]) {
+                    builder.newPage();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to check run-level page break: {}", e.getMessage());
+            }
+
             // Task 4.8: Check for embedded images
             try {
                 for (var picture : run.getEmbeddedPictures()) {
@@ -102,6 +128,7 @@ public class DocxToPdfService {
                         byte[] imageData = pictureData.getData();
                         if (imageData != null && imageData.length > 0) {
                             builder.addImage(imageData);
+                            contentRendered[0] = true;
                         }
                     }
                 }
@@ -122,6 +149,7 @@ public class DocxToPdfService {
                 int[] rgb = parseColor(run.getColor());
                 builder.addFormattedText(text, bold, italic, fontSize, rgb[0], rgb[1], rgb[2]);
                 hasContent = true;
+                contentRendered[0] = true;
             }
         }
 
@@ -193,6 +221,22 @@ public class DocxToPdfService {
             case RIGHT -> TextAlignment.RIGHT;
             default -> TextAlignment.LEFT; // LEFT, BOTH, and others all map to LEFT
         };
+    }
+
+    /**
+     * Checks whether a run contains a page break by inspecting the underlying XML break elements.
+     * A run has a page break if any of its CTBr elements has type PAGE.
+     *
+     * @param run the XWPFRun to check
+     * @return true if the run contains a page break
+     */
+    private boolean isRunPageBreak(XWPFRun run) {
+        for (CTBr br : run.getCTR().getBrList()) {
+            if (br.getType() == STBrType.PAGE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

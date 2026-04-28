@@ -5,6 +5,7 @@ import com.xtopdf.xtopdf.services.conversion.document.DocxToPdfService;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.usermodel.BreakType;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -423,6 +424,128 @@ public class DocxToPdfServiceTest {
         String pdfText = extractPdfText(pdfFile);
         assertTrue(pdfText.contains("Right aligned date"),
                 "PDF should contain the right-aligned text");
+    }
+
+    // ---------------------------------------------------------------
+    // Page break detection tests (Task 7.1)
+    // Validates: Requirements 4.1, 4.2, 4.3, 4.4
+    // ---------------------------------------------------------------
+
+    @Test
+    void testDocxWithOneExplicitPageBreakProducesTwoPagePdf() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        // First page content
+        XWPFParagraph p1 = document.createParagraph();
+        p1.createRun().setText("Content on page one");
+
+        // Page break via run-level break
+        XWPFParagraph p2 = document.createParagraph();
+        XWPFRun breakRun = p2.createRun();
+        breakRun.addBreak(BreakType.PAGE);
+
+        // Second page content
+        XWPFParagraph p3 = document.createParagraph();
+        p3.createRun().setText("Content on page two");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "pagebreak.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("pagebreak-one.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertEquals(2, pdf.getNumberOfPages(),
+                    "DOCX with one explicit page break should produce a 2-page PDF");
+        }
+    }
+
+    @Test
+    void testDocxWithNoPageBreaksProducesSinglePagePdf() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        document.createParagraph().createRun().setText("First paragraph");
+        document.createParagraph().createRun().setText("Second paragraph");
+        document.createParagraph().createRun().setText("Third paragraph");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "nobreak.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("nobreak.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertEquals(1, pdf.getNumberOfPages(),
+                    "DOCX with no page breaks should produce a single-page PDF");
+        }
+    }
+
+    @Test
+    void testPageBreakBeforeAnyContentDoesNotProduceBlankLeadingPage() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        // Page break before any content
+        XWPFParagraph p1 = document.createParagraph();
+        XWPFRun breakRun = p1.createRun();
+        breakRun.addBreak(BreakType.PAGE);
+
+        // Content after the page break
+        XWPFParagraph p2 = document.createParagraph();
+        p2.createRun().setText("Content after leading page break");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "leading-break.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("leading-break.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertEquals(1, pdf.getNumberOfPages(),
+                    "Page break before any content should not produce a blank leading page");
+        }
+
+        // Verify the content is still present
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Content after leading page break"),
+                "PDF should contain the text after the leading page break");
+    }
+
+    @Test
+    void testRunLevelPageBreakTriggersNewPage() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+
+        // Paragraph with text followed by a run-level page break and more text
+        XWPFParagraph p1 = document.createParagraph();
+        XWPFRun run1 = p1.createRun();
+        run1.setText("Before break");
+
+        // Second paragraph with a run that has a page break
+        XWPFParagraph p2 = document.createParagraph();
+        XWPFRun breakRun = p2.createRun();
+        breakRun.addBreak(BreakType.PAGE);
+
+        XWPFParagraph p3 = document.createParagraph();
+        XWPFRun run3 = p3.createRun();
+        run3.setText("After break");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "run-break.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("run-break.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertEquals(2, pdf.getNumberOfPages(),
+                    "Run-level page break should trigger a new page");
+        }
+
+        // Verify both texts are present
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Before break"), "PDF should contain 'Before break'");
+        assertTrue(pdfText.contains("After break"), "PDF should contain 'After break'");
     }
 
     // ---------------------------------------------------------------
