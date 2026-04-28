@@ -91,3 +91,14 @@ tasks.named('test') {
 jacocoTestReport {
 	dependsOn test
 }
+
+jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.60
+			}
+		}
+	}
+}
