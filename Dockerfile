@@ -1,21 +1,22 @@
 # Multi-stage build for XToPDF conversion service
-FROM gradle:jdk25-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy gradle files first for better caching
-COPY build.gradle settings.gradle ./
+# Copy gradle wrapper and config first for better caching
+COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
+RUN chmod +x ./gradlew
 
 # Download dependencies (cached if dependencies don't change)
-RUN gradle dependencies --no-daemon || true
+RUN ./gradlew dependencies --no-daemon || true
 
 # Copy source code
 COPY src ./src
 
-# Build the application with preview features enabled
-RUN gradle bootJar --no-daemon
+# Build the application
+RUN ./gradlew bootJar --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:25-jre-alpine
@@ -23,9 +24,7 @@ FROM eclipse-temurin:25-jre-alpine
 # Install required packages for PDF conversion
 RUN apk add --no-cache \
     fontconfig \
-    ttf-dejavu \
-    msttcorefonts-installer \
-    && update-ms-fonts
+    ttf-dejavu
 
 # Create app user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
