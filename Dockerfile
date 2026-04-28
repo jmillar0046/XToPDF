@@ -1,6 +1,9 @@
 # Multi-stage build for XToPDF conversion service
 FROM eclipse-temurin:25-jdk-alpine AS build
 
+# Install git (needed for version resolution in build.gradle)
+RUN apk add --no-cache git
+
 # Set working directory
 WORKDIR /app
 
@@ -8,6 +11,9 @@ WORKDIR /app
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
 RUN chmod +x ./gradlew
+
+# Initialize a minimal git repo so version resolution doesn't fail
+RUN git init && git commit --allow-empty -m "docker build"
 
 # Download dependencies (cached if dependencies don't change)
 RUN ./gradlew dependencies --no-daemon || true
