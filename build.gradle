@@ -86,6 +86,16 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport
+
+	// Parallel test execution with multiple JVM forks
+	maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+	forkEvery = 100
+
+	// JVM settings for test forks
+	jvmArgs += [
+		'-Xmx512m',
+		'-XX:+UseG1GC'
+	]
 }
 
 jacocoTestReport {
