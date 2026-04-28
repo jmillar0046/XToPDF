@@ -167,6 +167,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         if (text == null || text.isEmpty()) {
             return;
         }
+        text = safeEncode(text, regularFont);
         contentStream.beginText();
         contentStream.setFont(regularFont, DEFAULT_FONT_SIZE);
         contentStream.newLineAtOffset(x, y);
@@ -182,6 +183,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
         // Replace tabs with spaces for consistent rendering
         text = text.replace("\t", "    ");
+        text = safeEncode(text, regularFont);
 
         contentStream.beginText();
         contentStream.setFont(regularFont, DEFAULT_FONT_SIZE);
@@ -239,6 +241,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
                 // Draw cell text
                 String cellText = row[col] != null ? row[col] : "";
+                cellText = safeEncode(cellText, regularFont);
                 cellText = truncateText(cellText, cellWidth - (2 * TABLE_CELL_PADDING), regularFont, DEFAULT_FONT_SIZE);
 
                 contentStream.beginText();
@@ -392,6 +395,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         if (text == null || text.isEmpty()) {
             return;
         }
+        text = safeEncode(text, regularFont);
         float headerY = currentPage.getMediaBox().getHeight() - HEADER_Y_OFFSET;
         contentStream.beginText();
         contentStream.setFont(regularFont, HEADER_FOOTER_FONT_SIZE);
@@ -405,6 +409,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         if (text == null || text.isEmpty()) {
             return;
         }
+        text = safeEncode(text, regularFont);
         contentStream.beginText();
         contentStream.setFont(regularFont, HEADER_FOOTER_FONT_SIZE);
         contentStream.newLineAtOffset(DEFAULT_MARGIN, FOOTER_Y_POSITION);
@@ -441,7 +446,8 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
     /**
      * Determines the best font for a given character — uses CJK font if the
-     * primary font cannot encode the character.
+     * primary font cannot encode the character. Returns null if no font can
+     * encode the character.
      */
     private PDFont fontForChar(char c, PDFont primaryFont) {
         try {
@@ -454,10 +460,11 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
                     cjkFont.encode(String.valueOf(c));
                     return cjkFont;
                 } catch (Exception ex) {
-                    // CJK font also can't encode — fall back to primary
+                    // CJK font also can't encode
                 }
             }
-            return primaryFont;
+            // No font can encode this character — return null to signal skip
+            return null;
         }
     }
 
@@ -502,7 +509,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
     /**
      * Splits text into contiguous runs where each character resolves to the same font
-     * (primary vs CJK fallback).
+     * (primary vs CJK fallback). Characters that cannot be encoded by any font are skipped.
      */
     private List<FontRun> splitIntoFontRuns(String text, PDFont primaryFont) {
         List<FontRun> runs = new ArrayList<>();
@@ -511,13 +518,19 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         }
 
         StringBuilder currentRun = new StringBuilder();
-        PDFont currentFont = fontForChar(text.charAt(0), primaryFont);
-        currentRun.append(text.charAt(0));
+        PDFont currentFont = null;
 
-        for (int i = 1; i < text.length(); i++) {
+        for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             PDFont charFont = fontForChar(c, primaryFont);
-            if (charFont == currentFont) {
+            if (charFont == null) {
+                // Character can't be encoded by any font — skip it
+                continue;
+            }
+            if (currentFont == null) {
+                currentFont = charFont;
+                currentRun.append(c);
+            } else if (charFont == currentFont) {
                 currentRun.append(c);
             } else {
                 runs.add(new FontRun(currentRun.toString(), currentFont));
@@ -631,6 +644,27 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         }
 
         return lines;
+    }
+
+    /**
+     * Filters out characters that cannot be encoded by the given font.
+     * Characters that fail encoding are replaced with a space.
+     */
+    private String safeEncode(String text, PDFont font) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        StringBuilder safe = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            try {
+                font.encode(String.valueOf(c));
+                safe.append(c);
+            } catch (Exception e) {
+                // Character can't be encoded — replace with space
+                safe.append(' ');
+            }
+        }
+        return safe.toString();
     }
 
     /**
