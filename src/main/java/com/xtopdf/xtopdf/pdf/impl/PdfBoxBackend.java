@@ -27,8 +27,15 @@ public class PdfBoxBackend implements PdfBackendProvider {
     private byte[] boldFontBytes;
     private byte[] cjkFontBytes;
 
+    public PdfBoxBackend() {
+        loadFontBytes();
+    }
+
     @PostConstruct
     void loadFontBytes() {
+        if (regularFontBytes != null) {
+            return; // Already loaded by constructor
+        }
         regularFontBytes = loadResource("/fonts/NotoSans-Regular.ttf");
         boldFontBytes = loadResource("/fonts/NotoSans-Bold.ttf");
         cjkFontBytes = loadCjkResource();
