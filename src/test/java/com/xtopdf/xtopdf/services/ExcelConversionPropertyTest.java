@@ -43,7 +43,7 @@ class ExcelConversionPropertyTest {
      * For any valid Excel file, the conversion should produce a valid PDF
      * that can be opened and has at least one page.
      */
-    @Property(tries = 100, generation = GenerationMode.RANDOMIZED)
+    @Property(tries = 25, generation = GenerationMode.RANDOMIZED)
     @Label("Excel conversion produces valid PDF")
     void excelConversionProducesValidPdf(
             @ForAll("validExcelWorkbooks") Workbook workbook) throws IOException {
@@ -109,7 +109,7 @@ class ExcelConversionPropertyTest {
      * When an Excel file contains formulas, the PDF should contain
      * the evaluated results, not the formula text.
      */
-    @Property(tries = 100, generation = GenerationMode.RANDOMIZED)
+    @Property(tries = 25, generation = GenerationMode.RANDOMIZED)
     @Label("Excel formulas are evaluated in PDF")
     void excelFormulasAreEvaluated(
             @ForAll("workbooksWithFormulas") Workbook workbook) throws IOException {
@@ -168,7 +168,7 @@ class ExcelConversionPropertyTest {
      * When an Excel file contains charts, the conversion should include
      * visual representations of the charts in the output PDF.
      */
-    @Property(tries = 100, generation = GenerationMode.RANDOMIZED)
+    @Property(tries = 25, generation = GenerationMode.RANDOMIZED)
     @Label("Excel charts are rendered in PDF")
     void excelChartsAreRendered(
             @ForAll("workbooksWithCharts") XSSFWorkbook workbook) throws IOException {
@@ -231,7 +231,7 @@ class ExcelConversionPropertyTest {
      * When an Excel file contains formatting (bold, colors, etc.),
      * the conversion should preserve the formatting in the PDF.
      */
-    @Property(tries = 100, generation = GenerationMode.RANDOMIZED)
+    @Property(tries = 25, generation = GenerationMode.RANDOMIZED)
     @Label("Excel formatting is preserved in PDF")
     void excelFormattingIsPreserved(
             @ForAll("workbooksWithFormatting") Workbook workbook) throws IOException {

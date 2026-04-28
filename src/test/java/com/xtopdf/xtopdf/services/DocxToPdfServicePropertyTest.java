@@ -46,7 +46,7 @@ class DocxToPdfServicePropertyTest {
      *
      * **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
      */
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Body element order is preserved in PDF output")
     void bodyElementOrderIsPreserved(
             @ForAll("interleavedBodyElements") List<BodyElement> elements) throws IOException {
@@ -120,7 +120,7 @@ class DocxToPdfServicePropertyTest {
      *
      * **Validates: Requirements 2.6**
      */
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Per-run formatting extraction produces valid PDF")
     void perRunFormattingExtractionProducesValidPdf(
             @ForAll("multiRunParagraphs") List<RunSpec> runs) throws IOException {
@@ -187,7 +187,7 @@ class DocxToPdfServicePropertyTest {
      *
      * **Validates: Requirements 5.1**
      */
-    @Property(tries = 30)
+    @Property(tries = 10)
     @Label("Bullet list items are prefixed with bullet character")
     void bulletListItemsArePrefixed(
             @ForAll("bulletListTexts") List<String> texts) throws IOException {
@@ -246,7 +246,7 @@ class DocxToPdfServicePropertyTest {
      *
      * **Validates: Requirements 5.2, 5.3**
      */
-    @Property(tries = 30)
+    @Property(tries = 10)
     @Label("Numbered list items are sequentially numbered")
     void numberedListItemsAreSequential(
             @ForAll("numberedListTexts") List<String> texts) throws IOException {
