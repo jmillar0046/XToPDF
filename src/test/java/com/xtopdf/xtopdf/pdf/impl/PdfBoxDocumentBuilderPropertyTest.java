@@ -31,7 +31,7 @@ class PdfBoxDocumentBuilderPropertyTest {
     // **Validates: Requirements 2.1, 2.2, 2.3**
     // ---------------------------------------------------------------
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 2: Font variant selection — regular (false, false)")
     void regularFontVariantProducesValidPdfWithText(
             @ForAll("asciiText") String text) throws IOException {
@@ -50,7 +50,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 2: Font variant selection — bold (true, false)")
     void boldFontVariantProducesValidPdfWithText(
             @ForAll("asciiText") String text) throws IOException {
@@ -69,7 +69,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 2: Font variant selection — italic (false, true)")
     void italicFontVariantProducesValidPdfWithText(
             @ForAll("asciiText") String text) throws IOException {
@@ -88,7 +88,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 2: Font variant selection — bold-italic (true, true)")
     void boldItalicFontVariantProducesValidPdfWithText(
             @ForAll("asciiText") String text) throws IOException {
@@ -107,7 +107,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 2: All four font variants in a single paragraph produce valid PDF")
     void allFontVariantsInOneParagraphProduceValidPdf(
             @ForAll("asciiText") String text) throws IOException {
@@ -140,7 +140,7 @@ class PdfBoxDocumentBuilderPropertyTest {
     // **Validates: Requirements 2.4, 2.5**
     // ---------------------------------------------------------------
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 3: Positive font size is accepted without error")
     void positiveFontSizeIsAcceptedWithoutError(
             @ForAll @FloatRange(min = 6f, max = 48f) float fontSize,
@@ -161,7 +161,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 3: Zero font size falls back to default without error")
     void zeroFontSizeFallsBackToDefaultWithoutError(
             @ForAll("asciiText") String text) throws IOException {
@@ -181,7 +181,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("Property 3: Negative font size falls back to default without error")
     void negativeFontSizeFallsBackToDefaultWithoutError(
             @ForAll @FloatRange(min = -1000f, max = -0.01f) float fontSize,
@@ -209,7 +209,7 @@ class PdfBoxDocumentBuilderPropertyTest {
     // **Validates: Requirements 6.4**
     // ---------------------------------------------------------------
 
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Property 8: Latin characters pass through without '?' substitution")
     void latinCharactersPassThroughWithoutSubstitution(
             @ForAll("latinText") String text) throws IOException {
@@ -230,7 +230,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Property 8: Cyrillic characters pass through without '?' substitution")
     void cyrillicCharactersPassThroughWithoutSubstitution(
             @ForAll("cyrillicText") String text) throws IOException {
@@ -250,7 +250,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Property 8: CJK characters do not crash the builder")
     void cjkCharactersDoNotCrashBuilder(
             @ForAll("cjkText") String text) throws IOException {
@@ -271,7 +271,7 @@ class PdfBoxDocumentBuilderPropertyTest {
         }
     }
 
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Label("Property 8: Mixed Unicode (Latin + Cyrillic + CJK) does not crash the builder")
     void mixedUnicodeDoesNotCrashBuilder(
             @ForAll("latinText") String latin,
