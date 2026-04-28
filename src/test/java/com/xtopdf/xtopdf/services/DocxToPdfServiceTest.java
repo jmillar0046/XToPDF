@@ -2,6 +2,9 @@ package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.services.conversion.document.DocxToPdfService;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -14,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -183,6 +187,162 @@ public class DocxToPdfServiceTest {
         docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
         assertTrue(pdfFile.exists());
         assertTrue(pdfFile.length() > 0);
+    }
+
+    // ---------------------------------------------------------------
+    // Integration tests with PDFTextStripper content verification
+    // ---------------------------------------------------------------
+
+    @Test
+    void testMixedContentOrderPreserved() throws Exception {
+        // Create DOCX: paragraph → table → paragraph
+        XWPFDocument document = new XWPFDocument();
+        document.createParagraph().createRun().setText("Before table");
+        var table = document.createTable(1, 2);
+        table.getRow(0).getCell(0).setText("CellX");
+        table.getRow(0).getCell(1).setText("CellY");
+        document.createParagraph().createRun().setText("After table");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "mixed.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("mixed-content.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        int beforeIdx = pdfText.indexOf("Before table");
+        int cellXIdx = pdfText.indexOf("CellX");
+        int afterIdx = pdfText.indexOf("After table");
+
+        assertTrue(beforeIdx >= 0, "PDF should contain 'Before table'");
+        assertTrue(cellXIdx >= 0, "PDF should contain 'CellX'");
+        assertTrue(afterIdx >= 0, "PDF should contain 'After table'");
+        assertTrue(beforeIdx < cellXIdx, "'Before table' should appear before table content");
+        assertTrue(cellXIdx < afterIdx, "Table content should appear before 'After table'");
+    }
+
+    @Test
+    void testCyrillicCharactersRenderedWithoutQuestionMarks() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+        XWPFRun run = paragraph.createRun();
+        run.setText("Привет мир");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "cyrillic.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("cyrillic.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Привет"), "PDF should contain Cyrillic text 'Привет'");
+        assertTrue(pdfText.contains("мир"), "PDF should contain Cyrillic text 'мир'");
+        assertFalse(pdfText.contains("?"), "PDF should not contain '?' placeholders for Cyrillic characters");
+    }
+
+    @Test
+    void testEmptyDocxProducesValidPdf() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "empty-integration.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("empty-integration.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        assertTrue(pdfFile.exists(), "PDF file should be created for empty DOCX");
+        assertTrue(pdfFile.length() > 0, "PDF file should not be empty");
+        // Verify it's a valid PDF by loading it
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            assertTrue(pdf.getNumberOfPages() >= 1, "PDF should have at least one page");
+        }
+    }
+
+    @Test
+    void testBoldItalicFormattingProducesValidPdfWithText() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+
+        XWPFRun boldRun = paragraph.createRun();
+        boldRun.setText("Bold text ");
+        boldRun.setBold(true);
+
+        XWPFRun italicRun = paragraph.createRun();
+        italicRun.setText("Italic text");
+        italicRun.setItalic(true);
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "bold-italic.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("bold-italic.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Bold text"), "PDF should contain 'Bold text'");
+        assertTrue(pdfText.contains("Italic text"), "PDF should contain 'Italic text'");
+    }
+
+    @Test
+    void testMultipleParagraphsAndTableInterleaved() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        document.createParagraph().createRun().setText("Intro paragraph");
+
+        var table1 = document.createTable(1, 2);
+        table1.getRow(0).getCell(0).setText("T1R1C1");
+        table1.getRow(0).getCell(1).setText("T1R1C2");
+
+        document.createParagraph().createRun().setText("Middle paragraph");
+
+        var table2 = document.createTable(1, 2);
+        table2.getRow(0).getCell(0).setText("T2R1C1");
+        table2.getRow(0).getCell(1).setText("T2R1C2");
+
+        document.createParagraph().createRun().setText("Closing paragraph");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "interleaved.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("interleaved.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        String pdfText = extractPdfText(pdfFile);
+        int introIdx = pdfText.indexOf("Intro paragraph");
+        int t1Idx = pdfText.indexOf("T1R1C1");
+        int middleIdx = pdfText.indexOf("Middle paragraph");
+        int t2Idx = pdfText.indexOf("T2R1C1");
+        int closingIdx = pdfText.indexOf("Closing paragraph");
+
+        assertTrue(introIdx >= 0, "PDF should contain 'Intro paragraph'");
+        assertTrue(t1Idx >= 0, "PDF should contain table 1 content");
+        assertTrue(middleIdx >= 0, "PDF should contain 'Middle paragraph'");
+        assertTrue(t2Idx >= 0, "PDF should contain table 2 content");
+        assertTrue(closingIdx >= 0, "PDF should contain 'Closing paragraph'");
+
+        assertTrue(introIdx < t1Idx, "Intro should precede table 1");
+        assertTrue(t1Idx < middleIdx, "Table 1 should precede middle paragraph");
+        assertTrue(middleIdx < t2Idx, "Middle paragraph should precede table 2");
+        assertTrue(t2Idx < closingIdx, "Table 2 should precede closing paragraph");
+    }
+
+    // ---------------------------------------------------------------
+    // Helper methods
+    // ---------------------------------------------------------------
+
+    private byte[] toBytes(XWPFDocument document) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            document.write(baos);
+            return baos.toByteArray();
+        }
+    }
+
+    private File tempFile(String name) {
+        return new File(System.getProperty("java.io.tmpdir") + "/" + name);
+    }
+
+    private String extractPdfText(File pdfFile) throws IOException {
+        try (PDDocument pdf = Loader.loadPDF(pdfFile)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(pdf);
+        }
     }
 
     private byte[] createMockDocxFileContent() throws IOException {
