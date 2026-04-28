@@ -60,7 +60,8 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     /**
      * A segment of formatted text accumulated via {@link #addFormattedText}.
      */
-    record TextSegment(String text, boolean bold, boolean italic, float fontSize) {}
+    record TextSegment(String text, boolean bold, boolean italic, float fontSize,
+                       int r, int g, int b) {}
 
     /**
      * Creates a new PDFBox document builder.
@@ -358,12 +359,13 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     }
 
     @Override
-    public void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException {
+    public void addFormattedText(String text, boolean bold, boolean italic, float fontSize,
+                                 int r, int g, int b) throws IOException {
         if (text == null || text.isEmpty()) {
             return;
         }
         float effectiveFontSize = fontSize <= 0 ? DEFAULT_FONT_SIZE : fontSize;
-        pendingSegments.add(new TextSegment(text, bold, italic, effectiveFontSize));
+        pendingSegments.add(new TextSegment(text, bold, italic, effectiveFontSize, r, g, b));
     }
 
     @Override
@@ -432,9 +434,9 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     // ---------------------------------------------------------------
 
     /**
-     * A single word (or whitespace-delimited token) with its associated font and size.
+     * A single word (or whitespace-delimited token) with its associated font, size, and color.
      */
-    private record WordToken(String word, PDFont font, float fontSize) {}
+    private record WordToken(String word, PDFont font, float fontSize, int r, int g, int b) {}
 
     /**
      * A line of word tokens ready to be rendered.
@@ -490,6 +492,9 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
             PDFont primaryFont = selectFont(seg.bold(), seg.italic());
             String text = seg.text();
             float fontSize = seg.fontSize();
+            int r = seg.r();
+            int g = seg.g();
+            int b = seg.b();
 
             // Split into runs of characters that share the same resolved font,
             // then split those runs into words.
@@ -504,7 +509,7 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
                         word = " " + word;
                     }
                     if (!word.isEmpty()) {
-                        tokens.add(new WordToken(word, run.font(), fontSize));
+                        tokens.add(new WordToken(word, run.font(), fontSize, r, g, b));
                     }
                 }
             }
@@ -574,7 +579,8 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
                 if (token.word().startsWith(" ")) {
                     String trimmed = token.word().substring(1);
                     if (!trimmed.isEmpty()) {
-                        token = new WordToken(trimmed, token.font(), token.fontSize());
+                        token = new WordToken(trimmed, token.font(), token.fontSize(),
+                                token.r(), token.g(), token.b());
                         tokenWidth = token.font().getStringWidth(token.word()) / 1000 * token.fontSize();
                     } else {
                         continue;
@@ -595,7 +601,8 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
     /**
      * Renders a single line of word tokens at the current Y position,
-     * applying the current alignment to compute the X offset.
+     * applying the current alignment to compute the X offset and
+     * setting the non-stroking color for each token.
      */
     private void renderLine(LineOfTokens line, float maxWidth) throws IOException {
         // Compute line width by summing all token widths
@@ -617,8 +624,19 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         // Group consecutive tokens with the same font and size to minimize font switches
         PDFont lastFont = null;
         float lastSize = -1;
+        boolean hasNonBlackColor = false;
 
         for (WordToken token : line.tokens()) {
+            // Set color if non-black
+            if (token.r() != 0 || token.g() != 0 || token.b() != 0) {
+                contentStream.setNonStrokingColor(token.r() / 255f, token.g() / 255f, token.b() / 255f);
+                hasNonBlackColor = true;
+            } else if (hasNonBlackColor) {
+                // Reset to black
+                contentStream.setNonStrokingColor(0f, 0f, 0f);
+                hasNonBlackColor = false;
+            }
+
             if (token.font() != lastFont || token.fontSize() != lastSize) {
                 contentStream.setFont(token.font(), token.fontSize());
                 lastFont = token.font();
@@ -628,6 +646,11 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         }
 
         contentStream.endText();
+
+        // Reset to black after the line if any non-black color was used
+        if (hasNonBlackColor) {
+            contentStream.setNonStrokingColor(0f, 0f, 0f);
+        }
     }
 
     // ---------------------------------------------------------------

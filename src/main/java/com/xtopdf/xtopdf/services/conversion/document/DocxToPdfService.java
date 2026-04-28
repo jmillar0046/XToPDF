@@ -119,7 +119,8 @@ public class DocxToPdfService {
                         ? fontSizeDouble.floatValue()
                         : 0; // 0 signals default size to the builder
 
-                builder.addFormattedText(text, bold, italic, fontSize);
+                int[] rgb = parseColor(run.getColor());
+                builder.addFormattedText(text, bold, italic, fontSize, rgb[0], rgb[1], rgb[2]);
                 hasContent = true;
             }
         }
@@ -192,6 +193,29 @@ public class DocxToPdfService {
             case RIGHT -> TextAlignment.RIGHT;
             default -> TextAlignment.LEFT; // LEFT, BOTH, and others all map to LEFT
         };
+    }
+
+    /**
+     * Parses a 6-character hexadecimal RGB color string into an int array of {r, g, b}.
+     * Returns {0, 0, 0} (black) for null, wrong-length, or non-hex inputs.
+     * Package-private for testing.
+     *
+     * @param hexColor the hex color string (e.g., "FF0000" for red)
+     * @return int array with {r, g, b} components (0-255 each)
+     */
+    int[] parseColor(String hexColor) {
+        if (hexColor == null || hexColor.length() != 6) {
+            return new int[]{0, 0, 0};
+        }
+        try {
+            int r = Integer.parseInt(hexColor.substring(0, 2), 16);
+            int g = Integer.parseInt(hexColor.substring(2, 4), 16);
+            int b = Integer.parseInt(hexColor.substring(4, 6), 16);
+            return new int[]{r, g, b};
+        } catch (NumberFormatException e) {
+            log.warn("Invalid color hex string '{}', defaulting to black", hexColor);
+            return new int[]{0, 0, 0};
+        }
     }
 
     /**

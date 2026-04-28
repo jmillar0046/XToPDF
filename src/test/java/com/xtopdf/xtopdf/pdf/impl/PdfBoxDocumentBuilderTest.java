@@ -308,6 +308,65 @@ class PdfBoxDocumentBuilderTest {
     }
 
     // ---------------------------------------------------------------
+    // 7-param addFormattedText with color tests (Task 5.4)
+    // Validates: Requirements 3.3, 3.4
+    // ---------------------------------------------------------------
+
+    @Test
+    void addFormattedTextWithColorShouldProduceValidPdf() throws IOException {
+        File outputFile = tempDir.resolve("red-text.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.addFormattedText("Red text", false, false, 12f, 255, 0, 0);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Red text"),
+                "PDF should contain the colored text");
+    }
+
+    @Test
+    void existingFourParamAddFormattedTextShouldStillWork() throws IOException {
+        File outputFile = tempDir.resolve("backward-compat.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.addFormattedText("Default black text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Default black text"),
+                "PDF should contain the default-colored text");
+    }
+
+    @Test
+    void coloredTextFollowedByDefaultTextShouldRenderBoth() throws IOException {
+        File outputFile = tempDir.resolve("mixed-color.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.addFormattedText("Blue text ", false, false, 12f, 0, 0, 255);
+            builder.addFormattedText("Black text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Blue text"),
+                "PDF should contain the blue text");
+        assertTrue(extractedText.contains("Black text"),
+                "PDF should contain the black text");
+    }
+
+    // ---------------------------------------------------------------
     // Helper method
     // ---------------------------------------------------------------
 

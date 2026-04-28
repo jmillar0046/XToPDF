@@ -214,6 +214,7 @@ public interface PdfDocumentBuilder extends AutoCloseable {
      * Adds formatted text at the current cursor position within a paragraph.
      * Multiple calls build up a single line before advancing. The accumulated
      * text is flushed when {@link #endParagraph()} is called.
+     * Defaults to black text color (0, 0, 0).
      *
      * @param text     the text fragment to add
      * @param bold     whether the text should be rendered in bold
@@ -221,7 +222,26 @@ public interface PdfDocumentBuilder extends AutoCloseable {
      * @param fontSize font size in points; use 0 or a negative value for the default size (12pt)
      * @throws IOException if an I/O error occurs
      */
-    void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException;
+    default void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException {
+        addFormattedText(text, bold, italic, fontSize, 0, 0, 0);
+    }
+
+    /**
+     * Adds formatted text with explicit RGB color at the current cursor position within a paragraph.
+     * Multiple calls build up a single line before advancing. The accumulated
+     * text is flushed when {@link #endParagraph()} is called.
+     *
+     * @param text     the text fragment to add
+     * @param bold     whether the text should be rendered in bold
+     * @param italic   whether the text should be rendered in italic
+     * @param fontSize font size in points; use 0 or a negative value for the default size (12pt)
+     * @param r        red component (0-255)
+     * @param g        green component (0-255)
+     * @param b        blue component (0-255)
+     * @throws IOException if an I/O error occurs
+     */
+    void addFormattedText(String text, boolean bold, boolean italic, float fontSize,
+                          int r, int g, int b) throws IOException;
 
     /**
      * Signals the end of a paragraph, flushing any accumulated formatted text
