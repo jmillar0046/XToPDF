@@ -10,7 +10,6 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFPictureData;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
@@ -22,21 +21,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
 /**
- * Service to convert DOCX (Word) files to PDF.
- * Uses Apache POI to parse DOCX and PDFBox to generate PDF.
- *
- * <p>This implementation uses single-pass body element iteration to preserve
- * document order, extracts per-run formatting (bold, italic, font size),
- * renders embedded images, processes headers/footers, and detects bulleted
- * and numbered lists.</p>
+ * Converts DOCX files to PDF, preserving document order, text formatting,
+ * images, headers/footers, lists, alignment, color, and page breaks.
  */
 @Service
 @Slf4j
 public class DocxToPdfService {
+
+    private static final String BULLET_PREFIX = "• ";
+    private static final String LIST_INDENT = "  ";
+    private static final String NUM_FMT_BULLET = "bullet";
+    private static final String NUM_FMT_DECIMAL = "decimal";
+    private static final String DEFAULT_NUM_ID = "default";
 
     private final PdfBackendProvider pdfBackend;
 
@@ -45,173 +44,178 @@ public class DocxToPdfService {
     }
 
     public void convertDocxToPdf(MultipartFile docxFile, File pdfFile) throws IOException {
+        Objects.requireNonNull(docxFile, "docxFile must not be null");
+        Objects.requireNonNull(pdfFile, "pdfFile must not be null");
+
         try (var fis = docxFile.getInputStream();
-             XWPFDocument docxDocument = new XWPFDocument(fis);
+             XWPFDocument document = new XWPFDocument(fis);
              PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
 
-            // Local variable — each invocation gets its own map (thread-safe)
-            Map<String, Integer> listCounters = new HashMap<>();
+            var state = new ConversionState();
 
-            // Mutable holder for tracking whether any content has been rendered.
-            // Used to prevent blank leading pages when a page break appears before any content.
-            boolean[] contentRendered = {false};
-
-            // Process headers before body content
-            processHeaders(docxDocument, builder);
-
-            // Single-pass body element iteration (Task 4.6)
-            for (IBodyElement element : docxDocument.getBodyElements()) {
-                if (element instanceof XWPFParagraph paragraph) {
-                    processParagraph(paragraph, builder, listCounters, contentRendered);
-                } else if (element instanceof XWPFTable table) {
-                    processTable(table, builder);
-                }
-            }
-
-            // Process footers after body content
-            processFooters(docxDocument, builder);
+            renderHeaders(document, builder);
+            renderBodyElements(document, builder, state);
+            renderFooters(document, builder);
 
             builder.save(pdfFile);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error processing DOCX file: {}", e.getMessage(), e);
             throw new IOException("Error processing DOCX file: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Processes a single paragraph, extracting per-run formatting, embedded images,
-     * list detection, and page break handling.
-     */
-    private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder,
-                                  Map<String, Integer> listCounters, boolean[] contentRendered) throws IOException {
-        // Check for paragraph-level page break (paragraph.isPageBreak() checks if the
-        // paragraph has a page break before it)
-        try {
-            if (paragraph.isPageBreak() && contentRendered[0]) {
-                builder.newPage();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to check paragraph-level page break: {}", e.getMessage());
-        }
+    // ------------------------------------------------------------------
+    // Top-level rendering
+    // ------------------------------------------------------------------
 
-        // Set alignment for this paragraph
+    private void renderBodyElements(XWPFDocument document, PdfDocumentBuilder builder,
+                                    ConversionState state) throws IOException {
+        for (IBodyElement element : document.getBodyElements()) {
+            if (element instanceof XWPFParagraph paragraph) {
+                renderParagraph(paragraph, builder, state);
+            } else if (element instanceof XWPFTable table) {
+                renderTable(table, builder);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Paragraph rendering
+    // ------------------------------------------------------------------
+
+    private void renderParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder,
+                                 ConversionState state) throws IOException {
+        handleParagraphPageBreak(paragraph, builder, state);
         builder.setAlignment(mapAlignment(paragraph.getAlignment()));
 
-        // Task 4.10: List detection
-        String listPrefix = getListPrefix(paragraph, listCounters);
-        String indentation = getListIndentation(paragraph);
+        boolean hasContent = renderListPrefix(paragraph, builder, state);
 
-        boolean hasContent = false;
-
-        // If this is a list item, prepend the list prefix as a formatted text segment
-        if (!listPrefix.isEmpty()) {
-            builder.addFormattedText(indentation + listPrefix, false, false, 0);
-            hasContent = true;
-        }
-
-        // Task 4.7: Iterate XWPFRun objects for formatting extraction
         for (XWPFRun run : paragraph.getRuns()) {
-            // Check for run-level page break
-            try {
-                if (isRunPageBreak(run) && contentRendered[0]) {
-                    builder.newPage();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to check run-level page break: {}", e.getMessage());
-            }
-
-            // Task 4.8: Check for embedded images
-            try {
-                for (var picture : run.getEmbeddedPictures()) {
-                    XWPFPictureData pictureData = picture.getPictureData();
-                    if (pictureData != null) {
-                        byte[] imageData = pictureData.getData();
-                        if (imageData != null && imageData.length > 0) {
-                            builder.addImage(imageData);
-                            contentRendered[0] = true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Failed to extract embedded image from paragraph: {}", e.getMessage());
-            }
-
-            // Extract text and formatting from each run
-            String text = run.text();
-            if (text != null && !text.isEmpty()) {
-                boolean bold = run.isBold();
-                boolean italic = run.isItalic();
-                Double fontSizeDouble = run.getFontSizeAsDouble();
-                float fontSize = (fontSizeDouble != null && fontSizeDouble > 0)
-                        ? fontSizeDouble.floatValue()
-                        : 0; // 0 signals default size to the builder
-
-                int[] rgb = parseColor(run.getColor());
-                builder.addFormattedText(text, bold, italic, fontSize, rgb[0], rgb[1], rgb[2]);
-                hasContent = true;
-                contentRendered[0] = true;
-            }
+            handleRunPageBreak(run, builder, state);
+            renderEmbeddedImages(run, builder, state);
+            hasContent |= renderRunText(run, builder, state);
         }
 
-        // Always call endParagraph to flush accumulated text
         if (hasContent) {
             builder.endParagraph();
         }
     }
 
-    /**
-     * Determines the list prefix for a paragraph based on its numbering format.
-     *
-     * @return the prefix string ("• " for bullets, "N. " for numbered), or empty string
-     */
-    private String getListPrefix(XWPFParagraph paragraph, Map<String, Integer> listCounters) {
+    private boolean renderListPrefix(XWPFParagraph paragraph, PdfDocumentBuilder builder,
+                                     ConversionState state) throws IOException {
+        String prefix = resolveListPrefix(paragraph, state);
+        if (prefix.isEmpty()) {
+            return false;
+        }
+        builder.addFormattedText(LIST_INDENT + prefix, false, false, 0);
+        return true;
+    }
+
+    private boolean renderRunText(XWPFRun run, PdfDocumentBuilder builder,
+                                  ConversionState state) throws IOException {
+        String text = run.text();
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+
+        float fontSize = extractFontSize(run);
+        Color color = Color.fromHex(run.getColor());
+
+        builder.addFormattedText(text, run.isBold(), run.isItalic(), fontSize,
+                color.r(), color.g(), color.b());
+        state.markContentRendered();
+        return true;
+    }
+
+    // ------------------------------------------------------------------
+    // Page break handling
+    // ------------------------------------------------------------------
+
+    private void handleParagraphPageBreak(XWPFParagraph paragraph, PdfDocumentBuilder builder,
+                                          ConversionState state) {
+        try {
+            if (paragraph.isPageBreak() && state.hasContentBeenRendered()) {
+                builder.newPage();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check paragraph-level page break: {}", e.getMessage());
+        }
+    }
+
+    private void handleRunPageBreak(XWPFRun run, PdfDocumentBuilder builder,
+                                    ConversionState state) {
+        try {
+            if (hasPageBreak(run) && state.hasContentBeenRendered()) {
+                builder.newPage();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check run-level page break: {}", e.getMessage());
+        }
+    }
+
+    private boolean hasPageBreak(XWPFRun run) {
+        return run.getCTR().getBrList().stream()
+                .anyMatch(br -> br.getType() == STBrType.PAGE);
+    }
+
+    // ------------------------------------------------------------------
+    // Image extraction
+    // ------------------------------------------------------------------
+
+    private void renderEmbeddedImages(XWPFRun run, PdfDocumentBuilder builder,
+                                      ConversionState state) {
+        try {
+            for (var picture : run.getEmbeddedPictures()) {
+                var pictureData = picture.getPictureData();
+                if (pictureData == null) continue;
+
+                byte[] imageData = pictureData.getData();
+                if (imageData != null && imageData.length > 0) {
+                    builder.addImage(imageData);
+                    state.markContentRendered();
+                }
+            }
+        } catch (IOException e) {
+            log.warn("Failed to render embedded image: {}", e.getMessage());
+        } catch (Exception e) {
+            log.warn("Unexpected error extracting embedded image: {}", e.getMessage());
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // List detection
+    // ------------------------------------------------------------------
+
+    private String resolveListPrefix(XWPFParagraph paragraph, ConversionState state) {
         String numFmt = paragraph.getNumFmt();
         if (numFmt == null) {
             return "";
         }
-
-        if ("bullet".equalsIgnoreCase(numFmt)) {
-            return "• ";
+        if (NUM_FMT_BULLET.equalsIgnoreCase(numFmt)) {
+            return BULLET_PREFIX;
         }
-
-        if ("decimal".equalsIgnoreCase(numFmt)) {
-            String numId = getNumId(paragraph);
-            int counter = listCounters.getOrDefault(numId, 0) + 1;
-            listCounters.put(numId, counter);
-            return counter + ". ";
+        if (NUM_FMT_DECIMAL.equalsIgnoreCase(numFmt)) {
+            String numId = extractNumId(paragraph);
+            return state.nextListNumber(numId) + ". ";
         }
-
         return "";
     }
 
-    /**
-     * Returns indentation spaces for list items.
-     */
-    private String getListIndentation(XWPFParagraph paragraph) {
-        String numFmt = paragraph.getNumFmt();
-        if (numFmt == null) {
-            return "";
-        }
-        // Apply indentation for list items
-        return "  ";
-    }
-
-    /**
-     * Extracts the numbering ID from a paragraph, used as the key for list counters.
-     */
-    private String getNumId(XWPFParagraph paragraph) {
+    private String extractNumId(XWPFParagraph paragraph) {
         try {
             var numID = paragraph.getNumID();
-            return numID != null ? numID.toString() : "default";
+            return numID != null ? numID.toString() : DEFAULT_NUM_ID;
         } catch (Exception e) {
-            return "default";
+            return DEFAULT_NUM_ID;
         }
     }
 
-    /**
-     * Maps a POI ParagraphAlignment to the internal TextAlignment enum.
-     * BOTH (justify) maps to LEFT as a reasonable approximation.
-     */
+    // ------------------------------------------------------------------
+    // Alignment mapping
+    // ------------------------------------------------------------------
+
     private TextAlignment mapAlignment(ParagraphAlignment poiAlignment) {
         if (poiAlignment == null) {
             return TextAlignment.LEFT;
@@ -219,55 +223,35 @@ public class DocxToPdfService {
         return switch (poiAlignment) {
             case CENTER -> TextAlignment.CENTER;
             case RIGHT -> TextAlignment.RIGHT;
-            default -> TextAlignment.LEFT; // LEFT, BOTH, and others all map to LEFT
+            default -> TextAlignment.LEFT;
         };
     }
 
-    /**
-     * Checks whether a run contains a page break by inspecting the underlying XML break elements.
-     * A run has a page break if any of its CTBr elements has type PAGE.
-     *
-     * @param run the XWPFRun to check
-     * @return true if the run contains a page break
-     */
-    private boolean isRunPageBreak(XWPFRun run) {
-        for (CTBr br : run.getCTR().getBrList()) {
-            if (br.getType() == STBrType.PAGE) {
-                return true;
-            }
-        }
-        return false;
+    // ------------------------------------------------------------------
+    // Formatting extraction
+    // ------------------------------------------------------------------
+
+    private float extractFontSize(XWPFRun run) {
+        Double size = run.getFontSizeAsDouble();
+        return (size != null && size > 0) ? size.floatValue() : 0;
     }
 
     /**
-     * Parses a 6-character hexadecimal RGB color string into an int array of {r, g, b}.
-     * Returns {0, 0, 0} (black) for null, wrong-length, or non-hex inputs.
-     * Package-private for testing.
-     *
-     * @param hexColor the hex color string (e.g., "FF0000" for red)
-     * @return int array with {r, g, b} components (0-255 each)
+     * Parses a hex color string. Delegates to {@link Color#fromHex(String)}.
+     * Package-private for backward compatibility with existing tests.
      */
     int[] parseColor(String hexColor) {
-        if (hexColor == null || hexColor.length() != 6) {
-            return new int[]{0, 0, 0};
-        }
-        try {
-            int r = Integer.parseInt(hexColor.substring(0, 2), 16);
-            int g = Integer.parseInt(hexColor.substring(2, 4), 16);
-            int b = Integer.parseInt(hexColor.substring(4, 6), 16);
-            return new int[]{r, g, b};
-        } catch (NumberFormatException e) {
-            log.warn("Invalid color hex string '{}', defaulting to black", hexColor);
-            return new int[]{0, 0, 0};
-        }
+        Color c = Color.fromHex(hexColor);
+        return new int[]{c.r(), c.g(), c.b()};
     }
 
-    /**
-     * Processes headers from the DOCX document.
-     */
-    private void processHeaders(XWPFDocument docxDocument, PdfDocumentBuilder builder) {
+    // ------------------------------------------------------------------
+    // Headers and footers
+    // ------------------------------------------------------------------
+
+    private void renderHeaders(XWPFDocument document, PdfDocumentBuilder builder) {
         try {
-            for (XWPFHeader header : docxDocument.getHeaderList()) {
+            for (XWPFHeader header : document.getHeaderList()) {
                 String text = header.getText();
                 if (text != null && !text.trim().isEmpty()) {
                     builder.addHeaderText(text.trim());
@@ -278,12 +262,9 @@ public class DocxToPdfService {
         }
     }
 
-    /**
-     * Processes footers from the DOCX document.
-     */
-    private void processFooters(XWPFDocument docxDocument, PdfDocumentBuilder builder) {
+    private void renderFooters(XWPFDocument document, PdfDocumentBuilder builder) {
         try {
-            for (XWPFFooter footer : docxDocument.getFooterList()) {
+            for (XWPFFooter footer : document.getFooterList()) {
                 String text = footer.getText();
                 if (text != null && !text.trim().isEmpty()) {
                     builder.addFooterText(text.trim());
@@ -294,23 +275,23 @@ public class DocxToPdfService {
         }
     }
 
-    private void processTable(XWPFTable table, PdfDocumentBuilder builder) throws IOException {
+    // ------------------------------------------------------------------
+    // Table rendering
+    // ------------------------------------------------------------------
+
+    private void renderTable(XWPFTable table, PdfDocumentBuilder builder) throws IOException {
         if (table.getRows().isEmpty()) {
             return;
         }
 
-        // Determine table dimensions
         int numCols = table.getRow(0).getTableCells().size();
         int numRows = table.getRows().size();
-
         String[][] tableData = new String[numRows][numCols];
 
-        // Extract table data
         for (int i = 0; i < numRows; i++) {
             XWPFTableRow row = table.getRow(i);
             for (int j = 0; j < numCols && j < row.getTableCells().size(); j++) {
-                XWPFTableCell cell = row.getCell(j);
-                tableData[i][j] = cell.getText();
+                tableData[i][j] = row.getCell(j).getText();
             }
         }
 
