@@ -13,6 +13,7 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,6 +75,68 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
         this.document = new PDDocument();
         loadFonts();
         newPage();
+    }
+
+    /**
+     * Creates a new PDFBox document builder using pre-loaded font byte arrays.
+     * This constructor avoids repeated classpath I/O by accepting cached font bytes
+     * from {@link PdfBoxBackend}.
+     *
+     * <p>If any byte array is null, that font variant falls back to Helvetica.</p>
+     *
+     * @param regularFontBytes raw bytes of NotoSans-Regular.ttf, or null for Helvetica fallback
+     * @param boldFontBytes    raw bytes of NotoSans-Bold.ttf, or null for Helvetica-Bold fallback
+     * @param cjkFontBytes     raw bytes of a CJK font file, or null to skip CJK support
+     * @throws IOException if the document cannot be created
+     */
+    public PdfBoxDocumentBuilder(byte[] regularFontBytes, byte[] boldFontBytes,
+                                  byte[] cjkFontBytes) throws IOException {
+        this.document = new PDDocument();
+        loadFontsFromBytes(regularFontBytes, boldFontBytes, cjkFontBytes);
+        newPage();
+    }
+
+    /**
+     * Loads fonts from pre-cached byte arrays. Falls back to Helvetica for any null byte array.
+     */
+    private void loadFontsFromBytes(byte[] regularFontBytes, byte[] boldFontBytes,
+                                     byte[] cjkFontBytes) {
+        try {
+            if (regularFontBytes != null) {
+                this.regularFont = PDType0Font.load(document, new ByteArrayInputStream(regularFontBytes), false);
+            } else {
+                log.warn("Regular font bytes are null, falling back to Helvetica");
+                this.regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            }
+
+            if (boldFontBytes != null) {
+                this.boldFont = PDType0Font.load(document, new ByteArrayInputStream(boldFontBytes), false);
+            } else {
+                log.warn("Bold font bytes are null, falling back to Helvetica-Bold");
+                this.boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+            }
+
+            // Only set fontsLoaded if both regular and bold were loaded from bytes
+            this.fontsLoaded = (regularFontBytes != null && boldFontBytes != null);
+
+            if (cjkFontBytes != null) {
+                try {
+                    this.cjkFont = PDType0Font.load(document, new ByteArrayInputStream(cjkFontBytes), false);
+                    log.debug("CJK font loaded from cached bytes");
+                } catch (IOException e) {
+                    log.warn("Failed to load CJK font from cached bytes: {}", e.getMessage());
+                    this.cjkFont = null;
+                }
+            } else {
+                this.cjkFont = null;
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load fonts from cached bytes, falling back to Helvetica: {}", e.getMessage());
+            this.regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            this.boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+            this.cjkFont = null;
+            this.fontsLoaded = false;
+        }
     }
 
     /**

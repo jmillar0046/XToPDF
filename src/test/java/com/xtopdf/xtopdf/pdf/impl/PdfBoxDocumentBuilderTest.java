@@ -367,6 +367,86 @@ class PdfBoxDocumentBuilderTest {
     }
 
     // ---------------------------------------------------------------
+    // New constructor accepting cached font bytes (Task 9.2)
+    // Validates: Requirement 5.5
+    // ---------------------------------------------------------------
+
+    @Test
+    void byteArrayConstructorShouldCreateValidBuilder() throws IOException {
+        byte[] regularBytes = loadClasspathResource("/fonts/NotoSans-Regular.ttf");
+        byte[] boldBytes = loadClasspathResource("/fonts/NotoSans-Bold.ttf");
+        byte[] cjkBytes = loadClasspathResource("/fonts/NotoSansCJK-Regular.otf");
+
+        File outputFile = tempDir.resolve("byte-constructor.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder(regularBytes, boldBytes, cjkBytes)) {
+            assertNotNull(builder, "Builder created with byte arrays should not be null");
+            assertTrue(builder.isFontsLoaded(),
+                    "fontsLoaded should be true when valid font bytes are provided");
+            builder.addFormattedText("Created with cached font bytes", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+    }
+
+    @Test
+    void byteArrayConstructorShouldProducePdfWithCorrectUnicodeRendering() throws IOException {
+        byte[] regularBytes = loadClasspathResource("/fonts/NotoSans-Regular.ttf");
+        byte[] boldBytes = loadClasspathResource("/fonts/NotoSans-Bold.ttf");
+        byte[] cjkBytes = loadClasspathResource("/fonts/NotoSansCJK-Regular.otf");
+
+        File outputFile = tempDir.resolve("byte-unicode.pdf").toFile();
+        String latinText = "Hello World";
+        String cyrillicText = "Привет мир";
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder(regularBytes, boldBytes, cjkBytes)) {
+            builder.addFormattedText(latinText, false, false, 12f);
+            builder.endParagraph();
+            builder.addFormattedText(cyrillicText, false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Hello World"),
+                "PDF should contain Latin text rendered via cached font bytes");
+        assertFalse(extractedText.contains("?"),
+                "Unicode text should not contain '?' placeholder characters");
+    }
+
+    @Test
+    void byteArrayConstructorWithNullFontBytesShouldFallBackToHelvetica() throws IOException {
+        File outputFile = tempDir.resolve("null-bytes-fallback.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder(null, null, null)) {
+            assertFalse(builder.isFontsLoaded(),
+                    "fontsLoaded should be false when all font bytes are null");
+            builder.addFormattedText("Helvetica fallback text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF should be created even with null font bytes");
+        assertTrue(outputFile.length() > 0, "PDF should not be empty");
+
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Helvetica fallback text"),
+                "Text should be rendered using Helvetica fallback");
+    }
+
+    private byte[] loadClasspathResource(String path) throws IOException {
+        try (java.io.InputStream is = getClass().getResourceAsStream(path)) {
+            if (is == null) {
+                return null;
+            }
+            return is.readAllBytes();
+        }
+    }
+
+    // ---------------------------------------------------------------
     // Helper method
     // ---------------------------------------------------------------
 
