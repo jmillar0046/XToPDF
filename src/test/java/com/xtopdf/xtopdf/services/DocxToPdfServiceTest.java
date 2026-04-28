@@ -379,6 +379,53 @@ public class DocxToPdfServiceTest {
     }
 
     // ---------------------------------------------------------------
+    // Alignment mapping tests (Task 3.3)
+    // Validates: Requirements 2.1, 2.2, 2.3, 2.4
+    // ---------------------------------------------------------------
+
+    @Test
+    void testDocxWithCenteredParagraphProducesValidPdfWithText() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+        paragraph.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
+        run.setText("Centered title text");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "centered.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("centered-alignment.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        assertTrue(pdfFile.exists(), "PDF file should be created");
+        assertTrue(pdfFile.length() > 0, "PDF file should not be empty");
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Centered title text"),
+                "PDF should contain the centered text");
+    }
+
+    @Test
+    void testDocxWithRightAlignedParagraphProducesValidPdfWithText() throws Exception {
+        XWPFDocument document = new XWPFDocument();
+        XWPFParagraph paragraph = document.createParagraph();
+        paragraph.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.RIGHT);
+        XWPFRun run = paragraph.createRun();
+        run.setText("Right aligned date");
+
+        byte[] docxBytes = toBytes(document);
+        var docxFile = new MockMultipartFile("file", "right-aligned.docx", MediaType.APPLICATION_OCTET_STREAM_VALUE, docxBytes);
+        var pdfFile = tempFile("right-alignment.pdf");
+
+        docxToPdfService.convertDocxToPdf(docxFile, pdfFile);
+
+        assertTrue(pdfFile.exists(), "PDF file should be created");
+        assertTrue(pdfFile.length() > 0, "PDF file should not be empty");
+        String pdfText = extractPdfText(pdfFile);
+        assertTrue(pdfText.contains("Right aligned date"),
+                "PDF should contain the right-aligned text");
+    }
+
+    // ---------------------------------------------------------------
     // Helper methods
     // ---------------------------------------------------------------
 

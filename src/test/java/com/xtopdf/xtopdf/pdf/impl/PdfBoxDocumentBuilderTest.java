@@ -214,6 +214,100 @@ class PdfBoxDocumentBuilderTest {
     }
 
     // ---------------------------------------------------------------
+    // TextAlignment enum and setAlignment() tests (Task 3.1)
+    // Validates: Requirements 2.1, 2.2, 2.4, 2.5
+    // ---------------------------------------------------------------
+
+    @Test
+    void textAlignmentEnumShouldHaveLeftCenterRightValues() {
+        com.xtopdf.xtopdf.pdf.TextAlignment[] values = com.xtopdf.xtopdf.pdf.TextAlignment.values();
+        assertEquals(3, values.length, "TextAlignment should have exactly 3 values");
+        assertNotNull(com.xtopdf.xtopdf.pdf.TextAlignment.LEFT, "LEFT should exist");
+        assertNotNull(com.xtopdf.xtopdf.pdf.TextAlignment.CENTER, "CENTER should exist");
+        assertNotNull(com.xtopdf.xtopdf.pdf.TextAlignment.RIGHT, "RIGHT should exist");
+    }
+
+    @Test
+    void setAlignmentLeftFollowedByEndParagraphShouldRenderText() throws IOException {
+        File outputFile = tempDir.resolve("align-left.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.setAlignment(com.xtopdf.xtopdf.pdf.TextAlignment.LEFT);
+            builder.addFormattedText("Left aligned text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Left aligned text"),
+                "PDF should contain the left-aligned text");
+    }
+
+    @Test
+    void setAlignmentCenterFollowedByEndParagraphShouldRenderText() throws IOException {
+        File outputFile = tempDir.resolve("align-center.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.setAlignment(com.xtopdf.xtopdf.pdf.TextAlignment.CENTER);
+            builder.addFormattedText("Center aligned text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Center aligned text"),
+                "PDF should contain the center-aligned text");
+    }
+
+    @Test
+    void setAlignmentRightFollowedByEndParagraphShouldRenderText() throws IOException {
+        File outputFile = tempDir.resolve("align-right.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            builder.setAlignment(com.xtopdf.xtopdf.pdf.TextAlignment.RIGHT);
+            builder.addFormattedText("Right aligned text", false, false, 12f);
+            builder.endParagraph();
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Right aligned text"),
+                "PDF should contain the right-aligned text");
+    }
+
+    @Test
+    void alignmentShouldResetToLeftAfterEndParagraph() throws IOException {
+        File outputFile = tempDir.resolve("align-reset.pdf").toFile();
+
+        try (PdfBoxDocumentBuilder builder = new PdfBoxDocumentBuilder()) {
+            // First paragraph: right-aligned
+            builder.setAlignment(com.xtopdf.xtopdf.pdf.TextAlignment.RIGHT);
+            builder.addFormattedText("Right paragraph", false, false, 12f);
+            builder.endParagraph();
+
+            // Second paragraph: should be left-aligned (reset after endParagraph)
+            builder.addFormattedText("Default paragraph", false, false, 12f);
+            builder.endParagraph();
+
+            builder.save(outputFile);
+        }
+
+        assertTrue(outputFile.exists(), "PDF file should be created");
+        assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+        String extractedText = extractTextFromPdf(outputFile);
+        assertTrue(extractedText.contains("Right paragraph"),
+                "PDF should contain the right-aligned paragraph");
+        assertTrue(extractedText.contains("Default paragraph"),
+                "PDF should contain the default-aligned paragraph");
+    }
+
+    // ---------------------------------------------------------------
     // Helper method
     // ---------------------------------------------------------------
 

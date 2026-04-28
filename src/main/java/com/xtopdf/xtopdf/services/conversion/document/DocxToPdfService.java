@@ -2,8 +2,10 @@ package com.xtopdf.xtopdf.services.conversion.document;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import com.xtopdf.xtopdf.pdf.TextAlignment;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.IBodyElement;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
@@ -75,6 +77,9 @@ public class DocxToPdfService {
      * and list detection.
      */
     private void processParagraph(XWPFParagraph paragraph, PdfDocumentBuilder builder, Map<String, Integer> listCounters) throws IOException {
+        // Set alignment for this paragraph
+        builder.setAlignment(mapAlignment(paragraph.getAlignment()));
+
         // Task 4.10: List detection
         String listPrefix = getListPrefix(paragraph, listCounters);
         String indentation = getListIndentation(paragraph);
@@ -172,6 +177,21 @@ public class DocxToPdfService {
         } catch (Exception e) {
             return "default";
         }
+    }
+
+    /**
+     * Maps a POI ParagraphAlignment to the internal TextAlignment enum.
+     * BOTH (justify) maps to LEFT as a reasonable approximation.
+     */
+    private TextAlignment mapAlignment(ParagraphAlignment poiAlignment) {
+        if (poiAlignment == null) {
+            return TextAlignment.LEFT;
+        }
+        return switch (poiAlignment) {
+            case CENTER -> TextAlignment.CENTER;
+            case RIGHT -> TextAlignment.RIGHT;
+            default -> TextAlignment.LEFT; // LEFT, BOTH, and others all map to LEFT
+        };
     }
 
     /**

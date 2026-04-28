@@ -202,6 +202,15 @@ public interface PdfDocumentBuilder extends AutoCloseable {
     void restoreState() throws IOException;
     
     /**
+     * Sets the horizontal alignment for the next paragraph rendered via {@link #endParagraph()}.
+     * Resets to {@link TextAlignment#LEFT} after each {@link #endParagraph()} call.
+     *
+     * @param alignment the desired alignment
+     * @throws IOException if an I/O error occurs
+     */
+    void setAlignment(TextAlignment alignment) throws IOException;
+
+    /**
      * Adds formatted text at the current cursor position within a paragraph.
      * Multiple calls build up a single line before advancing. The accumulated
      * text is flushed when {@link #endParagraph()} is called.

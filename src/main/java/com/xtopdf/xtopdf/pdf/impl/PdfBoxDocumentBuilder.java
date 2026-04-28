@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.pdf.impl;
 
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import com.xtopdf.xtopdf.pdf.TextAlignment;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -52,6 +53,9 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
 
     // Formatted text accumulation for addFormattedText / endParagraph
     private final List<TextSegment> pendingSegments = new ArrayList<>();
+
+    // Current paragraph alignment (resets to LEFT after each endParagraph)
+    private TextAlignment currentAlignment = TextAlignment.LEFT;
 
     /**
      * A segment of formatted text accumulated via {@link #addFormattedText}.
@@ -349,6 +353,11 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     // ---------------------------------------------------------------
 
     @Override
+    public void setAlignment(TextAlignment alignment) throws IOException {
+        this.currentAlignment = alignment != null ? alignment : TextAlignment.LEFT;
+    }
+
+    @Override
     public void addFormattedText(String text, boolean bold, boolean italic, float fontSize) throws IOException {
         if (text == null || text.isEmpty()) {
             return;
@@ -376,13 +385,14 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
                 if (currentY < DEFAULT_MARGIN) {
                     newPage();
                 }
-                renderLine(line);
+                renderLine(line, maxWidth);
                 currentY -= DEFAULT_LEADING;
             }
 
             currentY -= DEFAULT_LEADING; // extra space after paragraph
         } finally {
             pendingSegments.clear();
+            currentAlignment = TextAlignment.LEFT;
         }
     }
 
@@ -584,11 +594,25 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     }
 
     /**
-     * Renders a single line of word tokens at the current Y position.
+     * Renders a single line of word tokens at the current Y position,
+     * applying the current alignment to compute the X offset.
      */
-    private void renderLine(LineOfTokens line) throws IOException {
+    private void renderLine(LineOfTokens line, float maxWidth) throws IOException {
+        // Compute line width by summing all token widths
+        float lineWidth = 0;
+        for (WordToken token : line.tokens()) {
+            lineWidth += token.font().getStringWidth(token.word()) / 1000 * token.fontSize();
+        }
+
+        // Compute X offset based on alignment
+        float xOffset = switch (currentAlignment) {
+            case LEFT -> DEFAULT_MARGIN;
+            case CENTER -> DEFAULT_MARGIN + (maxWidth - lineWidth) / 2;
+            case RIGHT -> DEFAULT_MARGIN + (maxWidth - lineWidth);
+        };
+
         contentStream.beginText();
-        contentStream.newLineAtOffset(DEFAULT_MARGIN, currentY);
+        contentStream.newLineAtOffset(xOffset, currentY);
 
         // Group consecutive tokens with the same font and size to minimize font switches
         PDFont lastFont = null;
