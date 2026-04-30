@@ -7,6 +7,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -689,6 +690,258 @@ class ExcelToPdfServiceTest {
                         "PDF should contain sheet name 'Expenses' but text was: " + text);
                 assertTrue(text.contains("Summary"),
                         "PDF should contain sheet name 'Summary' but text was: " + text);
+            }
+        }
+    }
+
+    // ========== Integration Tests (Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6) ==========
+
+    @Nested
+    class IntegrationTests {
+
+        private ExcelToPdfService service;
+        private PdfBackendProvider pdfBackend;
+
+        @BeforeEach
+        void setUp() {
+            pdfBackend = new PdfBoxBackend();
+            service = new ExcelToPdfService(pdfBackend);
+        }
+
+        @Test
+        void convertExcelToPdf_basicSpreadsheetXlsx_producesValidPdfWithExpectedContent() throws Exception {
+            ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+            byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                "file", "basic-spreadsheet.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("integration-xlsx-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertNotNull(document);
+                assertTrue(document.getNumberOfPages() > 0, "PDF should have at least one page");
+
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+                assertNotNull(text);
+                assertFalse(text.isBlank(), "PDF should contain text content");
+
+                // Verify expected data from basic-spreadsheet.xlsx
+                assertTrue(text.contains("Basic Data"), "PDF should contain sheet name 'Basic Data'");
+                assertTrue(text.contains("Name"), "PDF should contain header 'Name'");
+                assertTrue(text.contains("Age"), "PDF should contain header 'Age'");
+                assertTrue(text.contains("City"), "PDF should contain header 'City'");
+                assertTrue(text.contains("Salary"), "PDF should contain header 'Salary'");
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_xlsFile_producesValidPdfWithExpectedContent() throws Exception {
+            // Create a programmatic .xls file to test XLS format through the unified service
+            byte[] xlsData;
+            try (HSSFWorkbook workbook = new HSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("XLS Integration");
+                Row header = sheet.createRow(0);
+                header.createCell(0).setCellValue("Product");
+                header.createCell(1).setCellValue("Price");
+                header.createCell(2).setCellValue("Quantity");
+
+                Row row1 = sheet.createRow(1);
+                row1.createCell(0).setCellValue("Widget");
+                row1.createCell(1).setCellValue(9.99);
+                row1.createCell(2).setCellValue(100);
+
+                Row row2 = sheet.createRow(2);
+                row2.createCell(0).setCellValue("Gadget");
+                row2.createCell(1).setCellValue(24.50);
+                row2.createCell(2).setCellValue(50);
+
+                workbook.write(baos);
+                xlsData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsFile = new MockMultipartFile(
+                "file", "integration-test.xls", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsData
+            );
+            File outputFile = tempDir.resolve("integration-xls-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertNotNull(document);
+                assertTrue(document.getNumberOfPages() > 0, "PDF should have at least one page");
+
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+                assertNotNull(text);
+
+                // Verify XLS data appears in PDF
+                assertTrue(text.contains("Product"), "PDF should contain 'Product'");
+                assertTrue(text.contains("Widget"), "PDF should contain 'Widget'");
+                assertTrue(text.contains("Gadget"), "PDF should contain 'Gadget'");
+                assertTrue(text.contains("XLS Integration"), "PDF should contain sheet name 'XLS Integration'");
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_multiSheetWithFormattingSparseRowsAndFormulas_endToEnd() throws Exception {
+            // Create a complex workbook with multiple sheets, formatting, sparse rows, and formulas
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+                // Sheet 1: Data with formatting
+                Sheet dataSheet = workbook.createSheet("DataSheet");
+                org.apache.poi.ss.usermodel.CellStyle boldStyle = workbook.createCellStyle();
+                Font boldFont = workbook.createFont();
+                boldFont.setBold(true);
+                boldStyle.setFont(boldFont);
+
+                Row headerRow = dataSheet.createRow(0);
+                Cell h1 = headerRow.createCell(0);
+                h1.setCellValue("Item");
+                h1.setCellStyle(boldStyle);
+                Cell h2 = headerRow.createCell(1);
+                h2.setCellValue("Value");
+                h2.setCellStyle(boldStyle);
+
+                Row dataRow1 = dataSheet.createRow(1);
+                dataRow1.createCell(0).setCellValue("Alpha");
+                dataRow1.createCell(1).setCellValue(100);
+
+                Row dataRow2 = dataSheet.createRow(2);
+                dataRow2.createCell(0).setCellValue("Beta");
+                dataRow2.createCell(1).setCellValue(200);
+
+                // Sheet 2: Sparse rows
+                Sheet sparseSheet = workbook.createSheet("SparseSheet");
+                Row sr0 = sparseSheet.createRow(0);
+                sr0.createCell(0).setCellValue("First");
+                // Gap at rows 1-4
+                Row sr5 = sparseSheet.createRow(5);
+                sr5.createCell(0).setCellValue("Sixth");
+                Row sr10 = sparseSheet.createRow(10);
+                sr10.createCell(0).setCellValue("Eleventh");
+
+                // Sheet 3: Formulas
+                Sheet formulaSheet = workbook.createSheet("FormulaSheet");
+                Row fr0 = formulaSheet.createRow(0);
+                fr0.createCell(0).setCellValue(10);
+                fr0.createCell(1).setCellValue(20);
+                fr0.createCell(2).setCellValue(30);
+                Row fr1 = formulaSheet.createRow(1);
+                Cell sumCell = fr1.createCell(0);
+                sumCell.setCellFormula("SUM(A1:C1)");
+                // Pre-evaluate
+                org.apache.poi.ss.usermodel.FormulaEvaluator evaluator =
+                    workbook.getCreationHelper().createFormulaEvaluator();
+                evaluator.evaluateAll();
+
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                "file", "complex-integration.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("complex-integration-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                // Should have at least 3 pages (one per sheet)
+                assertTrue(document.getNumberOfPages() >= 3,
+                    "3-sheet workbook should produce at least 3 PDF pages, got: " + document.getNumberOfPages());
+
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // Verify all sheet names
+                assertTrue(text.contains("DataSheet"), "PDF should contain sheet name 'DataSheet'");
+                assertTrue(text.contains("SparseSheet"), "PDF should contain sheet name 'SparseSheet'");
+                assertTrue(text.contains("FormulaSheet"), "PDF should contain sheet name 'FormulaSheet'");
+
+                // Verify data from Sheet 1
+                assertTrue(text.contains("Item"), "PDF should contain 'Item'");
+                assertTrue(text.contains("Alpha"), "PDF should contain 'Alpha'");
+                assertTrue(text.contains("Beta"), "PDF should contain 'Beta'");
+
+                // Verify sparse row data from Sheet 2
+                assertTrue(text.contains("First"), "PDF should contain 'First' from sparse sheet");
+                assertTrue(text.contains("Sixth"), "PDF should contain 'Sixth' from sparse sheet");
+                assertTrue(text.contains("Eleventh"), "PDF should contain 'Eleventh' from sparse sheet");
+
+                // Verify formula result from Sheet 3 (SUM of 10+20+30 = 60)
+                assertTrue(text.contains("60"),
+                    "PDF should contain formula result '60' but text was: " + text);
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_backwardCompatibility_xlsxOutputContainsExpectedData() throws Exception {
+            // Verify that the unified service produces the same output as the old XlsxToPdfService
+            ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xlsx");
+            byte[] xlsxData = Files.readAllBytes(resource.getFile().toPath());
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                "file", "basic-spreadsheet.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("backward-compat-xlsx.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // Same assertions as the old XlsxToPdfServiceTest
+                assertTrue(text.contains("Basic Data"), "PDF should contain sheet name 'Basic Data'");
+                assertTrue(text.contains("Name"), "PDF should contain header 'Name'");
+                assertTrue(text.contains("Age"), "PDF should contain header 'Age'");
+                assertTrue(text.contains("City"), "PDF should contain header 'City'");
+                assertTrue(text.contains("Salary"), "PDF should contain header 'Salary'");
+                assertTrue(text.contains("Alice") || text.contains("Bob") || text.contains("Charlie"),
+                    "PDF should contain employee names");
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_backwardCompatibility_xlsOutputContainsExpectedData() throws Exception {
+            // Verify that the unified service produces the same output as the old XlsToPdfService
+            ClassPathResource resource = new ClassPathResource("test-files/basic-spreadsheet.xls");
+            byte[] xlsData = Files.readAllBytes(resource.getFile().toPath());
+            MockMultipartFile xlsFile = new MockMultipartFile(
+                "file", "basic-spreadsheet.xls", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsData
+            );
+            File outputFile = tempDir.resolve("backward-compat-xls.pdf").toFile();
+
+            service.convertExcelToPdf(xlsFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // Same assertions as the old XlsToPdfServiceTest
+                assertTrue(text.contains("Basic Data"), "PDF should contain sheet name 'Basic Data'");
+                assertTrue(text.contains("Name"), "PDF should contain header 'Name'");
+                assertTrue(text.contains("Age"), "PDF should contain header 'Age'");
+                assertTrue(text.contains("City"), "PDF should contain header 'City'");
+                assertTrue(text.contains("Salary"), "PDF should contain header 'Salary'");
             }
         }
     }
