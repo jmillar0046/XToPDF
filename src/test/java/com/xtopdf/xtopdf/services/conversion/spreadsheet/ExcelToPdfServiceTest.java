@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.xtopdf.xtopdf.utils.ExcelUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 
 /**
  * Tests for ExcelToPdfService.
@@ -435,6 +437,259 @@ class ExcelToPdfServiceTest {
         void excelUtils_getCellValueAsString_nullCell_returnsEmptyString() {
             String result = com.xtopdf.xtopdf.utils.ExcelUtils.getCellValueAsString(null);
             assertEquals("", result, "ExcelUtils.getCellValueAsString(null) should return empty string");
+        }
+    }
+
+    // ========== ExecuteMacros Formula Recalculation Tests (Requirements 2.1, 2.2, 2.3) ==========
+
+    @Nested
+    class ExecuteMacrosTests {
+
+        private ExcelToPdfService service;
+        private PdfBackendProvider pdfBackend;
+
+        @BeforeEach
+        void setUp() {
+            pdfBackend = new PdfBoxBackend();
+            service = new ExcelToPdfService(pdfBackend);
+        }
+
+        @Test
+        void convertExcelToPdf_executeMacrosTrue_formulasAreRecalculated() throws Exception {
+            // Create workbook with numeric values and a SUM formula
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("FormulaSheet");
+
+                Row dataRow = sheet.createRow(0);
+                dataRow.createCell(0).setCellValue(10);
+                dataRow.createCell(1).setCellValue(20);
+                dataRow.createCell(2).setCellValue(30);
+
+                Row formulaRow = sheet.createRow(1);
+                Cell sumCell = formulaRow.createCell(0);
+                sumCell.setCellFormula("SUM(A1:C1)");
+                // Do NOT evaluate — leave cached result empty/zero
+
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "formulas.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("formulas-output.pdf").toFile();
+
+            // Convert with executeMacros=true — should recalculate formulas
+            service.convertExcelToPdf(xlsxFile, outputFile, true);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // The SUM formula should have been recalculated to 60
+                assertTrue(text.contains("60"),
+                        "PDF should contain recalculated SUM result '60' but text was: " + text);
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_executeMacrosFalse_cachedValuesUsed() throws Exception {
+            // Create workbook with a formula — conversion should still work with cached values
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("CachedSheet");
+
+                Row dataRow = sheet.createRow(0);
+                dataRow.createCell(0).setCellValue(5);
+                dataRow.createCell(1).setCellValue(15);
+
+                Row formulaRow = sheet.createRow(1);
+                Cell sumCell = formulaRow.createCell(0);
+                sumCell.setCellFormula("SUM(A1:B1)");
+                // Pre-evaluate to cache the result
+                FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                evaluator.evaluateAll();
+
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "cached.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("cached-output.pdf").toFile();
+
+            // Convert with executeMacros=false — should use cached values
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // The cached SUM result (20) should appear in the PDF
+                assertTrue(text.contains("20"),
+                        "PDF should contain cached SUM result '20' but text was: " + text);
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_formulaRecalculationFails_conversionContinues() throws Exception {
+            // Create workbook with an invalid formula reference that will fail during recalculation
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("BadFormulaSheet");
+
+                Row dataRow = sheet.createRow(0);
+                dataRow.createCell(0).setCellValue("ValidData");
+
+                Row formulaRow = sheet.createRow(1);
+                Cell badCell = formulaRow.createCell(0);
+                // Reference a non-existent sheet — this will fail during recalculation
+                badCell.setCellFormula("NonExistentSheet!A1");
+
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "bad-formula.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("bad-formula-output.pdf").toFile();
+
+            // Should NOT throw — conversion should continue with cached/fallback values
+            assertDoesNotThrow(() ->
+                    service.convertExcelToPdf(xlsxFile, outputFile, true),
+                    "Conversion should not throw when formula recalculation fails"
+            );
+
+            assertTrue(outputFile.exists(), "PDF file should be created even when formula recalculation fails");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                // The valid data should still be present
+                assertTrue(text.contains("ValidData"),
+                        "PDF should contain 'ValidData' even when formula recalculation fails, but text was: " + text);
+            }
+        }
+    }
+
+    // ========== Page Break Tests (Requirements 6.1, 6.2, 6.3) ==========
+
+    @Nested
+    class PageBreakTests {
+
+        private ExcelToPdfService service;
+        private PdfBackendProvider pdfBackend;
+
+        @BeforeEach
+        void setUp() {
+            pdfBackend = new PdfBoxBackend();
+            service = new ExcelToPdfService(pdfBackend);
+        }
+
+        @Test
+        void convertExcelToPdf_threeSheetWorkbook_producesAtLeastThreePages() throws Exception {
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                for (int s = 0; s < 3; s++) {
+                    Sheet sheet = workbook.createSheet("Sheet" + (s + 1));
+                    Row row = sheet.createRow(0);
+                    row.createCell(0).setCellValue("Data on sheet " + (s + 1));
+                }
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "multi-sheet.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("multi-sheet-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertTrue(document.getNumberOfPages() >= 3,
+                        "3-sheet workbook should produce at least 3 PDF pages, but got: " + document.getNumberOfPages());
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_singleSheetWorkbook_producesOnePage() throws Exception {
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("OnlySheet");
+                Row row = sheet.createRow(0);
+                row.createCell(0).setCellValue("Single sheet data");
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "single-sheet.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("single-sheet-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertEquals(1, document.getNumberOfPages(),
+                        "Single-sheet workbook should produce exactly 1 PDF page");
+            }
+        }
+
+        @Test
+        void convertExcelToPdf_multiSheetWorkbook_sheetNamesAppearInPdf() throws Exception {
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                String[] sheetNames = {"Revenue", "Expenses", "Summary"};
+                for (String name : sheetNames) {
+                    Sheet sheet = workbook.createSheet(name);
+                    Row row = sheet.createRow(0);
+                    row.createCell(0).setCellValue("Data for " + name);
+                }
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "named-sheets.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("named-sheets-output.pdf").toFile();
+
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                assertTrue(text.contains("Revenue"),
+                        "PDF should contain sheet name 'Revenue' but text was: " + text);
+                assertTrue(text.contains("Expenses"),
+                        "PDF should contain sheet name 'Expenses' but text was: " + text);
+                assertTrue(text.contains("Summary"),
+                        "PDF should contain sheet name 'Summary' but text was: " + text);
+            }
         }
     }
 }

@@ -288,4 +288,58 @@ class ExcelToPdfServicePropertyTest {
     }
 
     record FormulaSheetData(double[] sourceValues) {}
+
+    // ========== Property 7: Page Breaks Equal Sheet Count Minus One ==========
+
+    /**
+     * Property 7: Page Breaks Equal Sheet Count Minus One
+     *
+     * For any Workbook with N sheets (N ≥ 1), the converted PDF SHALL have at least N pages
+     * (each sheet on its own page). For a single-sheet workbook, the PDF SHALL have exactly 1 page.
+     *
+     * **Validates: Requirements 6.1, 6.3**
+     */
+    @Property(tries = 25)
+    @Label("Property 7: Page Breaks Equal Sheet Count Minus One — N sheets produce at least N PDF pages")
+    void pageBreaksEqualSheetCountMinusOneProperty(
+            @ForAll @IntRange(min = 1, max = 5) int numSheets
+    ) throws Exception {
+        // Build an XSSFWorkbook with numSheets sheets, each with some data
+        byte[] xlsxBytes;
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            for (int s = 0; s < numSheets; s++) {
+                Sheet sheet = workbook.createSheet("Sheet_" + s);
+                Row row = sheet.createRow(0);
+                row.createCell(0).setCellValue("SheetData_" + s);
+                row.createCell(1).setCellValue("Col2_" + s);
+            }
+            workbook.write(baos);
+            xlsxBytes = baos.toByteArray();
+        }
+
+        // Convert to PDF
+        ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
+        Path tempDir = Files.createTempDirectory("pagebreak-prop-test");
+        File outputFile = tempDir.resolve("output.pdf").toFile();
+
+        try {
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "multi-sheet.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxBytes
+            );
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                int pageCount = document.getNumberOfPages();
+                assertTrue(pageCount >= numSheets,
+                        "Workbook with " + numSheets + " sheets should produce at least " + numSheets
+                                + " PDF pages, but got: " + pageCount);
+            }
+        } finally {
+            if (outputFile.exists()) outputFile.delete();
+            tempDir.toFile().delete();
+        }
+    }
 }

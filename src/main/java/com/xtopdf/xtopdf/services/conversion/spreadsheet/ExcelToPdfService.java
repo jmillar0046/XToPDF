@@ -78,6 +78,15 @@ public class ExcelToPdfService {
              Workbook workbook = WorkbookFactory.create(inputStream);
              PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
 
+            // Recalculate formulas when executeMacros is true (Requirement 2.1)
+            if (executeMacros) {
+                try {
+                    ExcelUtils.recalculateFormulas(workbook);
+                } catch (Exception e) {
+                    log.warn("Formula recalculation failed, continuing with cached values: {}", e.getMessage());
+                }
+            }
+
             // Process each sheet in the workbook
             for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
                 Sheet sheet = workbook.getSheetAt(sheetIndex);
