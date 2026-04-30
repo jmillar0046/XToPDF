@@ -328,6 +328,82 @@ public class PdfBoxDocumentBuilder implements PdfDocumentBuilder {
     }
 
     @Override
+    public void addTable(String[][] data, float[] columnWidths,
+                         com.xtopdf.xtopdf.services.conversion.spreadsheet.CellFormatting[][] formatting) throws IOException {
+        if (data == null || data.length == 0) {
+            return;
+        }
+
+        int numCols = data[0].length;
+        float cellHeight = 20f;
+
+        for (int rowIdx = 0; rowIdx < data.length; rowIdx++) {
+            String[] row = data[rowIdx];
+
+            // Check if we need a new page
+            if (currentY - cellHeight < DEFAULT_MARGIN) {
+                newPage();
+            }
+
+            float x = DEFAULT_MARGIN;
+            float y = currentY;
+
+            for (int col = 0; col < numCols && col < row.length; col++) {
+                float colWidth = (columnWidths != null && col < columnWidths.length)
+                        ? columnWidths[col]
+                        : (currentPage.getMediaBox().getWidth() - 2 * DEFAULT_MARGIN) / numCols;
+
+                // Get formatting for this cell
+                com.xtopdf.xtopdf.services.conversion.spreadsheet.CellFormatting cellFmt = null;
+                if (formatting != null && rowIdx < formatting.length && col < formatting[rowIdx].length) {
+                    cellFmt = formatting[rowIdx][col];
+                }
+
+                // Draw background fill if cell has a background color
+                if (cellFmt != null && cellFmt.hasBackground()) {
+                    contentStream.setNonStrokingColor(
+                            cellFmt.backgroundR() / 255f,
+                            cellFmt.backgroundG() / 255f,
+                            cellFmt.backgroundB() / 255f);
+                    contentStream.addRect(x, y - cellHeight, colWidth, cellHeight);
+                    contentStream.fill();
+                    // Reset to black for text
+                    contentStream.setNonStrokingColor(0f, 0f, 0f);
+                }
+
+                // Draw cell border
+                contentStream.addRect(x, y - cellHeight, colWidth, cellHeight);
+                contentStream.stroke();
+
+                // Determine cell text: use formattedValue if available, otherwise raw data
+                String cellText;
+                if (cellFmt != null && cellFmt.formattedValue() != null && !cellFmt.formattedValue().isEmpty()) {
+                    cellText = cellFmt.formattedValue();
+                } else {
+                    cellText = row[col] != null ? row[col] : "";
+                }
+
+                // Select font based on bold flag
+                PDFont cellFont = (cellFmt != null && cellFmt.bold()) ? boldFont : regularFont;
+                cellText = safeEncode(cellText, cellFont);
+                cellText = truncateText(cellText, colWidth - (2 * TABLE_CELL_PADDING), cellFont, DEFAULT_FONT_SIZE);
+
+                contentStream.beginText();
+                contentStream.setFont(cellFont, DEFAULT_FONT_SIZE);
+                contentStream.newLineAtOffset(x + TABLE_CELL_PADDING, y - cellHeight + TABLE_CELL_PADDING);
+                contentStream.showText(cellText);
+                contentStream.endText();
+
+                x += colWidth;
+            }
+
+            currentY -= cellHeight;
+        }
+
+        currentY -= DEFAULT_LEADING; // Add space after table
+    }
+
+    @Override
     public void addImage(byte[] imageData) throws IOException {
         if (imageData == null || imageData.length == 0) {
             return;
