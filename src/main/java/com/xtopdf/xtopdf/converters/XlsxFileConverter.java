@@ -1,8 +1,7 @@
 package com.xtopdf.xtopdf.converters;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
-import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsxToPdfService;
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.ExcelToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,22 +12,20 @@ import java.io.IOException;
 @AllArgsConstructor
 @Component
 public class XlsxFileConverter implements FileConverter {
-    private final XlsxToPdfService xlsxToPdfService;
+    private final ExcelToPdfService excelToPdfService;
 
     @Override
     public void convertToPDF(MultipartFile xlsxFile, String outputFile) throws FileConversionException {
         convertToPDF(xlsxFile, outputFile, false);
     }
-    
+
     @Override
     public void convertToPDF(MultipartFile xlsxFile, String outputFile, boolean executeMacros) throws FileConversionException {
         var pdfFile = new File(outputFile);
         try {
-            xlsxToPdfService.convertXlsxToPdf(xlsxFile, pdfFile, executeMacros);
+            excelToPdfService.convertExcelToPdf(xlsxFile, pdfFile, executeMacros);
         } catch (IOException e) {
-            throw new RuntimeException("Error converting XLSX to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            throw new FileConversionException("Error converting XLSX to PDF: " + e.getMessage(), e);
         }
     }
 }
