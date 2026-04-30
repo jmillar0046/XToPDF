@@ -692,4 +692,201 @@ class ExcelToPdfServiceTest {
             }
         }
     }
+
+    // ========== Streaming Threshold Routing Tests (Requirements 9.1, 9.2) ==========
+
+    @Nested
+    class StreamingThresholdRoutingTests {
+
+        private ExcelToPdfService service;
+
+        @BeforeEach
+        void setUp() {
+            PdfBackendProvider mockBackend = mock(PdfBackendProvider.class);
+            service = new ExcelToPdfService(mockBackend);
+        }
+
+        @Test
+        void isStreamingRequired_xlsxFileAboveThreshold_returnsTrue() {
+            MockMultipartFile largeXlsx = new MockMultipartFile(
+                "file", "large.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[]{1}
+            ) {
+                @Override
+                public long getSize() {
+                    return ExcelToPdfService.STREAMING_THRESHOLD + 1;
+                }
+            };
+
+            assertTrue(service.isStreamingRequired(largeXlsx),
+                "XLSX file above 10MB threshold should require streaming");
+        }
+
+        @Test
+        void isStreamingRequired_xlsxFileAtOrBelowThreshold_returnsFalse() {
+            MockMultipartFile smallXlsx = new MockMultipartFile(
+                "file", "small.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[]{1}
+            ) {
+                @Override
+                public long getSize() {
+                    return ExcelToPdfService.STREAMING_THRESHOLD;
+                }
+            };
+
+            assertFalse(service.isStreamingRequired(smallXlsx),
+                "XLSX file at or below 10MB threshold should NOT require streaming");
+        }
+
+        @Test
+        void isStreamingRequired_xlsFileAboveThreshold_returnsFalse() {
+            MockMultipartFile largeXls = new MockMultipartFile(
+                "file", "large.xls", MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[]{1}
+            ) {
+                @Override
+                public long getSize() {
+                    return ExcelToPdfService.STREAMING_THRESHOLD + 1;
+                }
+            };
+
+            assertFalse(service.isStreamingRequired(largeXls),
+                "XLS file above threshold should NOT require streaming (no SAX for binary XLS)");
+        }
+
+        @Test
+        void isStreamingRequired_xlsxFileWellBelowThreshold_returnsFalse() {
+            MockMultipartFile tinyXlsx = new MockMultipartFile(
+                "file", "tiny.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[]{1}
+            ) {
+                @Override
+                public long getSize() {
+                    return 1024L; // 1 KB
+                }
+            };
+
+            assertFalse(service.isStreamingRequired(tinyXlsx),
+                "Small XLSX file should NOT require streaming");
+        }
+
+        @Test
+        void isStreamingRequired_nullFilename_returnsFalse() {
+            MockMultipartFile noName = new MockMultipartFile(
+                "file", null, MediaType.APPLICATION_OCTET_STREAM_VALUE, new byte[]{1}
+            ) {
+                @Override
+                public long getSize() {
+                    return ExcelToPdfService.STREAMING_THRESHOLD + 1;
+                }
+            };
+
+            assertFalse(service.isStreamingRequired(noName),
+                "File with null filename should NOT require streaming");
+        }
+    }
+
+    // ========== Streaming Chunked Processing Tests (Requirements 9.3, 9.4) ==========
+
+    @Nested
+    class StreamingChunkedProcessingTests {
+
+        private ExcelToPdfService service;
+        private PdfBackendProvider pdfBackend;
+
+        @BeforeEach
+        void setUp() {
+            pdfBackend = new PdfBoxBackend();
+            service = new ExcelToPdfService(pdfBackend);
+        }
+
+        @Test
+        void convertXlsxStreaming_validXlsx_producesValidPdfWithCorrectContent() throws Exception {
+            // Create a valid XLSX workbook programmatically
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("StreamSheet");
+                Row row0 = sheet.createRow(0);
+                row0.createCell(0).setCellValue("StreamHeader1");
+                row0.createCell(1).setCellValue("StreamHeader2");
+                Row row1 = sheet.createRow(1);
+                row1.createCell(0).setCellValue("StreamData1");
+                row1.createCell(1).setCellValue("StreamData2");
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                "file", "stream-test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("stream-output.pdf").toFile();
+
+            // Call streaming path directly
+            service.convertXlsxStreaming(xlsxFile, outputFile);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertNotNull(document);
+                assertTrue(document.getNumberOfPages() > 0, "PDF should have at least one page");
+
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                assertTrue(text.contains("StreamHeader1"),
+                    "PDF should contain 'StreamHeader1' but text was: " + text);
+                assertTrue(text.contains("StreamHeader2"),
+                    "PDF should contain 'StreamHeader2' but text was: " + text);
+                assertTrue(text.contains("StreamData1"),
+                    "PDF should contain 'StreamData1' but text was: " + text);
+                assertTrue(text.contains("StreamData2"),
+                    "PDF should contain 'StreamData2' but text was: " + text);
+            }
+        }
+
+        @Test
+        void convertXlsxStreaming_multiSheet_maintainsSheetNames() throws Exception {
+            byte[] xlsxData;
+            try (XSSFWorkbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                String[] sheetNames = {"Sales", "Inventory", "Reports"};
+                for (String name : sheetNames) {
+                    Sheet sheet = workbook.createSheet(name);
+                    Row row = sheet.createRow(0);
+                    row.createCell(0).setCellValue("Data_" + name);
+                }
+                workbook.write(baos);
+                xlsxData = baos.toByteArray();
+            }
+
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                "file", "multi-stream.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxData
+            );
+            File outputFile = tempDir.resolve("multi-stream-output.pdf").toFile();
+
+            service.convertXlsxStreaming(xlsxFile, outputFile);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                assertTrue(document.getNumberOfPages() >= 3,
+                    "3-sheet workbook should produce at least 3 PDF pages via streaming, but got: "
+                        + document.getNumberOfPages());
+
+                PDFTextStripper stripper = new PDFTextStripper();
+                String text = stripper.getText(document);
+
+                assertTrue(text.contains("Sales"),
+                    "PDF should contain sheet name 'Sales' but text was: " + text);
+                assertTrue(text.contains("Inventory"),
+                    "PDF should contain sheet name 'Inventory' but text was: " + text);
+                assertTrue(text.contains("Reports"),
+                    "PDF should contain sheet name 'Reports' but text was: " + text);
+                assertTrue(text.contains("Data_Sales"),
+                    "PDF should contain 'Data_Sales' but text was: " + text);
+                assertTrue(text.contains("Data_Inventory"),
+                    "PDF should contain 'Data_Inventory' but text was: " + text);
+                assertTrue(text.contains("Data_Reports"),
+                    "PDF should contain 'Data_Reports' but text was: " + text);
+            }
+        }
+    }
 }

@@ -587,4 +587,151 @@ class ExcelToPdfServicePropertyTest {
         assertTrue(sum <= usableWidth + 0.01f,
                 "Sum of column widths (" + sum + ") should not exceed usable page width (" + usableWidth + ")");
     }
+
+    // ========== Property 8: Streaming Output Equivalence ==========
+
+    /**
+     * Property 8: Streaming Output Equivalence
+     *
+     * For any valid XLSX file that can be processed by both the in-memory and SAX streaming
+     * paths, the cell values and sheet names extracted by the streaming path SHALL be identical
+     * to those extracted by the in-memory path. Specifically, for each sheet and each cell
+     * position, the string value SHALL match.
+     *
+     * **Validates: Requirements 9.4**
+     */
+    @Property(tries = 10)
+    @Label("Property 8: Streaming Output Equivalence — streaming and in-memory paths produce matching cell values and sheet names")
+    void streamingOutputEquivalenceProperty(
+            @ForAll("streamingTestWorkbook") StreamingTestWorkbook testData
+    ) throws Exception {
+        // Build an XSSFWorkbook with the generated data
+        byte[] xlsxBytes;
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            for (int s = 0; s < testData.sheetNames().length; s++) {
+                Sheet sheet = workbook.createSheet(testData.sheetNames()[s]);
+                String[][] sheetData = testData.sheetData()[s];
+                for (int r = 0; r < sheetData.length; r++) {
+                    Row row = sheet.createRow(r);
+                    for (int c = 0; c < sheetData[r].length; c++) {
+                        row.createCell(c).setCellValue(sheetData[r][c]);
+                    }
+                }
+            }
+            workbook.write(baos);
+            xlsxBytes = baos.toByteArray();
+        }
+
+        ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
+        Path tempDir = Files.createTempDirectory("streaming-equiv-prop-test");
+        File inMemoryOutput = tempDir.resolve("in-memory.pdf").toFile();
+        File streamingOutput = tempDir.resolve("streaming.pdf").toFile();
+
+        try {
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "equiv-test.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxBytes
+            );
+
+            // Process through in-memory path
+            service.convertInMemory(xlsxFile, inMemoryOutput, false);
+
+            // Process through streaming path
+            service.convertXlsxStreaming(xlsxFile, streamingOutput);
+
+            assertTrue(inMemoryOutput.exists(), "In-memory PDF should be created");
+            assertTrue(streamingOutput.exists(), "Streaming PDF should be created");
+
+            // Extract text from both PDFs
+            String inMemoryText;
+            try (PDDocument doc = Loader.loadPDF(inMemoryOutput)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                inMemoryText = stripper.getText(doc);
+            }
+
+            String streamingText;
+            try (PDDocument doc = Loader.loadPDF(streamingOutput)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                streamingText = stripper.getText(doc);
+            }
+
+            // Verify sheet names appear in both outputs
+            for (String sheetName : testData.sheetNames()) {
+                assertTrue(inMemoryText.contains(sheetName),
+                        "In-memory PDF should contain sheet name '" + sheetName + "'");
+                assertTrue(streamingText.contains(sheetName),
+                        "Streaming PDF should contain sheet name '" + sheetName + "'");
+            }
+
+            // Verify all cell values appear in both outputs
+            for (String[][] sheetData : testData.sheetData()) {
+                for (String[] row : sheetData) {
+                    for (String cellValue : row) {
+                        if (!cellValue.isEmpty()) {
+                            assertTrue(inMemoryText.contains(cellValue),
+                                    "In-memory PDF should contain cell value '" + cellValue + "'");
+                            assertTrue(streamingText.contains(cellValue),
+                                    "Streaming PDF should contain cell value '" + cellValue + "'");
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (inMemoryOutput.exists()) inMemoryOutput.delete();
+            if (streamingOutput.exists()) streamingOutput.delete();
+            tempDir.toFile().delete();
+        }
+    }
+
+    @Provide
+    Arbitrary<StreamingTestWorkbook> streamingTestWorkbook() {
+        // Generate 1-2 sheets, each with 5-20 rows and 2-4 columns
+        return Arbitraries.integers().between(1, 2).flatMap(numSheets -> {
+            Arbitrary<String[]> sheetNamesArb = Arbitraries.strings().alpha().ofMinLength(4).ofMaxLength(8)
+                    .map(s -> "Sheet_" + s)
+                    .array(String[].class).ofSize(numSheets)
+                    .map(names -> {
+                        // Ensure unique sheet names
+                        Set<String> seen = new java.util.HashSet<>();
+                        for (int i = 0; i < names.length; i++) {
+                            while (seen.contains(names[i])) {
+                                names[i] = names[i] + i;
+                            }
+                            seen.add(names[i]);
+                        }
+                        return names;
+                    });
+
+            return sheetNamesArb.flatMap(sheetNames ->
+                    Arbitraries.integers().between(5, 20).flatMap(numRows ->
+                            Arbitraries.integers().between(2, 4).flatMap(numCols -> {
+                                // Generate cell data for each sheet
+                                Arbitrary<String[][][]> allSheetsArb = Arbitraries.just(numSheets).flatMap(ns -> {
+                                    String[][][] sheets = new String[ns][][];
+                                    Arbitrary<String[][][]> result = Arbitraries.just(sheets);
+                                    for (int s = 0; s < ns; s++) {
+                                        final int sheetIdx = s;
+                                        result = result.flatMap(arr ->
+                                                Arbitraries.strings().alpha().ofMinLength(3).ofMaxLength(8)
+                                                        .map(v -> "V_" + v)
+                                                        .array(String[].class).ofSize(numCols)
+                                                        .array(String[][].class).ofSize(numRows)
+                                                        .map(sheetData -> {
+                                                            arr[sheetIdx] = sheetData;
+                                                            return arr;
+                                                        })
+                                        );
+                                    }
+                                    return result;
+                                });
+
+                                return allSheetsArb.map(sheetsData ->
+                                        new StreamingTestWorkbook(sheetNames, sheetsData));
+                            })
+                    )
+            );
+        });
+    }
+
+    record StreamingTestWorkbook(String[] sheetNames, String[][][] sheetData) {}
 }

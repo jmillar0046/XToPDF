@@ -4,13 +4,24 @@ import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import com.xtopdf.xtopdf.utils.ExcelUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Unified service for converting Excel files (both XLS and XLSX) to PDF.
@@ -65,8 +76,33 @@ public class ExcelToPdfService {
             throw new IOException("File size exceeds maximum allowed: " + MAX_FILE_SIZE + " bytes");
         }
 
-        // Route to appropriate conversion path
-        convertInMemory(excelFile, pdfFile, executeMacros);
+        // Route to appropriate conversion path (Requirements 9.1, 9.2)
+        if (isStreamingRequired(excelFile)) {
+            convertXlsxStreaming(excelFile, pdfFile);
+        } else {
+            convertInMemory(excelFile, pdfFile, executeMacros);
+        }
+    }
+
+    /**
+     * Determines whether the given file should be processed via SAX streaming.
+     * Streaming is used for XLSX files exceeding the streaming threshold.
+     * XLS (binary) files always use the in-memory path since Apache POI has
+     * no SAX equivalent for the binary format.
+     *
+     * @param file the input file to check
+     * @return true if streaming should be used
+     */
+    boolean isStreamingRequired(MultipartFile file) {
+        if (file.getSize() <= STREAMING_THRESHOLD) {
+            return false;
+        }
+        // Only XLSX supports SAX streaming — check by filename extension
+        String filename = file.getOriginalFilename();
+        if (filename != null && filename.toLowerCase().endsWith(".xlsx")) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -110,6 +146,115 @@ public class ExcelToPdfService {
             throw e;
         } catch (Exception e) {
             throw new IOException("Error processing Excel file: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * SAX streaming conversion path for large XLSX files.
+     * Uses OPCPackage + XSSFReader + SAX ContentHandler to parse the file
+     * without loading the entire workbook into memory.
+     *
+     * <p>Note: The streaming path does NOT support cell formatting (CellFormatting)
+     * — it only extracts plain text values. This is an acknowledged trade-off
+     * per Requirement 9.4.</p>
+     *
+     * @param excelFile the input XLSX file
+     * @param pdfFile   the output PDF file
+     * @throws IOException if an I/O error occurs during conversion
+     */
+    void convertXlsxStreaming(MultipartFile excelFile, File pdfFile) throws IOException {
+        try (InputStream inputStream = excelFile.getInputStream();
+             OPCPackage opcPackage = OPCPackage.open(inputStream);
+             PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
+
+            ReadOnlySharedStringsTable sharedStrings = new ReadOnlySharedStringsTable(opcPackage);
+            XSSFReader xssfReader = new XSSFReader(opcPackage);
+
+            Iterator<InputStream> sheetsData = xssfReader.getSheetsData();
+            XSSFReader.SheetIterator sheetIterator = (XSSFReader.SheetIterator) sheetsData;
+
+            boolean firstSheet = true;
+
+            while (sheetIterator.hasNext()) {
+                try (InputStream sheetStream = sheetIterator.next()) {
+                    String sheetName = sheetIterator.getSheetName();
+
+                    if (!firstSheet) {
+                        builder.newPage();
+                    }
+                    firstSheet = false;
+
+                    // Add sheet name as header
+                    builder.addParagraph("Sheet: " + sheetName + "\n");
+
+                    // Collect all rows from the SAX handler
+                    List<List<String>> allRows = new ArrayList<>();
+                    int[] maxColumns = {0};
+
+                    SheetSaxHandler handler = new SheetSaxHandler(sharedStrings, (rowIndex, cellValues) -> {
+                        // Pad the allRows list to accommodate sparse rows
+                        while (allRows.size() <= rowIndex) {
+                            allRows.add(null);
+                        }
+                        allRows.set(rowIndex, cellValues);
+                        if (cellValues.size() > maxColumns[0]) {
+                            maxColumns[0] = cellValues.size();
+                        }
+                    });
+
+                    // Parse the sheet XML with SAX
+                    SAXParserFactory factory = SAXParserFactory.newInstance();
+                    SAXParser saxParser = factory.newSAXParser();
+                    XMLReader xmlReader = saxParser.getXMLReader();
+                    xmlReader.setContentHandler(handler);
+                    xmlReader.parse(new InputSource(sheetStream));
+
+                    // Write rows in chunks
+                    if (allRows.isEmpty() || maxColumns[0] == 0) {
+                        builder.addParagraph("(Empty sheet)\n");
+                    } else {
+                        writeRowsInChunks(allRows, maxColumns[0], builder);
+                    }
+                }
+            }
+
+            builder.save(pdfFile);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Error processing XLSX file in streaming mode: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Writes collected rows to the PDF builder in chunks of CHUNK_SIZE.
+     * Each chunk is written as a separate table call.
+     *
+     * @param allRows    the collected rows (may contain nulls for sparse rows)
+     * @param maxColumns the maximum number of columns across all rows
+     * @param builder    the PDF document builder
+     * @throws IOException if an I/O error occurs
+     */
+    private void writeRowsInChunks(List<List<String>> allRows, int maxColumns,
+                                    PdfDocumentBuilder builder) throws IOException {
+        int totalRows = allRows.size();
+        for (int startRow = 0; startRow < totalRows; startRow += CHUNK_SIZE) {
+            int endRow = Math.min(startRow + CHUNK_SIZE, totalRows);
+            int chunkSize = endRow - startRow;
+
+            String[][] chunkData = new String[chunkSize][maxColumns];
+            for (int i = 0; i < chunkSize; i++) {
+                List<String> rowValues = allRows.get(startRow + i);
+                for (int col = 0; col < maxColumns; col++) {
+                    if (rowValues != null && col < rowValues.size()) {
+                        chunkData[i][col] = rowValues.get(col) != null ? rowValues.get(col) : "";
+                    } else {
+                        chunkData[i][col] = "";
+                    }
+                }
+            }
+
+            builder.addTable(chunkData);
         }
     }
 
