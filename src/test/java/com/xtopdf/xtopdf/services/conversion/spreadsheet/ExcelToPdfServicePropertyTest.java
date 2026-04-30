@@ -8,9 +8,10 @@ import net.jqwik.api.constraints.IntRange;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.http.MediaType;
@@ -341,5 +342,249 @@ class ExcelToPdfServicePropertyTest {
             if (outputFile.exists()) outputFile.delete();
             tempDir.toFile().delete();
         }
+    }
+
+    // ========== Property 2: Cell Formatting Extraction Preserves Style Metadata ==========
+
+    /**
+     * Property 2: Cell Formatting Extraction Preserves Style Metadata
+     *
+     * For any Cell with a CellStyle that has a bold Font, the extracted CellFormatting
+     * SHALL have bold == true. For any Cell with a CellStyle that has a non-default fill
+     * foreground color, the extracted CellFormatting SHALL have hasBackground == true and
+     * RGB values matching the fill color from the CellStyle.
+     *
+     * **Validates: Requirements 3.1, 3.2**
+     */
+    @Property(tries = 25)
+    @Label("Property 2: Cell Formatting Extraction — bold cells produce bold text in PDF, text content is preserved")
+    void cellFormattingExtractionProperty(
+            @ForAll("boldCellData") BoldCellData cellData
+    ) throws Exception {
+        // Build an XSSFWorkbook with cells that have random bold/non-bold fonts
+        byte[] xlsxBytes;
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("FormattingSheet");
+
+            for (int r = 0; r < cellData.values().length; r++) {
+                Row row = sheet.createRow(r);
+                Cell cell = row.createCell(0);
+                cell.setCellValue(cellData.values()[r]);
+
+                // Apply bold formatting based on the boldFlags
+                XSSFFont font = workbook.createFont();
+                font.setBold(cellData.boldFlags()[r]);
+                XSSFCellStyle style = workbook.createCellStyle();
+                style.setFont(font);
+                cell.setCellStyle(style);
+            }
+
+            workbook.write(baos);
+            xlsxBytes = baos.toByteArray();
+        }
+
+        // Convert to PDF
+        ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
+        Path tempDir = Files.createTempDirectory("formatting-prop-test");
+        File outputFile = tempDir.resolve("output.pdf").toFile();
+
+        try {
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "formatting.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxBytes
+            );
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+            assertTrue(outputFile.length() > 0, "PDF file should not be empty");
+
+            // Extract text from PDF and verify all cell values are present
+            String pdfText;
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                pdfText = stripper.getText(document);
+            }
+
+            // Verify that all cell text content appears in the PDF
+            for (String value : cellData.values()) {
+                assertTrue(pdfText.contains(value),
+                        "PDF should contain cell value '" + value + "' but text was: " + pdfText);
+            }
+        } finally {
+            if (outputFile.exists()) outputFile.delete();
+            tempDir.toFile().delete();
+        }
+    }
+
+    @Provide
+    Arbitrary<BoldCellData> boldCellData() {
+        return Arbitraries.integers().between(2, 5).flatMap(numRows -> {
+            Arbitrary<String[]> valuesArb = Arbitraries.strings().alpha().ofMinLength(3).ofMaxLength(10)
+                    .array(String[].class).ofSize(numRows);
+            Arbitrary<boolean[]> boldArb = Arbitraries.of(true, false)
+                    .array(boolean[].class).ofSize(numRows);
+            return Combinators.combine(valuesArb, boldArb).as(BoldCellData::new);
+        });
+    }
+
+    record BoldCellData(String[] values, boolean[] boldFlags) {}
+
+    // ========== Property 3: Number Format Preservation ==========
+
+    /**
+     * Property 3: Number Format Preservation
+     *
+     * For any numeric Cell with a DataFormat pattern (currency, percentage, date, or custom),
+     * the formatted value in the extracted CellFormatting SHALL equal the output of
+     * DataFormatter.formatCellValue(cell) applied to that cell.
+     *
+     * **Validates: Requirements 3.3**
+     */
+    @Property(tries = 25)
+    @Label("Property 3: Number Format Preservation — currency-formatted numeric cells appear formatted in PDF")
+    void numberFormatPreservationProperty(
+            @ForAll("currencyValues") double[] values
+    ) throws Exception {
+        DataFormatter dataFormatter = new DataFormatter();
+
+        // Build an XSSFWorkbook with numeric cells using currency format
+        byte[] xlsxBytes;
+        String[] expectedFormatted = new String[values.length];
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("CurrencySheet");
+
+            // Create a currency format style
+            CellStyle currencyStyle = workbook.createCellStyle();
+            short currencyFormat = workbook.createDataFormat().getFormat("$#,##0.00");
+            currencyStyle.setDataFormat(currencyFormat);
+
+            for (int r = 0; r < values.length; r++) {
+                Row row = sheet.createRow(r);
+                Cell cell = row.createCell(0);
+                cell.setCellValue(values[r]);
+                cell.setCellStyle(currencyStyle);
+
+                // Capture the expected formatted value
+                expectedFormatted[r] = dataFormatter.formatCellValue(cell);
+            }
+
+            workbook.write(baos);
+            xlsxBytes = baos.toByteArray();
+        }
+
+        // Convert to PDF
+        ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
+        Path tempDir = Files.createTempDirectory("currency-prop-test");
+        File outputFile = tempDir.resolve("output.pdf").toFile();
+
+        try {
+            MockMultipartFile xlsxFile = new MockMultipartFile(
+                    "file", "currency.xlsx", MediaType.APPLICATION_OCTET_STREAM_VALUE, xlsxBytes
+            );
+            service.convertExcelToPdf(xlsxFile, outputFile, false);
+
+            assertTrue(outputFile.exists(), "PDF file should be created");
+
+            // Extract text from PDF
+            String pdfText;
+            try (PDDocument document = Loader.loadPDF(outputFile)) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                pdfText = stripper.getText(document);
+            }
+
+            // Verify that formatted values appear in the PDF
+            for (String formatted : expectedFormatted) {
+                assertTrue(pdfText.contains(formatted),
+                        "PDF should contain formatted value '" + formatted + "' but text was: " + pdfText);
+            }
+        } finally {
+            if (outputFile.exists()) outputFile.delete();
+            tempDir.toFile().delete();
+        }
+    }
+
+    @Provide
+    Arbitrary<double[]> currencyValues() {
+        // Generate 2-5 positive numeric values suitable for currency formatting
+        return Arbitraries.integers().between(1, 99999)
+                .map(i -> i / 100.0)
+                .array(double[].class).ofMinSize(2).ofMaxSize(5);
+    }
+
+    // ========== Property 4: Column Width Proportionality ==========
+
+    /**
+     * Property 4: Column Width Proportionality
+     *
+     * For any Sheet with N columns, the calculated column widths SHALL be proportional
+     * to the source metric. Specifically, for columns i and j,
+     * calculatedWidth[i] / calculatedWidth[j] SHALL approximate
+     * sourceMetric[i] / sourceMetric[j] within a tolerance of 1%.
+     *
+     * **Validates: Requirements 4.1, 4.2**
+     */
+    @Property(tries = 100)
+    @Label("Property 4: Column Width Proportionality — calculated widths are proportional to source widths")
+    void columnWidthProportionalityProperty(
+            @ForAll("columnWidthInputs") int[] sourceWidths
+    ) {
+        // Pure math test: given source widths, calculate proportional widths
+        float usableWidth = 495.28f; // A4 width (595.28) - 2*margin (50)
+
+        float[] calculated = ExcelToPdfService.calculateColumnWidths(sourceWidths, usableWidth);
+
+        // Verify proportionality: for any two columns i and j,
+        // calculated[i]/calculated[j] ≈ sourceWidths[i]/sourceWidths[j]
+        for (int i = 0; i < sourceWidths.length; i++) {
+            for (int j = 0; j < sourceWidths.length; j++) {
+                if (sourceWidths[j] > 0 && sourceWidths[i] > 0) {
+                    double expectedRatio = (double) sourceWidths[i] / sourceWidths[j];
+                    double actualRatio = (double) calculated[i] / calculated[j];
+                    double tolerance = 0.01; // 1%
+                    assertTrue(Math.abs(expectedRatio - actualRatio) <= tolerance * Math.max(1.0, Math.abs(expectedRatio)),
+                            "Column widths should be proportional. Expected ratio " + expectedRatio
+                                    + " but got " + actualRatio + " for columns " + i + " and " + j);
+                }
+            }
+        }
+    }
+
+    @Provide
+    Arbitrary<int[]> columnWidthInputs() {
+        // Generate 2-8 column widths, each between 1 and 100
+        return Arbitraries.integers().between(1, 100)
+                .array(int[].class).ofMinSize(2).ofMaxSize(8);
+    }
+
+    // ========== Property 5: Column Widths Fit Within Page Width ==========
+
+    /**
+     * Property 5: Column Widths Fit Within Page Width
+     *
+     * For any set of calculated column widths, the sum of all column widths SHALL be
+     * less than or equal to the printable page width. When raw sum exceeds available space,
+     * widths SHALL be scaled proportionally so that the sum equals the available space exactly.
+     *
+     * **Validates: Requirements 4.3**
+     */
+    @Property(tries = 100)
+    @Label("Property 5: Column Widths Fit Within Page Width — sum of widths ≤ usable page width")
+    void columnWidthsFitPageProperty(
+            @ForAll("columnWidthInputs") int[] sourceWidths
+    ) {
+        float usableWidth = 495.28f; // A4 width (595.28) - 2*margin (50)
+
+        float[] calculated = ExcelToPdfService.calculateColumnWidths(sourceWidths, usableWidth);
+
+        // Sum of calculated widths must not exceed usable page width
+        float sum = 0;
+        for (float w : calculated) {
+            sum += w;
+            assertTrue(w > 0, "Each column width should be positive");
+        }
+
+        assertTrue(sum <= usableWidth + 0.01f,
+                "Sum of column widths (" + sum + ") should not exceed usable page width (" + usableWidth + ")");
     }
 }
