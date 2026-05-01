@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class ThreeMfFileConverter implements FileConverter {
     private final ThreeMfToPdfService threemfToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".3mf");
+    }
 
     @Override
     public void convertToPDF(MultipartFile threemfFile, String outputFile) throws FileConversionException {

@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class JpegFileConverter implements FileConverter {
     private final JpegToPdfService jpegToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".jpeg", ".jpg");
+    }
 
     @Override
     public void convertToPDF(MultipartFile jpegFile, String outputFile) throws FileConversionException {

@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class PptFileConverter implements FileConverter {
     private final PptToPdfService pptToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".ppt");
+    }
 
     @Override
     public void convertToPDF(MultipartFile pptFile, String outputFile) throws FileConversionException {

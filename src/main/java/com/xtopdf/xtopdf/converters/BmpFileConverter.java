@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class BmpFileConverter implements FileConverter {
     private final BmpToPdfService bmpToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".bmp");
+    }
 
     @Override
     public void convertToPDF(MultipartFile bmpFile, String outputFile) throws FileConversionException {

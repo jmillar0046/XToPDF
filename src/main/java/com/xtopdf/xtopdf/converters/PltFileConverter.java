@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class PltFileConverter implements FileConverter {
     private final PltToPdfService pltToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".plt");
+    }
 
     @Override
     public void convertToPDF(MultipartFile pltFile, String outputFile) throws FileConversionException {

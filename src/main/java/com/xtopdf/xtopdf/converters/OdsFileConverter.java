@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class OdsFileConverter implements FileConverter {
     private final OdsToPdfService odsToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".ods");
+    }
 
     @Override
     public void convertToPDF(MultipartFile odsFile, String outputFile) throws FileConversionException {

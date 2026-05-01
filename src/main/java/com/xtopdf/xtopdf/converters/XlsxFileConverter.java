@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class XlsxFileConverter implements FileConverter {
     private final XlsxToPdfService xlsxToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".xlsx");
+    }
 
     @Override
     public void convertToPDF(MultipartFile xlsxFile, String outputFile) throws FileConversionException {

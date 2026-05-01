@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class GifFileConverter implements FileConverter {
     private final GifToPdfService gifToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".gif");
+    }
 
     @Override
     public void convertToPDF(MultipartFile gifFile, String outputFile) throws FileConversionException {

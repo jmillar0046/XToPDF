@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class RtfFileConverter implements FileConverter {
     private final RtfToPdfService rtfToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".rtf");
+    }
 
     @Override
     public void convertToPDF(MultipartFile rtfFile, String outputFile) throws FileConversionException {

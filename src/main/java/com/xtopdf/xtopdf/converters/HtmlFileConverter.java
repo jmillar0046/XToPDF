@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class HtmlFileConverter implements FileConverter {
     private final HtmlToPdfService htmlToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".html");
+    }
 
     @Override
     public void convertToPDF(MultipartFile htmlFile, String outputFile) throws FileConversionException {

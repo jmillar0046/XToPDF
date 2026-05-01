@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class WrlFileConverter implements FileConverter {
     private final WrlToPdfService wrlToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".wrl");
+    }
 
     @Override
     public void convertToPDF(MultipartFile wrlFile, String outputFile) throws FileConversionException {

@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class SvgFileConverter implements FileConverter {
     private final SvgToPdfService svgToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".svg");
+    }
 
     @Override
     public void convertToPDF(MultipartFile svgFile, String outputFile) throws FileConversionException {

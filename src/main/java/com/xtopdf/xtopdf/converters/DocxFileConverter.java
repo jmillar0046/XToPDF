@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.converters;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class DocxFileConverter implements FileConverter {
     private final DocxToPdfService docxToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".docx");
+    }
 
     @Override
     public void convertToPDF(MultipartFile docxFile, String outputFile) throws FileConversionException {

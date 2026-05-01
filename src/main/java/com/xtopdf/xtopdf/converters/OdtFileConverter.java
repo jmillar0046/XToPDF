@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class OdtFileConverter implements FileConverter {
     private final OdtToPdfService odtToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".odt");
+    }
 
     @Override
     public void convertToPDF(MultipartFile odtFile, String outputFile) throws FileConversionException {

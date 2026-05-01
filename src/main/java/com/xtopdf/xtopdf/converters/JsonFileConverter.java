@@ -9,11 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
 public class JsonFileConverter implements FileConverter {
     private final JsonToPdfService jsonToPdfService;
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".json");
+    }
 
     @Override
     public void convertToPDF(MultipartFile jsonFile, String outputFile) throws FileConversionException {
