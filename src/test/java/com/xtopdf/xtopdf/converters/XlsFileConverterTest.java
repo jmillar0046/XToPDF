@@ -41,38 +41,18 @@ class XlsFileConverterTest {
         FileConversionException ex = assertThrows(FileConversionException.class,
                 () -> converter.convertToPDF(inputFile, "output.pdf"));
         assertTrue(ex.getMessage().contains("XLS"), "Exception message should contain 'XLS'");
+        assertTrue(ex.getMessage().contains("Error"), "Exception message should contain original error");
     }
 
     @Test
-    void testConvertToPDF_IOException_DoesNotThrowRuntimeException() throws IOException {
-        ExcelToPdfService service = Mockito.mock(ExcelToPdfService.class);
-        XlsFileConverter converter = new XlsFileConverter(service);
-        var inputFile = new MockMultipartFile("file", "test.xls", "application/vnd.ms-excel", "content".getBytes());
-
-        doThrow(new IOException("Error")).when(service).convertExcelToPdf(any(), any(), anyBoolean());
-
-        // Should throw FileConversionException, not RuntimeException
-        Exception thrown = null;
-        try {
-            converter.convertToPDF(inputFile, "output.pdf");
-            fail("Expected an exception to be thrown");
-        } catch (Exception e) {
-            thrown = e;
-        }
-        assertNotNull(thrown);
-        assertInstanceOf(FileConversionException.class, thrown);
-        assertFalse(thrown instanceof RuntimeException, "Should not throw RuntimeException");
-    }
-
-    @Test
-    void testConvertToPDF_DoesNotCatchNullPointerException() throws IOException {
+    void testConvertToPDF_NullPointerException_WrappedInFileConversionException() throws IOException {
         ExcelToPdfService service = Mockito.mock(ExcelToPdfService.class);
         XlsFileConverter converter = new XlsFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.xls", "application/vnd.ms-excel", "content".getBytes());
 
         doThrow(new NullPointerException("null value")).when(service).convertExcelToPdf(any(), any(), anyBoolean());
 
-        // NullPointerException should propagate as-is, not be caught and re-wrapped
-        assertThrows(NullPointerException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        // All exceptions are wrapped in FileConversionException per standardized handling
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

@@ -41,11 +41,11 @@ class DxfFileConverterTest {
 
         doThrow(new IOException("File not found")).when(dxfToPdfService).convertDxfToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> dxfFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> dxfFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullPointerException_ThrowsFileConversionException() throws IOException, FileConversionException {
         DxfToPdfService dxfToPdfService = Mockito.mock(DxfToPdfService.class);
         DxfFileConverter dxfFileConverter = new DxfFileConverter(dxfToPdfService);
         var outputFile = "outputFile.pdf";
@@ -53,6 +53,6 @@ class DxfFileConverterTest {
 
         doThrow(new NullPointerException("Null input")).when(dxfToPdfService).convertDxfToPdf(any(), any());
 
-        assertThrows(NullPointerException.class, () -> dxfFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> dxfFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

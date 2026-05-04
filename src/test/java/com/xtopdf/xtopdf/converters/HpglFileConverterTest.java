@@ -41,6 +41,6 @@ class HpglFileConverterTest {
 
         doThrow(new IOException("File not found")).when(hpglToPdfService).convertHpglToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> hpglFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> hpglFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

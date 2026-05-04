@@ -28,6 +28,6 @@ class DocFileConverterTest {
         DocFileConverter converter = new DocFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.doc", "application/msword", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertDocToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

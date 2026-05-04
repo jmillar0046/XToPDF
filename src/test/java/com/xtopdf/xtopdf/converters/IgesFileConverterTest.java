@@ -41,6 +41,6 @@ class IgesFileConverterTest {
 
         doThrow(new IOException("File not found")).when(igesToPdfService).convertIgesToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> igesFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> igesFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

@@ -3,7 +3,7 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,14 +17,22 @@ public class DwtFileConverter implements FileConverter {
     private final DwtToPdfService dwtToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".dwt");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile dwtFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (dwtFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            dwtToPdfService.convertDwtToPdf(dwtFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting Dwt to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            dwtToPdfService.convertDwtToPdf(dwtFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting DWT to PDF: " + e.getMessage(), e);
         }
     }
 }

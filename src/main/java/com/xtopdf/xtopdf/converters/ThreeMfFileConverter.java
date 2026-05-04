@@ -3,7 +3,7 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,14 +17,22 @@ public class ThreeMfFileConverter implements FileConverter {
     private final ThreeMfToPdfService threemfToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".3mf");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile threemfFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (threemfFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            threemfToPdfService.convert3mfToPdf(threemfFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting ThreeMf to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            threemfToPdfService.convert3mfToPdf(threemfFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting 3MF to PDF: " + e.getMessage(), e);
         }
     }
 }

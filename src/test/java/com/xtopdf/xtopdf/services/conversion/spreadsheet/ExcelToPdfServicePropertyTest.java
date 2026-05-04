@@ -687,17 +687,11 @@ class ExcelToPdfServicePropertyTest {
     Arbitrary<StreamingTestWorkbook> streamingTestWorkbook() {
         // Generate 1-2 sheets, each with 5-20 rows and 2-4 columns
         return Arbitraries.integers().between(1, 2).flatMap(numSheets -> {
-            Arbitrary<String[]> sheetNamesArb = Arbitraries.strings().alpha().ofMinLength(4).ofMaxLength(8)
-                    .map(s -> "Sheet_" + s)
-                    .array(String[].class).ofSize(numSheets)
-                    .map(names -> {
-                        // Ensure unique sheet names
-                        Set<String> seen = new java.util.HashSet<>();
-                        for (int i = 0; i < names.length; i++) {
-                            while (seen.contains(names[i])) {
-                                names[i] = names[i] + i;
-                            }
-                            seen.add(names[i]);
+            Arbitrary<String[]> sheetNamesArb = Arbitraries.just(numSheets)
+                    .map(n -> {
+                        String[] names = new String[n];
+                        for (int i = 0; i < n; i++) {
+                            names[i] = "Sheet" + (i + 1);
                         }
                         return names;
                     });

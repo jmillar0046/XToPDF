@@ -28,6 +28,6 @@ class OdtFileConverterTest {
         OdtFileConverter converter = new OdtFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.odt", "application/vnd.oasis.opendocument.text", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertOdtToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

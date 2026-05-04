@@ -41,6 +41,6 @@ class StepFileConverterTest {
 
         doThrow(new IOException("File not found")).when(stepToPdfService).convertStepToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> stepFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> stepFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

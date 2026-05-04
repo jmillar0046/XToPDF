@@ -41,6 +41,6 @@ class ThreeMfFileConverterTest {
 
         doThrow(new IOException("File not found")).when(threeMfToPdfService).convert3mfToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> threeMfFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> threeMfFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

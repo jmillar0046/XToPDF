@@ -41,6 +41,6 @@ class PltFileConverterTest {
 
         doThrow(new IOException("File not found")).when(pltToPdfService).convertPltToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> pltFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> pltFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

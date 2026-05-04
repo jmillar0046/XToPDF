@@ -3,7 +3,7 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,14 +17,22 @@ public class WmfFileConverter implements FileConverter {
     private final WmfToPdfService wmfToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".wmf");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile wmfFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (wmfFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            wmfToPdfService.convertWmfToPdf(wmfFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting Wmf to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            wmfToPdfService.convertWmfToPdf(wmfFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting WMF to PDF: " + e.getMessage(), e);
         }
     }
 }

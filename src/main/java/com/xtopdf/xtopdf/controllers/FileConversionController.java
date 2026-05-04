@@ -2,6 +2,7 @@ package com.xtopdf.xtopdf.controllers;
 
 import com.xtopdf.xtopdf.config.PageNumberConfig;
 import com.xtopdf.xtopdf.config.WatermarkConfig;
+import com.xtopdf.xtopdf.dto.ConversionParameters;
 import com.xtopdf.xtopdf.dto.ConversionRequest;
 import com.xtopdf.xtopdf.dto.MergeRequest;
 import com.xtopdf.xtopdf.dto.PageNumberRequest;
@@ -16,6 +17,7 @@ import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.xtopdf.xtopdf.services.FileConversionService;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/convert")
@@ -35,6 +36,9 @@ import java.util.Optional;
 public class FileConversionController {
      private final FileConversionService fileConversionService;
      private final ObjectMapper objectMapper;
+
+     @Value("${xtopdf.output.directory:/safe/output/directory}")
+     private String baseOutputDirectory;
 
      public FileConversionController(
              FileConversionService fileConversionService,
@@ -59,7 +63,7 @@ public class FileConversionController {
             @RequestParam(value = "watermarkFontSize", required = false, defaultValue = "48") float watermarkFontSize,
             @RequestParam(value = "watermarkLayer", required = false, defaultValue = "FOREGROUND") String watermarkLayer,
             @RequestParam(value = "watermarkOrientation", required = false, defaultValue = "DIAGONAL_UP") String watermarkOrientation) {
-         var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
+         var baseDirectory = Paths.get(baseOutputDirectory).normalize().toAbsolutePath();
          var sanitizedOutputPath = baseDirectory.resolve(outputFile).normalize().toAbsolutePath();
          if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
@@ -107,8 +111,10 @@ public class FileConversionController {
              PageNumberConfig pageNumberConfig = ConversionConfigHelper.toPageNumberConfig(pageNumberRequest);
              WatermarkConfig watermarkConfig = ConversionConfigHelper.toWatermarkConfig(watermarkRequest);
              
-             fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, 
+             ConversionParameters params = new ConversionParameters(
+                     inputFile, sanitizedOutputPath.toString(), existingPdf,
                      validatedPosition, pageNumberConfig, watermarkConfig, executeMacros);
+             fileConversionService.convertFile(params);
              return ResponseEntity.ok("File converted successfully");
              
          } catch (IllegalArgumentException e) {
@@ -116,7 +122,7 @@ public class FileConversionController {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
          } catch (FileConversionException e) {
              log.error("Conversion error: {}", e.getMessage());
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error with conversion");
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File conversion failed");
          }
      }
 
@@ -134,7 +140,7 @@ public class FileConversionController {
             // Parse JSON request
             ConversionRequest request = objectMapper.readValue(requestJson, ConversionRequest.class);
             
-            var baseDirectory = Paths.get("/safe/output/directory").normalize().toAbsolutePath();
+            var baseDirectory = Paths.get(baseOutputDirectory).normalize().toAbsolutePath();
             var sanitizedOutputPath = baseDirectory.resolve(request.getOutputFile()).normalize().toAbsolutePath();
             if (!sanitizedOutputPath.startsWith(baseDirectory) || !sanitizedOutputPath.toString().endsWith(".pdf")) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid output file path");
@@ -146,18 +152,23 @@ public class FileConversionController {
             WatermarkConfig watermarkConfig = ConversionConfigHelper.toWatermarkConfig(request.getWatermark());
             boolean executeMacros = request.getExecuteMacros() != null && request.getExecuteMacros();
 
-            fileConversionService.convertFile(inputFile, sanitizedOutputPath.toString(), existingPdf, 
+            ConversionParameters params = new ConversionParameters(
+                    inputFile, sanitizedOutputPath.toString(), existingPdf,
                     position, pageNumberConfig, watermarkConfig, executeMacros);
+            fileConversionService.convertFile(params);
             
             return ResponseEntity.ok("File converted successfully");
             
         } catch (IllegalArgumentException e) {
             log.error("Validation error: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
+        } catch (FileConversionException e) {
+            log.error("Conversion error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File conversion failed");
         } catch (Exception e) {
-            log.error("Error converting file: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error with conversion");
+            log.error("Unexpected error converting file: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error");
         }
     }
 }

@@ -41,24 +41,24 @@ class PngFileConverterTest {
 
         doThrow(new IOException("Test exception")).when(pngToPdfService).convertPngToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> pngFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> pngFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullInputFile_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullInputFile_ThrowsFileConversionException() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var outputFile = "outputFile.pdf";
 
-        assertThrows(NullPointerException.class, () -> pngFileConverter.convertToPDF(null, outputFile));
+        assertThrows(FileConversionException.class, () -> pngFileConverter.convertToPDF(null, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullOutputFile_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullOutputFile_ThrowsFileConversionException() throws IOException, FileConversionException {
         PngToPdfService pngToPdfService = Mockito.mock(PngToPdfService.class);
         PngFileConverter pngFileConverter = new PngFileConverter(pngToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.png", "image/png", "test content".getBytes());
 
-        assertThrows(NullPointerException.class, () -> pngFileConverter.convertToPDF(inputFile, null));
+        assertThrows(FileConversionException.class, () -> pngFileConverter.convertToPDF(inputFile, null));
     }
 }

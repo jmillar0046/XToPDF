@@ -3,7 +3,7 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,12 +17,22 @@ public class MarkdownFileConverter implements FileConverter {
     private final MarkdownToPdfService markdownToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".md", ".markdown");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile markdownFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (markdownFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            markdownToPdfService.convertMarkdownToPdf(markdownFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting Markdown to PDF: " + e.getMessage(), e);
+            var pdfFile = new File(outputFile);
+            markdownToPdfService.convertMarkdownToPdf(markdownFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting Markdown to PDF: " + e.getMessage(), e);
         }
     }
 }

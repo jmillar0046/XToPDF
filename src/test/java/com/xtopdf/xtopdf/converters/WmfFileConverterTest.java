@@ -41,6 +41,6 @@ class WmfFileConverterTest {
 
         doThrow(new IOException("File not found")).when(wmfToPdfService).convertWmfToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> wmfFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> wmfFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

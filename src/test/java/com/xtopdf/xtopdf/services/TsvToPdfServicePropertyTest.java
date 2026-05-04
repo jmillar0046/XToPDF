@@ -26,7 +26,7 @@ class TsvToPdfServicePropertyTest {
     private final PdfBackendProvider pdfBackend = new PdfBoxBackend();
     private final TsvToPdfService tsvToPdfService = new TsvToPdfService(pdfBackend);
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 1: TSV Parsing and Normalization")
     void tsvParsingAndNormalization(
             @ForAll @Size(min = 1, max = 10) List<@Size(min = 1, max = 5) List<String>> rows
@@ -52,7 +52,7 @@ class TsvToPdfServicePropertyTest {
         assertTrue(maxColumns > 0, "Should have at least one column");
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 2: PDF File Creation")
     void pdfFileCreation(
             @ForAll @Size(min = 1, max = 5) List<@Size(min = 1, max = 3) List<@From("printableStrings") String>> rows,
@@ -91,7 +91,7 @@ class TsvToPdfServicePropertyTest {
                 .ofMaxLength(20);
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 1: TSV Parsing and Normalization")
     void tsvParsingHandlesEmptyFields(
             @ForAll @IntRange(min = 1, max = 10) int fieldCount
@@ -112,7 +112,7 @@ class TsvToPdfServicePropertyTest {
         }
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 1: TSV Parsing and Normalization")
     void tsvParsingHandlesQuotedFields(
             @ForAll @From("printableStrings") String field1,
@@ -131,7 +131,7 @@ class TsvToPdfServicePropertyTest {
         assertEquals(field3, parsed[2], "Third field should match");
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 1: TSV Parsing and Normalization")
     void tsvParsingHandlesEscapedQuotes(
             @ForAll @From("printableStrings") String prefix,

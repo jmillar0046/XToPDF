@@ -41,6 +41,6 @@ class DwfFileConverterTest {
 
         doThrow(new IOException("File not found")).when(dwfToPdfService).convertDwfToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> dwfFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> dwfFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

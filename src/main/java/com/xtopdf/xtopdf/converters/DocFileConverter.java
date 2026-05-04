@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -16,14 +16,22 @@ public class DocFileConverter implements FileConverter {
     private final DocToPdfService docToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".doc");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile docFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (docFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            docToPdfService.convertDocToPdf(docFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting DOC to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            docToPdfService.convertDocToPdf(docFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting DOC to PDF: " + e.getMessage(), e);
         }
     }
 }

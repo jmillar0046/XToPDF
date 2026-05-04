@@ -49,11 +49,5 @@ public class ContainerOrchestrationService {
         return containerRuntime.getRuntimeInfo();
     }
     
-    /**
-     * @deprecated Use getRuntimeInfo() instead
-     */
-    @Deprecated
-    public String getDockerInfo() {
-        return getRuntimeInfo();
-    }
+
 }

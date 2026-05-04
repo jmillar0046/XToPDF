@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -16,14 +17,21 @@ public class HtmlFileConverter implements FileConverter {
     private final HtmlToPdfService htmlToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".html");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile htmlFile, String outputFile) throws FileConversionException {
         if (htmlFile == null) {
-            throw new NullPointerException("Input file must not be null");
+            throw new FileConversionException("Input file must not be null");
         }
         if (outputFile == null) {
-            throw new NullPointerException("Output file must not be null");
+            throw new FileConversionException("Output file path must not be null");
         }
-
-        htmlToPdfService.convertHtmlToPdf(htmlFile, new File(outputFile));
+        try {
+            htmlToPdfService.convertHtmlToPdf(htmlFile, new File(outputFile));        } catch (Exception e) {
+            throw new FileConversionException("Error converting HTML to PDF: " + e.getMessage(), e);
+        }
     }
 }

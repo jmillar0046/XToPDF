@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -16,14 +16,22 @@ public class PptFileConverter implements FileConverter {
     private final PptToPdfService pptToPdfService;
 
     @Override
+    public Set<String> getSupportedExtensions() {
+        return Set.of(".ppt");
+    }
+
+    @Override
     public void convertToPDF(MultipartFile pptFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (pptFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            pptToPdfService.convertPptToPdf(pptFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting PPT to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            pptToPdfService.convertPptToPdf(pptFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting PPT to PDF: " + e.getMessage(), e);
         }
     }
 }

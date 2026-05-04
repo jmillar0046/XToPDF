@@ -1,27 +1,26 @@
 package com.xtopdf.xtopdf.services;
 
-import com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService;
-import com.xtopdf.xtopdf.services.operations.WatermarkService;
-import com.xtopdf.xtopdf.services.operations.PdfMergeService;
-import com.xtopdf.xtopdf.services.operations.PageNumberService;
-import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.config.PageNumberConfig;
+import com.xtopdf.xtopdf.config.WatermarkConfig;
+import com.xtopdf.xtopdf.converters.ConverterRegistry;
+import com.xtopdf.xtopdf.converters.FileConverter;
+import com.xtopdf.xtopdf.dto.ConversionParameters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
-import com.xtopdf.xtopdf.factories.*;
+import com.xtopdf.xtopdf.services.operations.PageNumberService;
+import com.xtopdf.xtopdf.services.operations.PdfMergeService;
+import com.xtopdf.xtopdf.services.operations.WatermarkService;
+import com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService;
+import com.xtopdf.xtopdf.validation.FileContentValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -29,51 +28,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FileConversionServiceTest {
 
-    // Existing mocks
-    @Mock private TxtFileConverterFactory txtFileConverterFactory;
-    @Mock private DocxFileConverterFactory docxFileConverterFactory;
-    @Mock private DocFileConverterFactory docFileConverterFactory;
-    @Mock private HtmlFileConverterFactory htmlFileConverterFactory;
-    @Mock private JpegFileConverterFactory jpegFileConverterFactory;
-    @Mock private PngFileConverterFactory pngFileConverterFactory;
-    @Mock private XlsxFileConverterFactory xlsxFileConverterFactory;
-    @Mock private XlsFileConverterFactory xlsFileConverterFactory;
-    @Mock private CsvFileConverterFactory csvFileConverterFactory;
-    @Mock private TsvFileConverterFactory tsvFileConverterFactory;
-    @Mock private BmpFileConverterFactory bmpFileConverterFactory;
-    @Mock private GifFileConverterFactory gifFileConverterFactory;
-    @Mock private PptxFileConverterFactory pptxFileConverterFactory;
-    @Mock private PptFileConverterFactory pptFileConverterFactory;
-    @Mock private RtfFileConverterFactory rtfFileConverterFactory;
-    @Mock private SvgFileConverterFactory svgFileConverterFactory;
-    @Mock private TiffFileConverterFactory tiffFileConverterFactory;
-    @Mock private MarkdownFileConverterFactory markdownFileConverterFactory;
-    @Mock private OdtFileConverterFactory odtFileConverterFactory;
-    @Mock private OdsFileConverterFactory odsFileConverterFactory;
-    @Mock private OdpFileConverterFactory odpFileConverterFactory;
-    @Mock private XmlFileConverterFactory xmlFileConverterFactory;
-    @Mock private JsonFileConverterFactory jsonFileConverterFactory;
-    @Mock private DxfFileConverterFactory dxfFileConverterFactory;
-    @Mock private DwgFileConverterFactory dwgFileConverterFactory;
-    
-    // New mocks for CAD formats
-    @Mock private DwtFileConverterFactory dwtFileConverterFactory;
-    @Mock private StepFileConverterFactory stepFileConverterFactory;
-    @Mock private StpFileConverterFactory stpFileConverterFactory;
-    @Mock private IgesFileConverterFactory igesFileConverterFactory;
-    @Mock private IgsFileConverterFactory igsFileConverterFactory;
-    @Mock private StlFileConverterFactory stlFileConverterFactory;
-    @Mock private ObjFileConverterFactory objFileConverterFactory;
-    @Mock private ThreeMfFileConverterFactory threeMfFileConverterFactory;
-    @Mock private WrlFileConverterFactory wrlFileConverterFactory;
-    @Mock private X3dFileConverterFactory x3dFileConverterFactory;
-    @Mock private DwfFileConverterFactory dwfFileConverterFactory;
-    @Mock private DwfxFileConverterFactory dwfxFileConverterFactory;
-    @Mock private PltFileConverterFactory pltFileConverterFactory;
-    @Mock private HpglFileConverterFactory hpglFileConverterFactory;
-    @Mock private EmfFileConverterFactory emfFileConverterFactory;
-    @Mock private WmfFileConverterFactory wmfFileConverterFactory;
-    
+    @Mock private ConverterRegistry converterRegistry;
+    @Mock private FileContentValidator contentValidator;
     @Mock private PdfMergeService pdfMergeService;
     @Mock private PageNumberService pageNumberService;
     @Mock private WatermarkService watermarkService;
@@ -90,99 +46,177 @@ class FileConversionServiceTest {
             logic.run();
             return null;
         }).when(containerOrchestrationService).executeInContainer(any(), any(), any());
-        
+
         fileConversionService = new FileConversionService(
-            txtFileConverterFactory, docxFileConverterFactory, docFileConverterFactory, htmlFileConverterFactory,
-            jpegFileConverterFactory, pngFileConverterFactory, xlsxFileConverterFactory, xlsFileConverterFactory,
-            csvFileConverterFactory, tsvFileConverterFactory, bmpFileConverterFactory, gifFileConverterFactory, pptxFileConverterFactory,
-            pptFileConverterFactory, rtfFileConverterFactory, svgFileConverterFactory, tiffFileConverterFactory,
-            markdownFileConverterFactory, odtFileConverterFactory, odsFileConverterFactory, odpFileConverterFactory,
-            xmlFileConverterFactory, jsonFileConverterFactory, dxfFileConverterFactory, dwgFileConverterFactory,
-            dwtFileConverterFactory, stepFileConverterFactory, stpFileConverterFactory, igesFileConverterFactory,
-            igsFileConverterFactory, stlFileConverterFactory, objFileConverterFactory,
-            threeMfFileConverterFactory, wrlFileConverterFactory, x3dFileConverterFactory,
-            dwfFileConverterFactory, dwfxFileConverterFactory, pltFileConverterFactory,
-            hpglFileConverterFactory, emfFileConverterFactory, wmfFileConverterFactory,
-            pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService
+                converterRegistry,
+                contentValidator,
+                pdfMergeService,
+                pageNumberService,
+                watermarkService,
+                containerOrchestrationService
         );
     }
 
+    // --- Tests for convertFile(ConversionParameters) delegating to ConverterRegistry ---
+
     @Test
-    void testConvertFile_TxtFile() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
-        when(txtFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
-        
-        fileConversionService.convertFile(inputFile, "output.pdf");
-        
-        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
-    }
-    
-    @Test
-    void testConvertFile_StepFile() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.step", MediaType.APPLICATION_OCTET_STREAM_VALUE, "content".getBytes());
-        when(stepFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
-        
-        fileConversionService.convertFile(inputFile, "output.pdf");
-        
-        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
-    }
-    
-    @Test
-    void testConvertFile_StlFile() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.stl", MediaType.APPLICATION_OCTET_STREAM_VALUE, "content".getBytes());
-        when(stlFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
-        
-        fileConversionService.convertFile(inputFile, "output.pdf");
-        
-        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
+    void convertFile_delegatesToConverterRegistryForConverterLookup() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "report.docx", "application/octet-stream", "content".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/report.pdf");
+
+        when(converterRegistry.getConverter(".docx")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        verify(converterRegistry).getConverter(".docx");
+        verify(mockConverter).convertToPDF(eq(inputFile), eq("/output/report.pdf"), eq(false));
     }
 
     @Test
-    void testConvertFile_TsvFile() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.tsv", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
-        when(tsvFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
-        
-        fileConversionService.convertFile(inputFile, "output.pdf");
-        
-        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
+    void convertFile_extractsExtensionCorrectlyForVariousFormats() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "image.PNG", "image/png", "content".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/image.pdf");
+
+        when(converterRegistry.getConverter(".png")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        // Extension should be lowercased before lookup
+        verify(converterRegistry).getConverter(".png");
+    }
+
+    // --- Tests for FileContentValidator being called before conversion ---
+
+    @Test
+    void convertFile_callsFileContentValidatorBeforeConversion() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "photo.jpg", "image/jpeg", "content".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/photo.pdf");
+
+        when(converterRegistry.getConverter(".jpg")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        // Verify validator is called
+        verify(contentValidator).validate(inputFile, ".jpg");
+
+        // Verify ordering: validate is called before getConverter
+        InOrder inOrder = inOrder(contentValidator, converterRegistry, mockConverter);
+        inOrder.verify(contentValidator).validate(inputFile, ".jpg");
+        inOrder.verify(converterRegistry).getConverter(".jpg");
+        inOrder.verify(mockConverter).convertToPDF(eq(inputFile), eq("/output/photo.pdf"), eq(false));
+    }
+
+    // --- Tests for null inputFile ---
+
+    @Test
+    void convertFile_nullInputFile_throwsFileConversionExceptionWithRequiredMessage() {
+        ConversionParameters params = new ConversionParameters(
+                null, "/output/file.pdf", null, null,
+                PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
+
+        assertThatThrownBy(() -> fileConversionService.convertFile(params))
+                .isInstanceOf(FileConversionException.class)
+                .hasMessage("Input file is required");
+    }
+
+    // --- Tests for null outputFile ---
+
+    @Test
+    void convertFile_nullOutputFile_throwsFileConversionExceptionWithRequiredMessage() {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test.txt", "text/plain", "content".getBytes());
+        ConversionParameters params = new ConversionParameters(
+                inputFile, null, null, null,
+                PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
+
+        assertThatThrownBy(() -> fileConversionService.convertFile(params))
+                .isInstanceOf(FileConversionException.class)
+                .hasMessage("Output file path is required");
+    }
+
+    // --- Tests for unsupported extension propagation ---
+
+    @Test
+    void convertFile_unsupportedExtension_propagatesFileConversionExceptionFromRegistry() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "data.xyz", "application/octet-stream", "content".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/data.pdf");
+
+        when(converterRegistry.getConverter(".xyz"))
+                .thenThrow(new FileConversionException("Unsupported file format: .xyz"));
+
+        assertThatThrownBy(() -> fileConversionService.convertFile(params))
+                .isInstanceOf(FileConversionException.class)
+                .hasMessage("Unsupported file format: .xyz");
+    }
+
+    // --- Tests for conversion pipeline (page numbers, watermark, merge) ---
+
+    @Test
+    void convertFile_withPageNumbersEnabled_addsPageNumbers() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "doc.txt", "text/plain", "content".getBytes());
+        PageNumberConfig pageConfig = PageNumberConfig.builder().enabled(true).build();
+        ConversionParameters params = new ConversionParameters(
+                inputFile, "/output/doc.pdf", null, null,
+                pageConfig, WatermarkConfig.disabled(), false);
+
+        when(converterRegistry.getConverter(".txt")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        verify(pageNumberService).addPageNumbers(any(java.io.File.class), eq(pageConfig));
     }
 
     @Test
-    void testConvertFile_TabFile() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "test.tab", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
-        when(tsvFileConverterFactory.createFileConverter()).thenReturn(mockConverter);
-        
-        fileConversionService.convertFile(inputFile, "output.pdf");
-        
-        verify(mockConverter).convertToPDF(any(), eq("output.pdf"), eq(false));
+    void convertFile_withWatermarkEnabled_addsWatermark() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "doc.txt", "text/plain", "content".getBytes());
+        WatermarkConfig watermarkConfig = WatermarkConfig.builder().enabled(true).text("DRAFT").build();
+        ConversionParameters params = new ConversionParameters(
+                inputFile, "/output/doc.pdf", null, null,
+                PageNumberConfig.disabled(), watermarkConfig, false);
+
+        when(converterRegistry.getConverter(".txt")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        verify(watermarkService).addWatermark(any(java.io.File.class), eq(watermarkConfig));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "test.txt,txt", "test.docx,docx", "test.xlsx,xlsx", "test.pptx,pptx",
-        "test.step,step", "test.stl,stl", "test.obj,obj", "test.dwt,dwt",
-        "test.3mf,3mf", "test.wrl,wrl", "test.x3d,x3d",
-        "test.dwf,dwf", "test.plt,plt", "test.emf,emf",
-        "test.tsv,tsv", "test.tab,tab", "test.TSV,TSV", "test.TAB,TAB"
-    })
-    void testGetFactoryForFile_ValidExtensions(String filename, String format) {
-        var factory = fileConversionService.getFactoryForFile(filename);
-        // Should return a non-null factory
-        assert(factory != null);
-    }
-    
     @Test
-    void testGetFactoryForFile_UnknownExtension() {
-        var factory = fileConversionService.getFactoryForFile("test.unknown");
-        assertEquals(null, factory);
+    void convertFile_withExistingPdf_mergesPdfs() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "doc.txt", "text/plain", "content".getBytes());
+        MockMultipartFile existingPdf = new MockMultipartFile(
+                "existing", "existing.pdf", "application/pdf", "pdf-content".getBytes());
+        ConversionParameters params = new ConversionParameters(
+                inputFile, "/output/doc.pdf", existingPdf, "back",
+                PageNumberConfig.disabled(), WatermarkConfig.disabled(), false);
+
+        when(converterRegistry.getConverter(".txt")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        verify(pdfMergeService).mergePdfs(any(java.io.File.class), eq(existingPdf), eq("back"));
     }
-    
+
     @Test
-    void testConvertFile_NoExtension() {
-        MockMultipartFile inputFile = new MockMultipartFile("file", "testfile", MediaType.TEXT_PLAIN_VALUE, "content".getBytes());
-        
-        assertThrows(FileConversionException.class, () -> {
-            fileConversionService.convertFile(inputFile, "output.pdf");
-        });
+    void convertFile_withExecuteMacros_passesExecuteMacrosToConverter() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "spreadsheet.xlsx", "application/octet-stream", "content".getBytes());
+        ConversionParameters params = new ConversionParameters(
+                inputFile, "/output/spreadsheet.pdf", null, null,
+                PageNumberConfig.disabled(), WatermarkConfig.disabled(), true);
+
+        when(converterRegistry.getConverter(".xlsx")).thenReturn(mockConverter);
+
+        fileConversionService.convertFile(params);
+
+        verify(mockConverter).convertToPDF(eq(inputFile), eq("/output/spreadsheet.pdf"), eq(true));
     }
+
 }

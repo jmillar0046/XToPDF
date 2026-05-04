@@ -41,23 +41,23 @@ class BmpFileConverterTest {
 
         doThrow(new IOException("File not found")).when(bmpToPdfService).convertBmpToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> bmpFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> bmpFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullInput_ThrowsNullPointerException() throws FileConversionException {
+    void testConvertToPDF_NullInput_ThrowsFileConversionException() throws FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
 
-        assertThrows(NullPointerException.class, () -> bmpFileConverter.convertToPDF(null, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> bmpFileConverter.convertToPDF(null, "output.pdf"));
     }
 
     @Test
-    void testConvertToPDF_NullOutput_ThrowsNullPointerException() throws FileConversionException {
+    void testConvertToPDF_NullOutput_ThrowsFileConversionException() throws FileConversionException {
         BmpToPdfService bmpToPdfService = Mockito.mock(BmpToPdfService.class);
         BmpFileConverter bmpFileConverter = new BmpFileConverter(bmpToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.bmp", MediaType.IMAGE_PNG_VALUE, "test content".getBytes());
 
-        assertThrows(NullPointerException.class, () -> bmpFileConverter.convertToPDF(inputFile, null));
+        assertThrows(FileConversionException.class, () -> bmpFileConverter.convertToPDF(inputFile, null));
     }
 }

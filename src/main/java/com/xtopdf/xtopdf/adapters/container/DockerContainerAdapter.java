@@ -275,9 +275,10 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     }
     
     /**
-     * Parse memory limit string to bytes
+     * Parse memory limit string to bytes.
+     * Package-private for testing.
      */
-    private long parseMemoryLimit(String memoryLimit) {
+    long parseMemoryLimit(String memoryLimit) {
         String lower = memoryLimit.toLowerCase();
         long multiplier = 1;
         
