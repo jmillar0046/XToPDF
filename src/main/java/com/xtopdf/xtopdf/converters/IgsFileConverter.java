@@ -3,7 +3,6 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import lombok.AllArgsConstructor;
@@ -24,13 +23,16 @@ public class IgsFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile igsFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (igsFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            igsToPdfService.convertIgsToPdf(igsFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting Igs to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            igsToPdfService.convertIgsToPdf(igsFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting IGS to PDF: " + e.getMessage(), e);
         }
     }
 }

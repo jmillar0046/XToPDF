@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -23,13 +22,16 @@ public class XmlFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile xmlFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (xmlFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            xmlToPdfService.convertXmlToPdf(xmlFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting XML to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            xmlToPdfService.convertXmlToPdf(xmlFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting XML to PDF: " + e.getMessage(), e);
         }
     }
 }

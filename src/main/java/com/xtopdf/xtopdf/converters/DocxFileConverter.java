@@ -1,7 +1,6 @@
 package com.xtopdf.xtopdf.converters;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
@@ -23,10 +22,15 @@ public class DocxFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile docxFile, String outputFile) throws FileConversionException {
+        if (docxFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            docxToPdfService.convertDocxToPdf(docxFile, new File(outputFile));
-        } catch (IOException e) {
-            throw new FileConversionException("DOCX to PDF conversion failed: " + e.getMessage(), e);
+            docxToPdfService.convertDocxToPdf(docxFile, new File(outputFile));        } catch (Exception e) {
+            throw new FileConversionException("Error converting DOCX to PDF: " + e.getMessage(), e);
         }
     }
 }

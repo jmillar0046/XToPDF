@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -24,17 +23,15 @@ public class RtfFileConverter implements FileConverter {
     @Override
     public void convertToPDF(MultipartFile rtfFile, String outputFile) throws FileConversionException {
         if (rtfFile == null) {
-            throw new NullPointerException("Input file must not be null");
+            throw new FileConversionException("Input file must not be null");
         }
         if (outputFile == null) {
-            throw new NullPointerException("Output file must not be null");
+            throw new FileConversionException("Output file path must not be null");
         }
-        
-        var pdfFile = new File(outputFile);
         try {
-            rtfToPdfService.convertRtfToPdf(rtfFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting RTF to PDF: " + e.getMessage(), e);
+            var pdfFile = new File(outputFile);
+            rtfToPdfService.convertRtfToPdf(rtfFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting RTF to PDF: " + e.getMessage(), e);
         }
     }
 }

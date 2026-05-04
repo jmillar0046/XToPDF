@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -23,13 +22,16 @@ public class OdtFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile odtFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (odtFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            odtToPdfService.convertOdtToPdf(odtFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting ODT to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            odtToPdfService.convertOdtToPdf(odtFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting ODT to PDF: " + e.getMessage(), e);
         }
     }
 }

@@ -3,7 +3,6 @@ package com.xtopdf.xtopdf.converters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import lombok.AllArgsConstructor;
@@ -24,13 +23,16 @@ public class TsvFileConverter implements FileConverter {
 
     @Override
     public void convertToPDF(MultipartFile tsvFile, String outputFile) throws FileConversionException {
-        var pdfFile = new File(outputFile);
+        if (tsvFile == null) {
+            throw new FileConversionException("Input file must not be null");
+        }
+        if (outputFile == null) {
+            throw new FileConversionException("Output file path must not be null");
+        }
         try {
-            tsvToPdfService.convertTsvToPdf(tsvFile, pdfFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting TSV to PDF: " + e.getMessage(), e);
-        } catch (NullPointerException e) {
-            throw new NullPointerException("Input file or output file must not be null");
+            var pdfFile = new File(outputFile);
+            tsvToPdfService.convertTsvToPdf(tsvFile, pdfFile);        } catch (Exception e) {
+            throw new FileConversionException("Error converting TSV to PDF: " + e.getMessage(), e);
         }
     }
 }
