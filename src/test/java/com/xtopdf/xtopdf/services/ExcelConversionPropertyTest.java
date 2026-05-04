@@ -1,6 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
-import com.xtopdf.xtopdf.services.conversion.spreadsheet.XlsxToPdfService;
+import com.xtopdf.xtopdf.services.conversion.spreadsheet.ExcelToPdfService;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import net.jqwik.api.*;
@@ -53,7 +53,7 @@ class ExcelConversionPropertyTest {
         
         try {
             // Create service
-            XlsxToPdfService service = new XlsxToPdfService(pdfBackend);
+            ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
             
             // Convert workbook to bytes
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -73,7 +73,7 @@ class ExcelConversionPropertyTest {
             File outputFile = tempDir.resolve("output.pdf").toFile();
             
             try {
-                service.convertXlsxToPdf(inputFile, outputFile);
+                service.convertExcelToPdf(inputFile, outputFile);
                 
                 // Verify PDF was created
                 assertThat(outputFile).exists();
@@ -117,7 +117,7 @@ class ExcelConversionPropertyTest {
         Path tempDir = Files.createTempDirectory("excel-formula-test");
         
         try {
-            XlsxToPdfService service = new XlsxToPdfService(pdfBackend);
+            ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
             
             // Convert workbook to bytes
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -135,7 +135,7 @@ class ExcelConversionPropertyTest {
             File outputFile = tempDir.resolve("formulas.pdf").toFile();
             
             try {
-                service.convertXlsxToPdf(inputFile, outputFile);
+                service.convertExcelToPdf(inputFile, outputFile);
                 
                 // Verify PDF was created
                 assertThat(outputFile).exists();
@@ -176,7 +176,7 @@ class ExcelConversionPropertyTest {
         Path tempDir = Files.createTempDirectory("excel-chart-test");
         
         try {
-            XlsxToPdfService service = new XlsxToPdfService(pdfBackend);
+            ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
             
             // Convert workbook to bytes
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -194,7 +194,7 @@ class ExcelConversionPropertyTest {
             File outputFile = tempDir.resolve("charts.pdf").toFile();
             
             try {
-                service.convertXlsxToPdf(inputFile, outputFile);
+                service.convertExcelToPdf(inputFile, outputFile);
                 
                 // Verify PDF was created
                 assertThat(outputFile).exists();
@@ -239,7 +239,7 @@ class ExcelConversionPropertyTest {
         Path tempDir = Files.createTempDirectory("excel-format-test");
         
         try {
-            XlsxToPdfService service = new XlsxToPdfService(pdfBackend);
+            ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
             
             // Convert workbook to bytes
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -257,7 +257,7 @@ class ExcelConversionPropertyTest {
             File outputFile = tempDir.resolve("formatted.pdf").toFile();
             
             try {
-                service.convertXlsxToPdf(inputFile, outputFile);
+                service.convertExcelToPdf(inputFile, outputFile);
                 
                 // Verify PDF was created
                 assertThat(outputFile).exists();
@@ -297,7 +297,7 @@ class ExcelConversionPropertyTest {
         Path tempDir = Files.createTempDirectory("excel-empty-test");
         
         try {
-            XlsxToPdfService service = new XlsxToPdfService(pdfBackend);
+            ExcelToPdfService service = new ExcelToPdfService(pdfBackend);
             
             // Create empty workbook
             Workbook workbook = new XSSFWorkbook();
@@ -318,7 +318,7 @@ class ExcelConversionPropertyTest {
             File outputFile = tempDir.resolve("empty.pdf").toFile();
             
             try {
-                service.convertXlsxToPdf(inputFile, outputFile);
+                service.convertExcelToPdf(inputFile, outputFile);
                 
                 // If conversion succeeds, PDF should be valid
                 assertThat(outputFile).exists();

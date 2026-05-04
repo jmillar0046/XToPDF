@@ -56,6 +56,22 @@ public interface PdfDocumentBuilder extends AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     void addTable(String[][] data) throws IOException;
+
+    /**
+     * Adds a table with column widths and optional cell formatting.
+     * Renders cells with proportional column widths, bold font for bold cells,
+     * background fill for cells with hasBackground, and uses formattedValue when present.
+     *
+     * @param data         table data (rows × columns)
+     * @param columnWidths column widths in points (will be used as-is)
+     * @param formatting   per-cell formatting metadata, or null for plain rendering
+     * @throws IOException if an I/O error occurs
+     */
+    default void addTable(String[][] data, float[] columnWidths,
+                          com.xtopdf.xtopdf.services.conversion.spreadsheet.CellFormatting[][] formatting) throws IOException {
+        // Default implementation delegates to the basic addTable for backward compatibility
+        addTable(data);
+    }
     
     /**
      * Adds an image to the current page.
