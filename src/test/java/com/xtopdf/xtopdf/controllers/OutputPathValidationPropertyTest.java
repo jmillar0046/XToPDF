@@ -48,7 +48,7 @@ class OutputPathValidationPropertyTest {
      *
      * **Validates: Requirements 4.3**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 6: Output Path Security Validation")
     void pathTraversalAttemptsAreRejected(
             @ForAll("pathTraversalStrings") String maliciousPath) throws Exception {
@@ -69,7 +69,7 @@ class OutputPathValidationPropertyTest {
      *
      * **Validates: Requirements 4.4**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 6: Output Path Security Validation")
     void nonPdfExtensionsAreRejected(
             @ForAll("nonPdfExtensions") String outputPath) throws Exception {

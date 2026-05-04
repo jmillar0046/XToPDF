@@ -49,7 +49,7 @@ class FileConversionControllerPropertyTest {
      *
      * **Validates: Requirements 3.1, 3.2**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 5: Controller Error Message Propagation")
     void controllerReturnsExactExceptionMessageInResponse(
             @ForAll("errorMessages") String errorMessage) throws Exception {

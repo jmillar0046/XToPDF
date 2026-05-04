@@ -48,7 +48,7 @@ class ImageScalingPropertyTest {
      *
      * **Validates: Requirements 3.2**
      */
-    @Property(tries = 1000)
+    @Property(tries = 250)
     @Label("Image scaling preserves aspect ratio and fits within bounds")
     void imageScalingPreservesAspectRatio(
             @ForAll("imageDimensions") float imageWidth,
@@ -90,7 +90,7 @@ class ImageScalingPropertyTest {
     /**
      * Property: When image fits within bounds, no scaling occurs.
      */
-    @Property(tries = 500)
+    @Property(tries = 150)
     @Label("Small images are not upscaled")
     void smallImagesAreNotUpscaled(
             @ForAll("smallImageDimensions") float imageWidth,

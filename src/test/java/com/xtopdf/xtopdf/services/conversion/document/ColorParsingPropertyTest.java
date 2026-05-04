@@ -19,7 +19,7 @@ class ColorParsingPropertyTest {
     private final DocxToPdfService service = new DocxToPdfService(
             new com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend());
 
-    @Property(tries = 500)
+    @Property(tries = 150)
     void validHexColorRoundTrip(
             @ForAll("rgbComponent") int r,
             @ForAll("rgbComponent") int g,

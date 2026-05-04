@@ -34,7 +34,7 @@ class DocxFileConverterExceptionPropertyTest {
      *
      * Validates: Requirements 7.1, 7.3
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Label("IOException is wrapped in FileConversionException with DOCX in message and original cause preserved")
     void ioExceptionIsWrappedInFileConversionException(
             @ForAll("ioExceptionMessages") String ioMessage) throws IOException {

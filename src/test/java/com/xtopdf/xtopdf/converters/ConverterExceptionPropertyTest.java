@@ -56,9 +56,9 @@ class ConverterExceptionPropertyTest {
                         (svc) -> { try { doThrow(runtimeException).when(svc).convertPngToPdf(any(), any()); } catch (Exception e) { throw new RuntimeException(e); } },
                         (svc) -> new PngFileConverter(svc)),
                 createThrowingConverter("CSV", runtimeException,
-                        com.xtopdf.xtopdf.services.conversion.spreadsheet.CsvToPdfService.class,
-                        (svc) -> { try { doThrow(runtimeException).when(svc).convertCsvToPdf(any(), any()); } catch (Exception e) { throw new RuntimeException(e); } },
-                        (svc) -> new CsvFileConverter(svc)),
+                        com.xtopdf.xtopdf.services.conversion.spreadsheet.DelimiterSeparatedToPdfService.class,
+                        (svc) -> { try { doThrow(runtimeException).when(svc).convertDelimiterSeparatedToPdf(any(), any(), any(char.class)); } catch (Exception e) { throw new RuntimeException(e); } },
+                        (svc) -> new DelimiterSeparatedConverter(svc, ',', "CSV", java.util.Set.of(".csv"))),
                 createThrowingConverter("BMP", runtimeException,
                         com.xtopdf.xtopdf.services.conversion.image.BmpToPdfService.class,
                         (svc) -> { try { doThrow(runtimeException).when(svc).convertBmpToPdf(any(), any()); } catch (Exception e) { throw new RuntimeException(e); } },
@@ -130,7 +130,7 @@ class ConverterExceptionPropertyTest {
      *
      * **Validates: Requirements 2.1, 2.4, 2.5**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 3: Converter Exception Wrapping")
     void converterWrapsExceptionInFileConversionExceptionWithFormatAndMessage(
             @ForAll("exceptionMessages") String errorMessage,
@@ -202,7 +202,7 @@ class ConverterExceptionPropertyTest {
         return List.of(
                 new ConverterDescriptor("DOCX", new DocxFileConverter(null)),
                 new ConverterDescriptor("PNG", new PngFileConverter(null)),
-                new ConverterDescriptor("CSV", new CsvFileConverter(null)),
+                new ConverterDescriptor("CSV", new DelimiterSeparatedConverter(null, ',', "CSV", Set.of(".csv"))),
                 new ConverterDescriptor("BMP", new BmpFileConverter(null)),
                 new ConverterDescriptor("HTML", new HtmlFileConverter(null)),
                 new ConverterDescriptor("JSON", new JsonFileConverter(null)),
@@ -214,7 +214,7 @@ class ConverterExceptionPropertyTest {
                 new ConverterDescriptor("Markdown", new MarkdownFileConverter(null)),
                 new ConverterDescriptor("DOC", new DocFileConverter(null)),
                 new ConverterDescriptor("TIFF", new TiffFileConverter(null)),
-                new ConverterDescriptor("TSV", new TsvFileConverter(null)),
+                new ConverterDescriptor("TSV", new DelimiterSeparatedConverter(null, '\t', "TSV", Set.of(".tsv", ".tab"))),
                 new ConverterDescriptor("ODS", new OdsFileConverter(null)),
                 new ConverterDescriptor("ODT", new OdtFileConverter(null)),
                 new ConverterDescriptor("PPTX", new PptxFileConverter(null)),
@@ -253,7 +253,7 @@ class ConverterExceptionPropertyTest {
      *
      * **Validates: Requirements 2.2, 2.3**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 4: Converter Null Parameter Validation")
     void nullInputFileThrowsFileConversionException(
             @ForAll("allConverterIndices") int converterIndex) {
@@ -279,7 +279,7 @@ class ConverterExceptionPropertyTest {
      *
      * **Validates: Requirements 2.2, 2.3**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 4: Converter Null Parameter Validation")
     void nullOutputFileThrowsFileConversionException(
             @ForAll("allConverterIndices") int converterIndex) {

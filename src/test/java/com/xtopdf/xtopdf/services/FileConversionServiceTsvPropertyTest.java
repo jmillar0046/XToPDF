@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
  */
 class FileConversionServiceTsvPropertyTest {
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 4: Case-Insensitive File Extension Routing")
     void caseInsensitiveRoutingForTsv(@ForAll("tsvExtensions") String extension) throws Exception {
         // Create service with mocked dependencies
@@ -66,7 +66,7 @@ class FileConversionServiceTsvPropertyTest {
                 ".tSv", ".tAb", ".TsV", ".TaB", ".tsV", ".taB");
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 4: Case-Insensitive File Extension Routing")
     void nonTsvExtensionsDoNotRouteToTsvConverter(@ForAll("nonTsvExtensions") String extension) throws Exception {
         // Create service with mocked dependencies

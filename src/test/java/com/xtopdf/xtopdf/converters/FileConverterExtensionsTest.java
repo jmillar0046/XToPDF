@@ -47,7 +47,7 @@ class FileConverterExtensionsTest {
 
     @Test
     void tsvConverterReturnsBothTsvAndTab() {
-        var converter = createTsvFileConverter();
+        var converter = createTsvDelimiterConverter();
         assertThat(converter.getSupportedExtensions()).containsExactlyInAnyOrder(".tsv", ".tab");
     }
 
@@ -75,8 +75,8 @@ class FileConverterExtensionsTest {
                 Arguments.of("PngFileConverter", Set.of(".png"), createPngFileConverter()),
                 Arguments.of("XlsxFileConverter", Set.of(".xlsx"), createXlsxFileConverter()),
                 Arguments.of("XlsFileConverter", Set.of(".xls"), createXlsFileConverter()),
-                Arguments.of("CsvFileConverter", Set.of(".csv"), createCsvFileConverter()),
-                Arguments.of("TsvFileConverter", Set.of(".tsv", ".tab"), createTsvFileConverter()),
+                Arguments.of("CsvDelimiterConverter", Set.of(".csv"), createCsvDelimiterConverter()),
+                Arguments.of("TsvDelimiterConverter", Set.of(".tsv", ".tab"), createTsvDelimiterConverter()),
                 Arguments.of("BmpFileConverter", Set.of(".bmp"), createBmpFileConverter()),
                 Arguments.of("GifFileConverter", Set.of(".gif"), createGifFileConverter()),
                 Arguments.of("PptxFileConverter", Set.of(".pptx"), createPptxFileConverter()),
@@ -128,8 +128,8 @@ class FileConverterExtensionsTest {
     private static PngFileConverter createPngFileConverter() { return new PngFileConverter(null); }
     private static XlsxFileConverter createXlsxFileConverter() { return new XlsxFileConverter(null); }
     private static XlsFileConverter createXlsFileConverter() { return new XlsFileConverter(null); }
-    private static CsvFileConverter createCsvFileConverter() { return new CsvFileConverter(null); }
-    private static TsvFileConverter createTsvFileConverter() { return new TsvFileConverter(null); }
+    private static DelimiterSeparatedConverter createCsvDelimiterConverter() { return new DelimiterSeparatedConverter(null, ',', "CSV", Set.of(".csv")); }
+    private static DelimiterSeparatedConverter createTsvDelimiterConverter() { return new DelimiterSeparatedConverter(null, '\t', "TSV", Set.of(".tsv", ".tab")); }
     private static BmpFileConverter createBmpFileConverter() { return new BmpFileConverter(null); }
     private static GifFileConverter createGifFileConverter() { return new GifFileConverter(null); }
     private static PptxFileConverter createPptxFileConverter() { return new PptxFileConverter(null); }

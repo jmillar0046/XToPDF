@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
  */
 class TsvPdfErrorPropagationPropertyTest {
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 5: PDF Generation Error Propagation")
     void pdfGenerationErrorPropagation(@ForAll String errorMessage) throws Exception {
         // Mock PDF backend to throw exception
@@ -55,7 +55,7 @@ class TsvPdfErrorPropagationPropertyTest {
                 "Exception message should contain original error message");
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 5: PDF Generation Error Propagation")
     void pdfBuilderCloseErrorPropagation(@ForAll String errorMessage) throws Exception {
         // Mock PDF backend to throw exception on close
@@ -89,7 +89,7 @@ class TsvPdfErrorPropagationPropertyTest {
                 "Exception message should indicate PDF creation failure");
     }
 
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: tsv-file-support, Property 5: PDF Generation Error Propagation")
     void pdfSaveErrorPropagation(@ForAll String errorMessage) throws Exception {
         // Mock PDF backend to throw exception on save

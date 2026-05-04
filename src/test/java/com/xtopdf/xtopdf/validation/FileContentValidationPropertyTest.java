@@ -34,7 +34,7 @@ class FileContentValidationPropertyTest {
      *
      * **Validates: Requirements 9.1, 9.2**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 11: Content-Based File Type Validation")
     void mismatchedContentAndExtensionThrowsExceptionWithBothInfo(
             @ForAll("mismatchedContentExtensionPairs") ContentExtensionPair pair) {

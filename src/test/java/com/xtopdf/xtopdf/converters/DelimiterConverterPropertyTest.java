@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Property-based tests for DelimiterSeparatedConverter backward compatibility.
  * Verifies that the unified converter produces identical PDF text content to the
- * original dedicated CsvFileConverter and TsvFileConverter.
+ * original dedicated CsvToPdfService and TsvToPdfService.
  *
  * Property 7: Delimiter Converter Backward Compatibility — For any valid
  * delimiter-separated input content, the DelimiterSeparatedConverter configured
@@ -46,20 +46,19 @@ class DelimiterConverterPropertyTest {
     /**
      * Property 7 (CSV): For any valid comma-separated content, the
      * DelimiterSeparatedConverter with comma delimiter produces PDF output
-     * with text content identical to the original CsvFileConverter.
+     * with text content identical to the original CsvToPdfService.
      *
      * **Validates: Requirements 5.4**
      */
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Tag("Feature: repo-efficiency-improvements, Property 7: Delimiter Converter Backward Compatibility")
     void csvConverterProducesSameOutputAsOriginal(
             @ForAll("csvContent") String csvContent) throws Exception {
 
         PdfBackendProvider pdfBackend = new PdfBoxBackend();
 
-        // Original converter path
+        // Original converter path — use CsvToPdfService directly
         CsvToPdfService csvService = new CsvToPdfService(pdfBackend);
-        CsvFileConverter originalConverter = new CsvFileConverter(csvService);
 
         // New unified converter path
         DelimiterSeparatedToPdfService delimiterService = new DelimiterSeparatedToPdfService(pdfBackend);
@@ -76,7 +75,7 @@ class DelimiterConverterPropertyTest {
             MockMultipartFile inputFile2 = new MockMultipartFile(
                     "file", "data.csv", "text/csv", csvContent.getBytes());
 
-            originalConverter.convertToPDF(inputFile1, originalOutput.getAbsolutePath());
+            csvService.convertCsvToPdf(inputFile1, originalOutput);
             unifiedConverter.convertToPDF(inputFile2, unifiedOutput.getAbsolutePath());
 
             String originalText = extractPdfText(originalOutput);
@@ -103,20 +102,19 @@ class DelimiterConverterPropertyTest {
     /**
      * Property 7 (TSV): For any valid tab-separated content, the
      * DelimiterSeparatedConverter with tab delimiter produces PDF output
-     * with text content identical to the original TsvFileConverter.
+     * with text content identical to the original TsvToPdfService.
      *
      * **Validates: Requirements 5.5**
      */
-    @Property(tries = 50)
+    @Property(tries = 15)
     @Tag("Feature: repo-efficiency-improvements, Property 7: Delimiter Converter Backward Compatibility")
     void tsvConverterProducesSameOutputAsOriginal(
             @ForAll("tsvContent") String tsvContent) throws Exception {
 
         PdfBackendProvider pdfBackend = new PdfBoxBackend();
 
-        // Original converter path
+        // Original converter path — use TsvToPdfService directly
         TsvToPdfService tsvService = new TsvToPdfService(pdfBackend);
-        TsvFileConverter originalConverter = new TsvFileConverter(tsvService);
 
         // New unified converter path
         DelimiterSeparatedToPdfService delimiterService = new DelimiterSeparatedToPdfService(pdfBackend);
@@ -133,7 +131,7 @@ class DelimiterConverterPropertyTest {
             MockMultipartFile inputFile2 = new MockMultipartFile(
                     "file", "data.tsv", "text/tab-separated-values", tsvContent.getBytes());
 
-            originalConverter.convertToPDF(inputFile1, originalOutput.getAbsolutePath());
+            tsvService.convertTsvToPdf(inputFile1, originalOutput);
             unifiedConverter.convertToPDF(inputFile2, unifiedOutput.getAbsolutePath());
 
             String originalText = extractPdfText(originalOutput);

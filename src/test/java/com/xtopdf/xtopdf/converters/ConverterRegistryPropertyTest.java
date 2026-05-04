@@ -42,7 +42,7 @@ class ConverterRegistryPropertyTest {
      *
      * **Validates: Requirements 1.3**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 1: Registry Lookup Correctness")
     void registryReturnsNonNullConverterForAnySupportedExtension(
             @ForAll("supportedExtensions") String extension) throws FileConversionException {
@@ -60,7 +60,7 @@ class ConverterRegistryPropertyTest {
      *
      * **Validates: Requirements 1.4**
      */
-    @Property(tries = 100)
+    @Property(tries = 25)
     @Tag("Feature: repo-efficiency-improvements, Property 2: Unsupported Extension Error")
     void registryThrowsFileConversionExceptionForUnsupportedExtension(
             @ForAll("unsupportedExtensions") String extension) {

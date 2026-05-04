@@ -38,8 +38,6 @@ class ContainerOrchestrationServiceTest {
         
         assertFalse(service.isEnabled(), "Service should not be enabled");
         assertEquals("Runtime disabled", service.getRuntimeInfo());
-        // Test deprecated method still works
-        assertEquals("Runtime disabled", service.getDockerInfo());
     }
     
     @Test

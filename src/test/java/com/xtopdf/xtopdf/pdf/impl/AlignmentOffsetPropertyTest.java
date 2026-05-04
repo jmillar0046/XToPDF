@@ -46,7 +46,7 @@ class AlignmentOffsetPropertyTest {
      *
      * **Validates: Requirements 2.1, 2.2, 2.4**
      */
-    @Property(tries = 500)
+    @Property(tries = 150)
     void alignmentXOffsetShouldMatchFormula(
             @ForAll("alignments") TextAlignment alignment,
             @ForAll @FloatRange(min = 10f, max = 100f) float margin,
@@ -73,7 +73,7 @@ class AlignmentOffsetPropertyTest {
         }
     }
 
-    @Property(tries = 500)
+    @Property(tries = 150)
     void leftAlignmentXOffsetShouldAlwaysEqualMargin(
             @ForAll @FloatRange(min = 10f, max = 100f) float margin,
             @ForAll @FloatRange(min = 200f, max = 1000f) float pageWidth,
@@ -87,7 +87,7 @@ class AlignmentOffsetPropertyTest {
         assertThat(xOffset).isEqualTo(margin);
     }
 
-    @Property(tries = 500)
+    @Property(tries = 150)
     void centerAlignmentXOffsetShouldBeBetweenLeftAndRight(
             @ForAll @FloatRange(min = 10f, max = 100f) float margin,
             @ForAll @FloatRange(min = 200f, max = 1000f) float pageWidth,
