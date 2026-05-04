@@ -19,11 +19,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Property-based tests for FileConversionController error message propagation.
+ * Property-based tests for FileConversionController error handling.
  *
- * Property 5: Controller Error Message Propagation — For any FileConversionException
- * with an arbitrary message string, the FileConversionController SHALL return an HTTP 400
- * response whose body contains that exact message string.
+ * Property 5: Controller Error Handling — For any FileConversionException regardless
+ * of its internal message, the FileConversionController SHALL return an HTTP 400
+ * response with a safe generic message that does not expose internal details.
  *
  * **Validates: Requirements 3.1, 3.2**
  */
@@ -43,15 +43,15 @@ class FileConversionControllerPropertyTest {
     }
 
     /**
-     * Property 5: Controller Error Message Propagation — For any FileConversionException
-     * with an arbitrary message string, the FileConversionController SHALL return an HTTP 400
-     * response whose body contains that exact message string.
+     * Property 5: For any FileConversionException with any internal message,
+     * the controller SHALL return HTTP 400 with a safe generic message
+     * that does not leak the internal exception details.
      *
      * **Validates: Requirements 3.1, 3.2**
      */
     @Property(tries = 25)
-    @Tag("Feature: repo-efficiency-improvements, Property 5: Controller Error Message Propagation")
-    void controllerReturnsExactExceptionMessageInResponse(
+    @Tag("Feature: repo-efficiency-improvements, Property 5: Controller Error Handling")
+    void controllerReturnsGenericErrorMessageForAnyException(
             @ForAll("errorMessages") String errorMessage) throws Exception {
 
         doThrow(new FileConversionException(errorMessage))
@@ -60,19 +60,34 @@ class FileConversionControllerPropertyTest {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
                 MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
-        mockMvc.perform(multipart("/api/convert")
+        String responseBody = mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
                         .param("outputFile", "test.pdf"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(errorMessage));
+                .andExpect(content().string("File conversion failed"))
+                .andReturn().getResponse().getContentAsString();
+
+        // Verify the internal error message is NOT exposed to the user
+        org.assertj.core.api.Assertions.assertThat(responseBody)
+                .doesNotContain(errorMessage);
     }
 
     @Provide
     Arbitrary<String> errorMessages() {
-        return Arbitraries.strings()
-                .ofMinLength(1)
-                .ofMaxLength(200)
-                .ascii()
-                .filter(s -> !s.isBlank());
+        // Generate messages that could contain sensitive info (paths, class names, etc.)
+        return Arbitraries.oneOf(
+                Arbitraries.of(
+                        "/usr/local/app/data/secret.pdf",
+                        "java.lang.NullPointerException at com.xtopdf.internal.Service",
+                        "Connection refused: localhost:5432",
+                        "Access denied for user 'admin'@'192.168.1.1'",
+                        "File not found: /etc/shadow"
+                ),
+                Arbitraries.strings()
+                        .ofMinLength(1)
+                        .ofMaxLength(200)
+                        .ascii()
+                        .filter(s -> !s.isBlank() && !s.equals("File conversion failed"))
+        );
     }
 }

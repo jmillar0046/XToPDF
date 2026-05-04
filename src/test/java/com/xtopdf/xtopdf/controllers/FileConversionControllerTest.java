@@ -57,7 +57,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Unsupported file format: .xyz"));
+                .andExpect(content().string("File conversion failed"));
     }
 
     @Test
@@ -78,7 +78,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Conversion failed: corrupt file"));
+                .andExpect(content().string("File conversion failed"));
     }
 
     // --- Requirement 3.3: IllegalArgumentException message propagation ---
@@ -97,7 +97,7 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid position. Must be 'front' or 'back'"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     // --- Requirement 4.1, 4.2: Configurable output directory ---
@@ -192,7 +192,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid file type"));
+                .andExpect(content().string("File conversion failed"));
     }
 
     @Test
@@ -208,7 +208,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Conversion failed"));
+                .andExpect(content().string("File conversion failed"));
     }
 
     @Test
@@ -339,7 +339,7 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid position. Must be 'front' or 'back'"));
+                .andExpect(content().string("Invalid request parameters"));
     }
 
     @Test
@@ -374,7 +374,7 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "back"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Merge failed"));
+                .andExpect(content().string("File conversion failed"));
     }
 
     @Test

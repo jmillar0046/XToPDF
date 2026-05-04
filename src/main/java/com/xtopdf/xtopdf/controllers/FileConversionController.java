@@ -119,10 +119,10 @@ public class FileConversionController {
              
          } catch (IllegalArgumentException e) {
              log.error("Validation error: {}", e.getMessage());
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
          } catch (FileConversionException e) {
              log.error("Conversion error: {}", e.getMessage());
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File conversion failed");
          }
      }
 
@@ -161,10 +161,10 @@ public class FileConversionController {
             
         } catch (IllegalArgumentException e) {
             log.error("Validation error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request parameters");
         } catch (FileConversionException e) {
             log.error("Conversion error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File conversion failed");
         } catch (Exception e) {
             log.error("Unexpected error converting file: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
