@@ -16,13 +16,13 @@ RUN chmod +x ./gradlew
 RUN git init && git config user.email "build@docker" && git config user.name "docker" && git commit --allow-empty -m "docker build"
 
 # Download dependencies (cached if dependencies don't change)
-RUN ./gradlew dependencies --no-daemon || true
+RUN ./gradlew dependencies --no-daemon -Dorg.gradle.jvmargs="-Xmx512m" || true
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN ./gradlew bootJar --no-daemon -x test
+RUN ./gradlew bootJar --no-daemon -x test -Dorg.gradle.jvmargs="-Xmx512m"
 
 # Runtime stage
 FROM eclipse-temurin:25-jre-alpine
