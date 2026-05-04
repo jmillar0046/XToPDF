@@ -1,180 +1,146 @@
 package com.xtopdf.xtopdf.adapters.container;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.exception.DockerException;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.ports.ContainerConfig;
 import net.jqwik.api.*;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * Property-based tests for container adapter execution.
- * Validates Requirements 1.1, 1.2
- * 
- * Property 1: Container Adapter Execution
- * Property 2: Container Cleanup Always Occurs
+ * Property-based tests for container adapter behavior.
+ *
+ * Property 8: Disabled Adapter Local Execution
+ * Property 9: Enabled Adapter Failure Propagation
  */
 class ContainerAdapterPropertyTest {
 
+    private static final ContainerConfig DEFAULT_CONFIG = ContainerConfig.builder()
+            .imageName("xtopdf-converter:latest")
+            .memoryLimit("512m")
+            .cpuLimit(1)
+            .timeoutSeconds(300)
+            .cleanupEnabled(true)
+            .containerPort(8080)
+            .build();
+
     /**
-     * Property 1: Container adapter handles disabled state correctly
-     * 
-     * When container orchestration is disabled, the adapter should
-     * execute the converter logic locally without attempting Docker operations.
+     * Property 8: Disabled Adapter Local Execution
+     *
+     * For any Runnable passed to a Container_Adapter with orchestration disabled,
+     * the adapter SHALL execute the Runnable directly (the Runnable's side effects
+     * are observable) without creating any container.
+     *
+     * **Validates: Requirements 8.1**
      */
     @Property
-    @Label("Disabled container adapter executes locally")
-    void disabledContainerAdapterExecutesLocally(
-            @ForAll("validContainerConfigs") ContainerConfig config,
-            @ForAll("validInputFiles") MultipartFile inputFile) {
-        
-        // Create adapter with orchestration disabled
-        DockerContainerAdapter adapter = new DockerContainerAdapter(config, false);
-        
-        // Track if converter logic was executed
-        final boolean[] executed = {false};
-        Runnable converterLogic = () -> executed[0] = true;
-        
+    @Label("Property 8: Disabled adapter executes Runnable directly with observable side effects")
+    void disabledAdapterExecutesRunnableDirectly(
+            @ForAll("sideEffectIds") int sideEffectId) throws Exception {
+
+        // Use DockerContainerAdapter with enabled=false
+        DockerContainerAdapter adapter = new DockerContainerAdapter(DEFAULT_CONFIG, false);
+
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test.txt", "text/plain", "content".getBytes());
+
+        // Create a Runnable with an observable side effect
+        AtomicInteger observedValue = new AtomicInteger(-1);
+        Runnable runnable = () -> observedValue.set(sideEffectId);
+
+        adapter.executeInContainer(inputFile, "/tmp/output.pdf", runnable);
+
+        // The side effect must be observable
+        assertThat(observedValue.get()).isEqualTo(sideEffectId);
+    }
+
+    /**
+     * Property 8 (Podman variant): Disabled Adapter Local Execution
+     *
+     * Same property verified for PodmanContainerAdapter.
+     *
+     * **Validates: Requirements 8.1**
+     */
+    @Property
+    @Label("Property 8: Disabled Podman adapter executes Runnable directly with observable side effects")
+    void disabledPodmanAdapterExecutesRunnableDirectly(
+            @ForAll("sideEffectIds") int sideEffectId) throws Exception {
+
+        PodmanContainerAdapter adapter = new PodmanContainerAdapter(DEFAULT_CONFIG, false);
+
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test.txt", "text/plain", "content".getBytes());
+
+        AtomicInteger observedValue = new AtomicInteger(-1);
+        Runnable runnable = () -> observedValue.set(sideEffectId);
+
+        adapter.executeInContainer(inputFile, "/tmp/output.pdf", runnable);
+
+        assertThat(observedValue.get()).isEqualTo(sideEffectId);
+    }
+
+    /**
+     * Property 9: Enabled Adapter Failure Propagation
+     *
+     * For any container creation failure with an error message, the Container_Adapter
+     * SHALL throw a FileConversionException whose message contains the failure reason string.
+     *
+     * **Validates: Requirements 8.2**
+     */
+    @Property
+    @Label("Property 9: Enabled adapter propagates failure reason in FileConversionException")
+    void enabledAdapterPropagatesFailureReason(
+            @ForAll("errorMessages") String errorMessage) throws Exception {
+
+        // Create a DockerContainerAdapter with enabled=true and mock the DockerClient
+        DockerContainerAdapter adapter = new DockerContainerAdapter(DEFAULT_CONFIG, true);
+
+        // Inject mocked DockerClient that throws on createContainerCmd
+        DockerClient mockDockerClient = mock(DockerClient.class);
+        when(mockDockerClient.createContainerCmd(anyString()))
+                .thenThrow(new DockerException(errorMessage, 500));
+
+        Field dockerClientField = DockerContainerAdapter.class.getDeclaredField("dockerClient");
+        dockerClientField.setAccessible(true);
+        dockerClientField.set(adapter, mockDockerClient);
+
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test.txt", "text/plain", "content".getBytes());
+
         try {
-            // Execute should run locally
-            adapter.executeInContainer(inputFile, "output.pdf", converterLogic);
-            
-            // Verify local execution occurred
-            assertThat(executed[0]).isTrue();
-            assertThat(adapter.isEnabled()).isFalse();
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Unexpected exception in disabled mode", e);
+            adapter.executeInContainer(inputFile, "/tmp/output.pdf", () -> {});
+            // Should not reach here
+            assertThat(false).as("Expected FileConversionException to be thrown").isTrue();
+        } catch (FileConversionException ex) {
+            assertThat(ex.getMessage()).contains(errorMessage);
         }
     }
 
-    /**
-     * Property 2: Container adapter provides runtime info
-     * 
-     * The adapter should always be able to provide runtime information,
-     * whether enabled or disabled.
-     */
-    @Property
-    @Label("Container adapter provides runtime info")
-    void containerAdapterProvidesRuntimeInfo(
-            @ForAll("validContainerConfigs") ContainerConfig config,
-            @ForAll boolean enabled) {
-        
-        DockerContainerAdapter adapter = new DockerContainerAdapter(config, enabled);
-        
-        // Runtime info should always be available
-        String info = adapter.getRuntimeInfo();
-        assertThat(info).isNotNull();
-        assertThat(info).isNotEmpty();
-        
-        // Verify enabled state matches
-        assertThat(adapter.isEnabled()).isEqualTo(enabled);
-    }
-
-    /**
-     * Property 3: Container config validation
-     * 
-     * Valid container configurations should have all required fields populated.
-     */
-    @Property
-    @Label("Valid container configs have required fields")
-    void validContainerConfigsHaveRequiredFields(
-            @ForAll("validContainerConfigs") ContainerConfig config) {
-        
-        assertThat(config.getImageName()).isNotNull();
-        assertThat(config.getImageName()).isNotEmpty();
-        assertThat(config.getMemoryLimit()).isNotNull();
-        assertThat(config.getCpuLimit()).isGreaterThan(0);
-        assertThat(config.getTimeoutSeconds()).isGreaterThan(0);
-        assertThat(config.getContainerPort()).isGreaterThan(0);
-    }
-
-    /**
-     * Property 4: Cleanup is always attempted
-     * 
-     * When cleanup is enabled in config, cleanup should be attempted
-     * regardless of execution success or failure.
-     */
-    @Property
-    @Label("Cleanup is attempted when enabled")
-    void cleanupIsAttemptedWhenEnabled(
-            @ForAll("validContainerConfigs") ContainerConfig config) {
-        
-        // Ensure cleanup is enabled
-        ContainerConfig cleanupConfig = ContainerConfig.builder()
-                .imageName(config.getImageName())
-                .memoryLimit(config.getMemoryLimit())
-                .cpuLimit(config.getCpuLimit())
-                .timeoutSeconds(config.getTimeoutSeconds())
-                .cleanupEnabled(true)
-                .containerPort(config.getContainerPort())
-                .build();
-        
-        assertThat(cleanupConfig.isCleanupEnabled()).isTrue();
-        
-        // When disabled, local execution should work
-        DockerContainerAdapter adapter = new DockerContainerAdapter(cleanupConfig, false);
-        assertThat(adapter.isEnabled()).isFalse();
-    }
-
-    // Arbitraries for generating test data
+    // ---- Arbitraries ----
 
     @Provide
-    Arbitrary<ContainerConfig> validContainerConfigs() {
-        return Arbitraries.of(
-                ContainerConfig.builder()
-                        .imageName("alpine:latest")
-                        .memoryLimit("256m")
-                        .cpuLimit(1)
-                        .timeoutSeconds(30)
-                        .cleanupEnabled(true)
-                        .containerPort(8080)
-                        .build(),
-                ContainerConfig.builder()
-                        .imageName("ubuntu:latest")
-                        .memoryLimit("512m")
-                        .cpuLimit(2)
-                        .timeoutSeconds(60)
-                        .cleanupEnabled(true)
-                        .containerPort(8080)
-                        .build(),
-                ContainerConfig.builder()
-                        .imageName("xtopdf-converter:latest")
-                        .memoryLimit("1g")
-                        .cpuLimit(4)
-                        .timeoutSeconds(120)
-                        .cleanupEnabled(false)
-                        .containerPort(8080)
-                        .build()
-        );
+    Arbitrary<Integer> sideEffectIds() {
+        return Arbitraries.integers().between(0, 100_000);
     }
 
     @Provide
-    Arbitrary<MultipartFile> validInputFiles() {
-        return Arbitraries.of(
-                new MockMultipartFile(
-                        "file",
-                        "test.txt",
-                        "text/plain",
-                        "test content".getBytes()
-                ),
-                new MockMultipartFile(
-                        "file",
-                        "document.pdf",
-                        "application/pdf",
-                        "PDF content".getBytes()
-                ),
-                new MockMultipartFile(
-                        "file",
-                        "data.csv",
-                        "text/csv",
-                        "col1,col2\nval1,val2".getBytes()
-                )
-        );
+    Arbitrary<String> errorMessages() {
+        return Arbitraries.strings()
+                .alpha()
+                .ofMinLength(1)
+                .ofMaxLength(100)
+                .map(s -> "Error: " + s);
     }
 }
-
