@@ -41,6 +41,6 @@ class EmfFileConverterTest {
 
         doThrow(new IOException("File not found")).when(emfToPdfService).convertEmfToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> emfFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> emfFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

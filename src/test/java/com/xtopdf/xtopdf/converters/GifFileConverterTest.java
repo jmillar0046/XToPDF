@@ -41,11 +41,11 @@ class GifFileConverterTest {
 
         doThrow(new IOException("File not found")).when(gifToPdfService).convertGifToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> gifFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> gifFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullPointerException_ThrowsFileConversionException() throws IOException, FileConversionException {
         GifToPdfService gifToPdfService = Mockito.mock(GifToPdfService.class);
         GifFileConverter gifFileConverter = new GifFileConverter(gifToPdfService);
         var outputFile = "outputFile.pdf";
@@ -53,6 +53,6 @@ class GifFileConverterTest {
 
         doThrow(new NullPointerException("Null input")).when(gifToPdfService).convertGifToPdf(any(), any());
 
-        assertThrows(NullPointerException.class, () -> gifFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> gifFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

@@ -41,6 +41,6 @@ class IgsFileConverterTest {
 
         doThrow(new IOException("File not found")).when(igsToPdfService).convertIgsToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> igsFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> igsFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

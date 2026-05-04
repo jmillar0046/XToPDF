@@ -41,6 +41,6 @@ class XlsxFileConverterTest {
 
         doThrow(new IOException("File processing error")).when(xlsxToPdfService).convertXlsxToPdf(any(), any(), any(Boolean.class));
 
-        assertThrows(RuntimeException.class, () -> xlsxFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> xlsxFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

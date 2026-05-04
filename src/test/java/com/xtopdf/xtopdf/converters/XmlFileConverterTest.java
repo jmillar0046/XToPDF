@@ -41,11 +41,11 @@ class XmlFileConverterTest {
 
         doThrow(new IOException("File not found")).when(xmlToPdfService).convertXmlToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> xmlFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> xmlFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullPointerException_ThrowsFileConversionException() throws IOException, FileConversionException {
         XmlToPdfService xmlToPdfService = Mockito.mock(XmlToPdfService.class);
         XmlFileConverter xmlFileConverter = new XmlFileConverter(xmlToPdfService);
         var outputFile = "outputFile.pdf";
@@ -53,6 +53,6 @@ class XmlFileConverterTest {
 
         doThrow(new NullPointerException("Null input")).when(xmlToPdfService).convertXmlToPdf(any(), any());
 
-        assertThrows(NullPointerException.class, () -> xmlFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> xmlFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

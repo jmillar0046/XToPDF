@@ -28,6 +28,6 @@ class PptxFileConverterTest {
         PptxFileConverter converter = new PptxFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertPptxToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

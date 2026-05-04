@@ -28,6 +28,6 @@ class RtfFileConverterTest {
         RtfFileConverter converter = new RtfFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.rtf", "application/rtf", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertRtfToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

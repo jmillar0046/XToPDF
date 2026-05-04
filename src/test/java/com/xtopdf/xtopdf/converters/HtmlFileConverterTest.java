@@ -35,9 +35,9 @@ class HtmlFileConverterTest {
         String outputFile = "outputFile.pdf";
         try {
             htmlFileConverter.convertToPDF(null, outputFile);
-            assert false : "Expected NullPointerException for null input file";
-        } catch (NullPointerException e) {
-            assert true;
+            assert false : "Expected FileConversionException for null input file";
+        } catch (FileConversionException e) {
+            assert e.getMessage().equals("Input file must not be null");
         }
     }
 
@@ -48,9 +48,9 @@ class HtmlFileConverterTest {
         var inputFile = new MockMultipartFile("inputFile", "test.html", MediaType.TEXT_HTML_VALUE, "test content".getBytes());
         try {
             htmlFileConverter.convertToPDF(inputFile, null);
-            assert false : "Expected NullPointerException for null output file";
-        } catch (NullPointerException e) {
-            assert true;
+            assert false : "Expected FileConversionException for null output file";
+        } catch (FileConversionException e) {
+            assert e.getMessage().equals("Output file path must not be null");
         }
     }
 
@@ -74,9 +74,9 @@ class HtmlFileConverterTest {
         Mockito.doThrow(new RuntimeException("Service error")).when(htmlToPdfService).convertHtmlToPdf(any(), any());
         try {
             htmlFileConverter.convertToPDF(inputFile, outputFile);
-            assert false : "Expected RuntimeException from service";
-        } catch (RuntimeException e) {
-            assert e.getMessage().equals("Service error");
+            assert false : "Expected FileConversionException from service";
+        } catch (FileConversionException e) {
+            assert e.getMessage().contains("Service error");
         }
     }
 

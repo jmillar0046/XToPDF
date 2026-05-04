@@ -42,6 +42,6 @@ class TiffFileConverterTest {
 
         doThrow(new IOException("File processing error")).when(tiffToPdfService).convertTiffToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> tiffFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> tiffFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

@@ -28,6 +28,6 @@ class SvgFileConverterTest {
         SvgFileConverter converter = new SvgFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.svg", "image/svg+xml", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertSvgToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

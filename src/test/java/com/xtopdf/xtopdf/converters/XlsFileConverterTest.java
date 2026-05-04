@@ -28,6 +28,6 @@ class XlsFileConverterTest {
         XlsFileConverter converter = new XlsFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.xls", "application/vnd.ms-excel", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertXlsToPdf(any(), any(), anyBoolean());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

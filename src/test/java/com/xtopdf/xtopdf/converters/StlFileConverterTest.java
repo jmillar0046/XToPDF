@@ -41,6 +41,6 @@ class StlFileConverterTest {
 
         doThrow(new IOException("File not found")).when(stlToPdfService).convertStlToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> stlFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> stlFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

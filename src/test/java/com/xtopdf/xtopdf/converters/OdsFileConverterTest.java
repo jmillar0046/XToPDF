@@ -28,6 +28,6 @@ class OdsFileConverterTest {
         OdsFileConverter converter = new OdsFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.ods", "application/vnd.oasis.opendocument.spreadsheet", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertOdsToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

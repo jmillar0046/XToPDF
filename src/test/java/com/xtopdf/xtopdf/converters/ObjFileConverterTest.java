@@ -41,6 +41,6 @@ class ObjFileConverterTest {
 
         doThrow(new IOException("File not found")).when(objToPdfService).convertObjToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> objFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> objFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

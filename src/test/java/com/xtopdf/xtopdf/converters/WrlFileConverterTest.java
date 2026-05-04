@@ -41,6 +41,6 @@ class WrlFileConverterTest {
 
         doThrow(new IOException("File not found")).when(wrlToPdfService).convertWrlToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> wrlFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> wrlFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

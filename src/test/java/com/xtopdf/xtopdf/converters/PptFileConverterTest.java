@@ -28,6 +28,6 @@ class PptFileConverterTest {
         PptFileConverter converter = new PptFileConverter(service);
         var inputFile = new MockMultipartFile("file", "test.ppt", "application/vnd.ms-powerpoint", "content".getBytes());
         doThrow(new IOException("Error")).when(service).convertPptToPdf(any(), any());
-        assertThrows(RuntimeException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
+        assertThrows(FileConversionException.class, () -> converter.convertToPDF(inputFile, "output.pdf"));
     }
 }

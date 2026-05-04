@@ -41,11 +41,11 @@ class TsvFileConverterTest {
 
         doThrow(new IOException("File not found")).when(tsvToPdfService).convertTsvToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> tsvFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> tsvFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullPointerException_ThrowsFileConversionException() throws IOException, FileConversionException {
         TsvToPdfService tsvToPdfService = Mockito.mock(TsvToPdfService.class);
         TsvFileConverter tsvFileConverter = new TsvFileConverter(tsvToPdfService);
         var outputFile = "outputFile.pdf";
@@ -53,6 +53,6 @@ class TsvFileConverterTest {
 
         doThrow(new NullPointerException("Null input")).when(tsvToPdfService).convertTsvToPdf(any(), any());
 
-        assertThrows(NullPointerException.class, () -> tsvFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> tsvFileConverter.convertToPDF(inputFile, outputFile));
     }
 }

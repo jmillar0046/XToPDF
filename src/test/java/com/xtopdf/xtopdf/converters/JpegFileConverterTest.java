@@ -41,14 +41,14 @@ class JpegFileConverterTest {
     }
 
     @Test
-    void convertToPDF_ServiceThrowsIOException_ThrowsRuntimeException() throws IOException, FileConversionException {
+    void convertToPDF_ServiceThrowsIOException_ThrowsFileConversionException() throws IOException, FileConversionException {
         MockMultipartFile jpegFile = new MockMultipartFile("test.jpeg", "test.jpeg", "image/jpeg", "fake jpeg content".getBytes());
         String outputFile = "output.pdf";
 
         doThrow(new IOException("Service error")).when(jpegToPdfService)
                 .convertJpegToPdf(eq(jpegFile), any(File.class));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
+        FileConversionException exception = assertThrows(FileConversionException.class, 
                 () -> jpegFileConverter.convertToPDF(jpegFile, outputFile));
         
         assertTrue(exception.getMessage().contains("Error converting JPEG to PDF"));
@@ -56,18 +56,18 @@ class JpegFileConverterTest {
     }
 
     @Test
-    void convertToPDF_NullInputFile_ThrowsNullPointerException() {
+    void convertToPDF_NullInputFile_ThrowsFileConversionException() {
         String outputFile = "output.pdf";
 
-        assertThrows(NullPointerException.class, 
+        assertThrows(FileConversionException.class, 
                 () -> jpegFileConverter.convertToPDF(null, outputFile));
     }
 
     @Test
-    void convertToPDF_NullOutputFile_ThrowsNullPointerException() {
+    void convertToPDF_NullOutputFile_ThrowsFileConversionException() {
         MockMultipartFile jpegFile = new MockMultipartFile("test.jpeg", "test.jpeg", "image/jpeg", "fake jpeg content".getBytes());
 
-        assertThrows(NullPointerException.class, 
+        assertThrows(FileConversionException.class, 
                 () -> jpegFileConverter.convertToPDF(jpegFile, null));
     }
 }

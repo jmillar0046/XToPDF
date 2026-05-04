@@ -41,6 +41,6 @@ class X3dFileConverterTest {
 
         doThrow(new IOException("File not found")).when(x3dToPdfService).convertX3dToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> x3dFileConverter.convertToPDF(inputFile, outputFile, false));
+        assertThrows(FileConversionException.class, () -> x3dFileConverter.convertToPDF(inputFile, outputFile, false));
     }
 }

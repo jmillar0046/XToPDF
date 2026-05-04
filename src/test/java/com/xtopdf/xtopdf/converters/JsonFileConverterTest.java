@@ -41,11 +41,11 @@ class JsonFileConverterTest {
 
         doThrow(new IOException("File not found")).when(jsonToPdfService).convertJsonToPdf(any(), any());
 
-        assertThrows(RuntimeException.class, () -> jsonFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> jsonFileConverter.convertToPDF(inputFile, outputFile));
     }
 
     @Test
-    void testConvertToPDF_NullPointerException_ThrowsNullPointerException() throws IOException, FileConversionException {
+    void testConvertToPDF_NullPointerException_ThrowsFileConversionException() throws IOException, FileConversionException {
         JsonToPdfService jsonToPdfService = Mockito.mock(JsonToPdfService.class);
         JsonFileConverter jsonFileConverter = new JsonFileConverter(jsonToPdfService);
         var outputFile = "outputFile.pdf";
@@ -53,6 +53,6 @@ class JsonFileConverterTest {
 
         doThrow(new NullPointerException("Null input")).when(jsonToPdfService).convertJsonToPdf(any(), any());
 
-        assertThrows(NullPointerException.class, () -> jsonFileConverter.convertToPDF(inputFile, outputFile));
+        assertThrows(FileConversionException.class, () -> jsonFileConverter.convertToPDF(inputFile, outputFile));
     }
 }
