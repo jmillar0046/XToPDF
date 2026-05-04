@@ -4,8 +4,6 @@ import java.util.Objects;
 
 import com.xtopdf.xtopdf.converters.ConverterRegistry;
 import com.xtopdf.xtopdf.converters.FileConverter;
-import com.xtopdf.xtopdf.config.PageNumberConfig;
-import com.xtopdf.xtopdf.config.WatermarkConfig;
 import com.xtopdf.xtopdf.dto.ConversionParameters;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.services.model.ConversionRuntimeException;
@@ -105,53 +103,6 @@ public class FileConversionService {
             log.error("Unexpected runtime error during conversion of {}: {}", fileName, e.getMessage(), e);
             throw new FileConversionException("Unexpected error converting " + fileName + ": " + e.getMessage(), e);
         }
-    }
-
-    // --- Deprecated wrapper methods for backward compatibility (Task 10 will update the controller) ---
-
-    /**
-     * @deprecated Use {@link #convertFile(ConversionParameters)} instead.
-     */
-    @Deprecated
-    public void convertFile(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        convertFile(new ConversionParameters(inputFile, outputFile, null, null,
-                PageNumberConfig.disabled(), WatermarkConfig.disabled(), false));
-    }
-
-    /**
-     * @deprecated Use {@link #convertFile(ConversionParameters)} instead.
-     */
-    @Deprecated
-    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position) throws FileConversionException {
-        convertFile(new ConversionParameters(inputFile, outputFile, existingPdf, position,
-                PageNumberConfig.disabled(), WatermarkConfig.disabled(), false));
-    }
-
-    /**
-     * @deprecated Use {@link #convertFile(ConversionParameters)} instead.
-     */
-    @Deprecated
-    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig) throws FileConversionException {
-        convertFile(new ConversionParameters(inputFile, outputFile, existingPdf, position,
-                pageNumberConfig, WatermarkConfig.disabled(), false));
-    }
-
-    /**
-     * @deprecated Use {@link #convertFile(ConversionParameters)} instead.
-     */
-    @Deprecated
-    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, boolean executeMacros) throws FileConversionException {
-        convertFile(new ConversionParameters(inputFile, outputFile, existingPdf, position,
-                pageNumberConfig, WatermarkConfig.disabled(), executeMacros));
-    }
-
-    /**
-     * @deprecated Use {@link #convertFile(ConversionParameters)} instead.
-     */
-    @Deprecated
-    public void convertFile(MultipartFile inputFile, String outputFile, MultipartFile existingPdf, String position, PageNumberConfig pageNumberConfig, WatermarkConfig watermarkConfig, boolean executeMacros) throws FileConversionException {
-        convertFile(new ConversionParameters(inputFile, outputFile, existingPdf, position,
-                pageNumberConfig, watermarkConfig, executeMacros));
     }
 
     /**

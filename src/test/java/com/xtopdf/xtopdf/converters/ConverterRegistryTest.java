@@ -57,7 +57,7 @@ class ConverterRegistryTest {
         // .md and .markdown → same MarkdownFileConverter
         assertThat(registry.getConverter(".md")).isSameAs(registry.getConverter(".markdown"));
 
-        // .tsv and .tab → same TsvFileConverter
+        // .tsv and .tab → same TSV converter
         assertThat(registry.getConverter(".tsv")).isSameAs(registry.getConverter(".tab"));
     }
 

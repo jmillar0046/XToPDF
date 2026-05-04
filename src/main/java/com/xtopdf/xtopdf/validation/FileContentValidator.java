@@ -88,7 +88,22 @@ public class FileContentValidator {
         }
 
         try {
-            byte[] content = file.getBytes();
+            // Only read the first 16 bytes for magic byte detection — avoids loading entire file into memory
+            byte[] header = new byte[16];
+            int bytesRead;
+            try (InputStream is = file.getInputStream()) {
+                bytesRead = is.read(header);
+            }
+            if (bytesRead < 2) {
+                logger.warn("File too small for MIME detection (extension: {}). "
+                        + "Allowing conversion with extension-only validation.", normalizedExtension);
+                return;
+            }
+
+            byte[] content = (bytesRead < header.length)
+                    ? java.util.Arrays.copyOf(header, bytesRead)
+                    : header;
+
             String detectedMime = detectMimeType(content);
 
             if (detectedMime == null || "application/octet-stream".equals(detectedMime)) {

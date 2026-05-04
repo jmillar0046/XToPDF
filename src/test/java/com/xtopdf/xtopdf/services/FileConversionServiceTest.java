@@ -219,36 +219,4 @@ class FileConversionServiceTest {
         verify(mockConverter).convertToPDF(eq(inputFile), eq("/output/spreadsheet.pdf"), eq(true));
     }
 
-    // --- Tests for backward-compatible deprecated methods ---
-
-    @Test
-    void convertFile_deprecatedSimpleMethod_delegatesToNewMethod() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile(
-                "file", "test.txt", "text/plain", "content".getBytes());
-
-        when(converterRegistry.getConverter(".txt")).thenReturn(mockConverter);
-
-        fileConversionService.convertFile(inputFile, "output.pdf");
-
-        verify(converterRegistry).getConverter(".txt");
-        verify(mockConverter).convertToPDF(eq(inputFile), eq("output.pdf"), eq(false));
-    }
-
-    @Test
-    void convertFile_deprecatedFullMethod_delegatesToNewMethod() throws Exception {
-        MockMultipartFile inputFile = new MockMultipartFile(
-                "file", "test.txt", "text/plain", "content".getBytes());
-        MockMultipartFile existingPdf = new MockMultipartFile(
-                "existing", "existing.pdf", "application/pdf", "pdf".getBytes());
-        PageNumberConfig pageConfig = PageNumberConfig.disabled();
-        WatermarkConfig watermarkConfig = WatermarkConfig.disabled();
-
-        when(converterRegistry.getConverter(".txt")).thenReturn(mockConverter);
-
-        fileConversionService.convertFile(inputFile, "output.pdf", existingPdf, "front",
-                pageConfig, watermarkConfig, false);
-
-        verify(converterRegistry).getConverter(".txt");
-        verify(mockConverter).convertToPDF(eq(inputFile), eq("output.pdf"), eq(false));
-    }
 }
