@@ -1,130 +1,111 @@
 package com.xtopdf.xtopdf.services;
 
-import com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService;
-import com.xtopdf.xtopdf.services.operations.WatermarkService;
-import com.xtopdf.xtopdf.services.operations.PdfMergeService;
+import com.xtopdf.xtopdf.converters.ConverterRegistry;
+import com.xtopdf.xtopdf.converters.FileConverter;
+import com.xtopdf.xtopdf.dto.ConversionParameters;
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.services.operations.PageNumberService;
-import com.xtopdf.xtopdf.factories.*;
+import com.xtopdf.xtopdf.services.operations.PdfMergeService;
+import com.xtopdf.xtopdf.services.operations.WatermarkService;
+import com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService;
+import com.xtopdf.xtopdf.validation.FileContentValidator;
 import net.jqwik.api.*;
 import org.junit.jupiter.api.Tag;
-import org.mockito.Mock;
+import org.springframework.mock.web.MockMultipartFile;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * Property-based tests for TSV file routing in FileConversionService.
- * Tests case-insensitive extension handling.
+ * Tests case-insensitive extension handling via ConverterRegistry delegation.
  */
 class FileConversionServiceTsvPropertyTest {
 
     @Property(tries = 100)
     @Tag("Feature: tsv-file-support, Property 4: Case-Insensitive File Extension Routing")
-    void caseInsensitiveRoutingForTsv(@ForAll("tsvExtensions") String extension) {
-        // Create service with mocked factories
-        TsvFileConverterFactory tsvFactory = mock(TsvFileConverterFactory.class);
-        FileConversionService service = createServiceWithTsvFactory(tsvFactory);
-        
-        // Test with random case variation
-        String filename = "test" + extension;
-        FileConverterFactory factory = service.getFactoryForFile(filename);
-        
-        // Verify TSV factory is returned
-        assertSame(tsvFactory, factory, 
-                "Should return TsvFileConverterFactory for extension: " + extension);
+    void caseInsensitiveRoutingForTsv(@ForAll("tsvExtensions") String extension) throws Exception {
+        // Create service with mocked dependencies
+        ConverterRegistry registry = mock(ConverterRegistry.class);
+        FileConverter tsvConverter = mock(FileConverter.class);
+        FileContentValidator contentValidator = mock(FileContentValidator.class);
+        ContainerOrchestrationService containerService = mock(ContainerOrchestrationService.class);
+
+        // Container service executes locally
+        doAnswer(invocation -> {
+            Runnable logic = invocation.getArgument(2);
+            logic.run();
+            return null;
+        }).when(containerService).executeInContainer(any(), any(), any());
+
+        // The registry should be called with the lowercased extension
+        String expectedExtension = extension.toLowerCase();
+        when(registry.getConverter(expectedExtension)).thenReturn(tsvConverter);
+
+        FileConversionService service = new FileConversionService(
+                registry, contentValidator,
+                mock(PdfMergeService.class), mock(PageNumberService.class),
+                mock(WatermarkService.class), containerService
+        );
+
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test" + extension, "text/plain", "col1\tcol2\nval1\tval2".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/test.pdf");
+
+        service.convertFile(params);
+
+        // Verify the registry was called with the lowercased extension
+        verify(registry).getConverter(expectedExtension);
+        verify(tsvConverter).convertToPDF(eq(inputFile), eq("/output/test.pdf"), eq(false));
     }
 
     @Provide
     Arbitrary<String> tsvExtensions() {
         // Generate random case variations of .tsv and .tab
-        return Arbitraries.of(".tsv", ".tab", ".TSV", ".TAB", ".Tsv", ".Tab", 
-                              ".tSv", ".tAb", ".TsV", ".TaB", ".tsV", ".taB");
+        return Arbitraries.of(".tsv", ".tab", ".TSV", ".TAB", ".Tsv", ".Tab",
+                ".tSv", ".tAb", ".TsV", ".TaB", ".tsV", ".taB");
     }
 
     @Property(tries = 100)
     @Tag("Feature: tsv-file-support, Property 4: Case-Insensitive File Extension Routing")
-    void nonTsvExtensionsDoNotRoutToTsvFactory(@ForAll("nonTsvExtensions") String extension) {
-        // Create service with mocked factories
-        TsvFileConverterFactory tsvFactory = mock(TsvFileConverterFactory.class);
-        FileConversionService service = createServiceWithTsvFactory(tsvFactory);
-        
-        // Test with non-TSV extension
-        String filename = "test" + extension;
-        FileConverterFactory factory = service.getFactoryForFile(filename);
-        
-        // Verify TSV factory is NOT returned
-        if (factory != null) {
-            assertNotSame(tsvFactory, factory,
-                    "Should not return TsvFileConverterFactory for extension: " + extension);
-        }
+    void nonTsvExtensionsDoNotRouteToTsvConverter(@ForAll("nonTsvExtensions") String extension) throws Exception {
+        // Create service with mocked dependencies
+        ConverterRegistry registry = mock(ConverterRegistry.class);
+        FileConverter tsvConverter = mock(FileConverter.class);
+        FileConverter otherConverter = mock(FileConverter.class);
+        FileContentValidator contentValidator = mock(FileContentValidator.class);
+        ContainerOrchestrationService containerService = mock(ContainerOrchestrationService.class);
+
+        // Container service executes locally
+        doAnswer(invocation -> {
+            Runnable logic = invocation.getArgument(2);
+            logic.run();
+            return null;
+        }).when(containerService).executeInContainer(any(), any(), any());
+
+        String expectedExtension = extension.toLowerCase();
+        when(registry.getConverter(expectedExtension)).thenReturn(otherConverter);
+
+        FileConversionService service = new FileConversionService(
+                registry, contentValidator,
+                mock(PdfMergeService.class), mock(PageNumberService.class),
+                mock(WatermarkService.class), containerService
+        );
+
+        MockMultipartFile inputFile = new MockMultipartFile(
+                "file", "test" + extension, "text/plain", "content".getBytes());
+        ConversionParameters params = ConversionParameters.of(inputFile, "/output/test.pdf");
+
+        service.convertFile(params);
+
+        // Verify the converter used is NOT the TSV converter
+        verify(tsvConverter, never()).convertToPDF(any(), any(), anyBoolean());
+        verify(otherConverter).convertToPDF(eq(inputFile), eq("/output/test.pdf"), eq(false));
     }
 
     @Provide
     Arbitrary<String> nonTsvExtensions() {
         return Arbitraries.of(".txt", ".csv", ".pdf", ".doc", ".docx", ".xls", ".xlsx",
-                              ".json", ".xml", ".html", ".md", ".rtf");
-    }
-
-    private FileConversionService createServiceWithTsvFactory(TsvFileConverterFactory tsvFactory) {
-        // Create all required mocks
-        TxtFileConverterFactory txtFactory = mock(TxtFileConverterFactory.class);
-        DocxFileConverterFactory docxFactory = mock(DocxFileConverterFactory.class);
-        DocFileConverterFactory docFactory = mock(DocFileConverterFactory.class);
-        HtmlFileConverterFactory htmlFactory = mock(HtmlFileConverterFactory.class);
-        JpegFileConverterFactory jpegFactory = mock(JpegFileConverterFactory.class);
-        PngFileConverterFactory pngFactory = mock(PngFileConverterFactory.class);
-        XlsxFileConverterFactory xlsxFactory = mock(XlsxFileConverterFactory.class);
-        XlsFileConverterFactory xlsFactory = mock(XlsFileConverterFactory.class);
-        CsvFileConverterFactory csvFactory = mock(CsvFileConverterFactory.class);
-        BmpFileConverterFactory bmpFactory = mock(BmpFileConverterFactory.class);
-        GifFileConverterFactory gifFactory = mock(GifFileConverterFactory.class);
-        PptxFileConverterFactory pptxFactory = mock(PptxFileConverterFactory.class);
-        PptFileConverterFactory pptFactory = mock(PptFileConverterFactory.class);
-        RtfFileConverterFactory rtfFactory = mock(RtfFileConverterFactory.class);
-        SvgFileConverterFactory svgFactory = mock(SvgFileConverterFactory.class);
-        TiffFileConverterFactory tiffFactory = mock(TiffFileConverterFactory.class);
-        MarkdownFileConverterFactory mdFactory = mock(MarkdownFileConverterFactory.class);
-        OdtFileConverterFactory odtFactory = mock(OdtFileConverterFactory.class);
-        OdsFileConverterFactory odsFactory = mock(OdsFileConverterFactory.class);
-        OdpFileConverterFactory odpFactory = mock(OdpFileConverterFactory.class);
-        XmlFileConverterFactory xmlFactory = mock(XmlFileConverterFactory.class);
-        JsonFileConverterFactory jsonFactory = mock(JsonFileConverterFactory.class);
-        DxfFileConverterFactory dxfFactory = mock(DxfFileConverterFactory.class);
-        DwgFileConverterFactory dwgFactory = mock(DwgFileConverterFactory.class);
-        DwtFileConverterFactory dwtFactory = mock(DwtFileConverterFactory.class);
-        StepFileConverterFactory stepFactory = mock(StepFileConverterFactory.class);
-        StpFileConverterFactory stpFactory = mock(StpFileConverterFactory.class);
-        IgesFileConverterFactory igesFactory = mock(IgesFileConverterFactory.class);
-        IgsFileConverterFactory igsFactory = mock(IgsFileConverterFactory.class);
-        StlFileConverterFactory stlFactory = mock(StlFileConverterFactory.class);
-        ObjFileConverterFactory objFactory = mock(ObjFileConverterFactory.class);
-        ThreeMfFileConverterFactory threeMfFactory = mock(ThreeMfFileConverterFactory.class);
-        WrlFileConverterFactory wrlFactory = mock(WrlFileConverterFactory.class);
-        X3dFileConverterFactory x3dFactory = mock(X3dFileConverterFactory.class);
-        DwfFileConverterFactory dwfFactory = mock(DwfFileConverterFactory.class);
-        DwfxFileConverterFactory dwfxFactory = mock(DwfxFileConverterFactory.class);
-        PltFileConverterFactory pltFactory = mock(PltFileConverterFactory.class);
-        HpglFileConverterFactory hpglFactory = mock(HpglFileConverterFactory.class);
-        EmfFileConverterFactory emfFactory = mock(EmfFileConverterFactory.class);
-        WmfFileConverterFactory wmfFactory = mock(WmfFileConverterFactory.class);
-        PdfMergeService pdfMergeService = mock(PdfMergeService.class);
-        PageNumberService pageNumberService = mock(PageNumberService.class);
-        WatermarkService watermarkService = mock(WatermarkService.class);
-        ContainerOrchestrationService containerService = mock(ContainerOrchestrationService.class);
-
-        return new FileConversionService(
-                txtFactory, docxFactory, docFactory, htmlFactory,
-                jpegFactory, pngFactory, xlsxFactory, xlsFactory,
-                csvFactory, tsvFactory, bmpFactory, gifFactory, pptxFactory,
-                pptFactory, rtfFactory, svgFactory, tiffFactory,
-                mdFactory, odtFactory, odsFactory, odpFactory,
-                xmlFactory, jsonFactory, dxfFactory, dwgFactory,
-                dwtFactory, stepFactory, stpFactory, igesFactory,
-                igsFactory, stlFactory, objFactory,
-                threeMfFactory, wrlFactory, x3dFactory,
-                dwfFactory, dwfxFactory, pltFactory,
-                hpglFactory, emfFactory, wmfFactory,
-                pdfMergeService, pageNumberService, watermarkService, containerService
-        );
+                ".json", ".xml", ".html", ".md", ".rtf");
     }
 }
