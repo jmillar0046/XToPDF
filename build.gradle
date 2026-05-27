@@ -78,7 +78,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
-	testImplementation 'net.jqwik:jqwik:1.9.3'
+	testImplementation 'net.jqwik:jqwik:1.10.0'
 	testImplementation 'org.assertj:assertj-core:3.27.7' // Fix CVE-2026-24400 XXE vulnerability
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
