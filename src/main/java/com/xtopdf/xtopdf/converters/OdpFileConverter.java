@@ -1,7 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
 import com.xtopdf.xtopdf.services.conversion.presentation.OdpToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class OdpFileConverter implements FileConverter {
+public class OdpFileConverter extends AbstractFileConverter {
     private final OdpToPdfService odpToPdfService;
 
     @Override
@@ -21,17 +19,12 @@ public class OdpFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile odpFile, String outputFile) throws FileConversionException {
-        if (odpFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            odpToPdfService.convertOdpToPdf(odpFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting ODP to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "ODP";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        odpToPdfService.convertOdpToPdf(inputFile, new File(outputFile));
     }
 }

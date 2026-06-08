@@ -54,7 +54,7 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
                     .sslConfig(dockerConfig.getSSLConfig())
                     .build();
             this.dockerClient = DockerClientImpl.getInstance(dockerConfig, httpClient);
-            log.info("Docker container adapter initialized with image: {}", config.getImageName());
+            log.info("Docker container adapter initialized with image: {}", config.imageName());
         } else {
             this.dockerClient = null;
             log.info("Docker container adapter disabled");
@@ -92,7 +92,7 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
                     e.getMessage(), e);
         } finally {
             // Cleanup container
-            if (containerId != null && config.isCleanupEnabled()) {
+            if (containerId != null && config.cleanupEnabled()) {
                 cleanupContainer(containerId);
             }
         }
@@ -125,19 +125,19 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
      */
     private String createAndStartContainer(int hostPort) {
         // Expose port from container
-        ExposedPort containerPort = ExposedPort.tcp(config.getContainerPort());
+        ExposedPort containerPort = ExposedPort.tcp(config.containerPort());
         Ports portBindings = new Ports();
         portBindings.bind(containerPort, Ports.Binding.bindPort(hostPort));
         
         // Create host config with resource limits
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withPortBindings(portBindings)
-                .withMemory(parseMemoryLimit(config.getMemoryLimit()))
-                .withNanoCPUs((long) config.getCpuLimit() * 1_000_000_000L)
+                .withMemory(parseMemoryLimit(config.memoryLimit()))
+                .withNanoCPUs((long) config.cpuLimit() * 1_000_000_000L)
                 .withAutoRemove(false); // We'll remove manually
         
         // Create container
-        CreateContainerResponse container = dockerClient.createContainerCmd(config.getImageName())
+        CreateContainerResponse container = dockerClient.createContainerCmd(config.imageName())
                 .withHostConfig(hostConfig)
                 .withExposedPorts(containerPort)
                 .exec();

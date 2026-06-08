@@ -14,8 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Property-based tests for output path security validation.
@@ -23,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Property 6: Output Path Security Validation — For any output path string that either
  * does not start with the configured base directory after normalization or does not end
  * with ".pdf", the FileConversionController SHALL return an HTTP 400 response with the
- * message "Invalid output file path".
+ * generic message "Invalid request parameters" (via GlobalExceptionHandler).
  *
  * **Validates: Requirements 4.3, 4.4**
  */
@@ -39,12 +38,14 @@ class OutputPathValidationPropertyTest {
         FileConversionController controller = new FileConversionController(
                 fileConversionService, objectMapper);
         ReflectionTestUtils.setField(controller, "baseOutputDirectory", "/safe/output/directory");
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     /**
      * Property 6 (path traversal): For any output path containing path traversal sequences,
-     * the controller SHALL return HTTP 400 with "Invalid output file path".
+     * the controller SHALL return HTTP 400 with generic error message via GlobalExceptionHandler.
      *
      * **Validates: Requirements 4.3**
      */
@@ -60,12 +61,13 @@ class OutputPathValidationPropertyTest {
                         .file(inputFile)
                         .param("outputFile", maliciousPath))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
     /**
      * Property 6 (non-.pdf extension): For any output path that does not end with ".pdf",
-     * the controller SHALL return HTTP 400 with "Invalid output file path".
+     * the controller SHALL return HTTP 400 with generic error message via GlobalExceptionHandler.
      *
      * **Validates: Requirements 4.4**
      */
@@ -81,7 +83,8 @@ class OutputPathValidationPropertyTest {
                         .file(inputFile)
                         .param("outputFile", outputPath))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
     @Provide

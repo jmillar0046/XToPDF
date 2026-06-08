@@ -1,7 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
 import com.xtopdf.xtopdf.services.conversion.image.PngToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class PngFileConverter implements FileConverter {
+public class PngFileConverter extends AbstractFileConverter {
     private final PngToPdfService pngToPdfService;
 
     @Override
@@ -21,17 +19,12 @@ public class PngFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile pngFile, String outputFile) throws FileConversionException {
-        if (pngFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            pngToPdfService.convertPngToPdf(pngFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting PNG to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "PNG";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        pngToPdfService.convertPngToPdf(inputFile, new File(outputFile));
     }
 }

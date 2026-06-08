@@ -24,8 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = FileConversionController.class)
 class FileConversionControllerTest {
@@ -42,10 +41,10 @@ class FileConversionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // --- Requirement 3.1, 3.2: Descriptive error messages ---
+    // --- FileConversionException handling via GlobalExceptionHandler ---
 
     @Test
-    void testFileConversionExceptionMessageIsReturnedInResponse() throws Exception {
+    void testFileConversionExceptionReturnsGenericMessage() throws Exception {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
                 MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         String outputFile = "test.pdf";
@@ -57,11 +56,13 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"));
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"))
+                .andExpect(jsonPath("$.correlationId").exists());
     }
 
     @Test
-    void testFileConversionExceptionMessageReturnedForJsonEndpoint() throws Exception {
+    void testFileConversionExceptionReturnedForJsonEndpoint() throws Exception {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
                 MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
 
@@ -78,13 +79,15 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"));
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"))
+                .andExpect(jsonPath("$.correlationId").exists());
     }
 
-    // --- Requirement 3.3: IllegalArgumentException message propagation ---
+    // --- IllegalArgumentException handling via GlobalExceptionHandler ---
 
     @Test
-    void testIllegalArgumentExceptionMessageIsReturnedInResponse() throws Exception {
+    void testIllegalArgumentExceptionReturnsGenericMessage() throws Exception {
         MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
                 MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
         MockMultipartFile existingPdf = new MockMultipartFile("existingPdf", "existing.pdf",
@@ -97,29 +100,12 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid request parameters"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"))
+                .andExpect(jsonPath("$.correlationId").exists());
     }
 
-    // --- Requirement 4.1, 4.2: Configurable output directory ---
-
-    @Test
-    void testDefaultOutputDirectoryIsUsedWhenPropertyNotSet() throws Exception {
-        // The default value is /safe/output/directory
-        // A valid output file should resolve under this directory
-        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
-                MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
-        String outputFile = "test.pdf";
-
-        doNothing().when(fileConversionService).convertFile(any(ConversionParameters.class));
-
-        mockMvc.perform(multipart("/api/convert")
-                        .file(inputFile)
-                        .param("outputFile", outputFile))
-                .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
-    }
-
-    // --- Requirement 4.3: Path traversal prevention ---
+    // --- Path validation ---
 
     @Test
     void testDirectoryTraversalAttackPrevention() throws Exception {
@@ -131,7 +117,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", maliciousPath))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
     @Test
@@ -144,10 +131,9 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", maliciousPath))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
-
-    // --- Requirement 4.4: Non-.pdf output paths ---
 
     @Test
     void testNonPdfOutputExtension() throws Exception {
@@ -159,10 +145,11 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
-    // --- Existing tests updated for new behavior ---
+    // --- Success cases (SuccessResponse JSON) ---
 
     @Test
     void testConvertFileAllGood() throws Exception {
@@ -176,7 +163,24 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
+    }
+
+    @Test
+    void testDefaultOutputDirectoryIsUsedWhenPropertyNotSet() throws Exception {
+        MockMultipartFile inputFile = new MockMultipartFile("inputFile", "test.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE, "test content".getBytes());
+        String outputFile = "test.pdf";
+
+        doNothing().when(fileConversionService).convertFile(any(ConversionParameters.class));
+
+        mockMvc.perform(multipart("/api/convert")
+                        .file(inputFile)
+                        .param("outputFile", outputFile))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -192,7 +196,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"));
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"));
     }
 
     @Test
@@ -208,7 +213,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"));
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"));
     }
 
     @Test
@@ -241,7 +247,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -266,7 +273,9 @@ class FileConversionControllerTest {
         mockMvc.perform(multipart("/api/convert")
                         .file(inputFile)
                         .param("outputFile", outputFile))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.errorCode").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
     }
 
     @Test
@@ -285,7 +294,8 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "back"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -304,7 +314,8 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "front"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -322,7 +333,8 @@ class FileConversionControllerTest {
                         .file(existingPdf)
                         .param("outputFile", outputFile))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -339,7 +351,8 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid request parameters"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
     @Test
@@ -354,7 +367,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .param("outputFile", outputFile))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -374,7 +388,8 @@ class FileConversionControllerTest {
                         .param("outputFile", outputFile)
                         .param("position", "back"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"));
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"));
     }
 
     @Test
@@ -393,7 +408,8 @@ class FileConversionControllerTest {
                         .param("pageNumberAlignment", "CENTER")
                         .param("pageNumberStyle", "ARABIC"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -413,7 +429,8 @@ class FileConversionControllerTest {
                         .param("watermarkLayer", "FOREGROUND")
                         .param("watermarkOrientation", "DIAGONAL_UP"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     // --- JSON endpoint tests ---
@@ -435,7 +452,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isOk())
-                .andExpect(content().string("File converted successfully"));
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("File converted successfully"));
     }
 
     @Test
@@ -453,7 +471,8 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 
     @Test
@@ -471,6 +490,7 @@ class FileConversionControllerTest {
                         .file(inputFile)
                         .file(requestPart))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid output file path"));
+                .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.message").value("Invalid request parameters"));
     }
 }

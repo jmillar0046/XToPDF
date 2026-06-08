@@ -53,7 +53,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
                 Process process = Runtime.getRuntime().exec("podman --version");
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
-                    log.info("Podman container adapter initialized with image: {}", config.getImageName());
+                    log.info("Podman container adapter initialized with image: {}", config.imageName());
                 } else {
                     log.warn("Podman not found or not working properly");
                 }
@@ -96,7 +96,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
                     e.getMessage(), e);
         } finally {
             // Cleanup container
-            if (containerId != null && config.isCleanupEnabled()) {
+            if (containerId != null && config.cleanupEnabled()) {
                 cleanupContainer(containerId);
             }
         }
@@ -137,14 +137,14 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
         command.add("run");
         command.add("-d"); // Detached mode
         // Only auto-remove if cleanup is enabled
-        if (config.isCleanupEnabled()) {
+        if (config.cleanupEnabled()) {
             command.add("--rm");
         }
         command.add("-p");
-        command.add(hostPort + ":" + config.getContainerPort());
-        command.add("--memory=" + config.getMemoryLimit());
-        command.add("--cpus=" + config.getCpuLimit());
-        command.add(config.getImageName());
+        command.add(hostPort + ":" + config.containerPort());
+        command.add("--memory=" + config.memoryLimit());
+        command.add("--cpus=" + config.cpuLimit());
+        command.add(config.imageName());
         
         ProcessBuilder pb = new ProcessBuilder(command);
         Process process = pb.start();
@@ -253,7 +253,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
             // If cleanup is enabled, the container was created WITH --rm flag and will auto-remove
             // If cleanup is disabled, the container was created WITHOUT --rm flag and won't auto-remove
             // So we don't need to do anything here - either way it's handled correctly
-            if (config.isCleanupEnabled()) {
+            if (config.cleanupEnabled()) {
                 log.info("Stopped Podman container {} (will auto-remove due to --rm flag)", containerId);
             } else {
                 log.info("Stopped Podman container {} (persisted, not removed)", containerId);

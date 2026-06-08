@@ -1,7 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
 import com.xtopdf.xtopdf.services.conversion.data.JsonToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class JsonFileConverter implements FileConverter {
+public class JsonFileConverter extends AbstractFileConverter {
     private final JsonToPdfService jsonToPdfService;
 
     @Override
@@ -21,17 +19,12 @@ public class JsonFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile jsonFile, String outputFile) throws FileConversionException {
-        if (jsonFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            jsonToPdfService.convertJsonToPdf(jsonFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting JSON to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "JSON";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        jsonToPdfService.convertJsonToPdf(inputFile, new File(outputFile));
     }
 }

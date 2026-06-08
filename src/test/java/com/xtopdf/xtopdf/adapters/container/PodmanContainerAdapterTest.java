@@ -177,7 +177,7 @@ class PodmanContainerAdapterTest {
                 .containerPort(8080)
                 .build();
 
-        assertThat(cleanupConfig.isCleanupEnabled()).isTrue();
+        assertThat(cleanupConfig.cleanupEnabled()).isTrue();
 
         // Adapter creates successfully with cleanup enabled
         PodmanContainerAdapter adapter = new PodmanContainerAdapter(cleanupConfig, false);
@@ -199,7 +199,7 @@ class PodmanContainerAdapterTest {
                 .containerPort(8080)
                 .build();
 
-        assertThat(noCleanupConfig.isCleanupEnabled()).isFalse();
+        assertThat(noCleanupConfig.cleanupEnabled()).isFalse();
 
         PodmanContainerAdapter adapter = new PodmanContainerAdapter(noCleanupConfig, false);
         assertNotNull(adapter);

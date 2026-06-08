@@ -7,7 +7,7 @@ import com.xtopdf.xtopdf.exceptions.FileConversionException;
  * This is necessary because the Runnable interface doesn't allow checked exceptions.
  */
 public class ConversionRuntimeException extends RuntimeException {
-    public final FileConversionException fileConversionException;
+    private final FileConversionException fileConversionException;
     
     public ConversionRuntimeException(FileConversionException fileConversionException) {
         super(fileConversionException);
