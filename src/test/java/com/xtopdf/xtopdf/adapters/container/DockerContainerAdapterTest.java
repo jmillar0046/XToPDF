@@ -174,8 +174,8 @@ class DockerContainerAdapterTest {
 
         when(mockRestTemplate.getForEntity(anyString(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                .thenReturn(new ResponseEntity<>("Success", HttpStatus.OK));
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(byte[].class)))
+                .thenReturn(new ResponseEntity<>(new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D}, HttpStatus.OK));
 
         adapter.executeInContainer(inputFile, outputFile, () -> {});
 
@@ -209,7 +209,7 @@ class DockerContainerAdapterTest {
 
         when(mockRestTemplate.getForEntity(anyString(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(String.class)))
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(byte[].class)))
                 .thenThrow(new RestClientException("Conversion failed"));
 
         assertThrows(FileConversionException.class,
@@ -248,8 +248,8 @@ class DockerContainerAdapterTest {
 
         when(mockRestTemplate.getForEntity(anyString(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                .thenReturn(new ResponseEntity<>("Success", HttpStatus.OK));
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(byte[].class)))
+                .thenReturn(new ResponseEntity<>(new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D}, HttpStatus.OK));
 
         adapter.executeInContainer(inputFile, outputFile, () -> {});
 
@@ -287,8 +287,8 @@ class DockerContainerAdapterTest {
 
         when(mockRestTemplate.getForEntity(anyString(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                .thenReturn(new ResponseEntity<>("Success", HttpStatus.OK));
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(byte[].class)))
+                .thenReturn(new ResponseEntity<>(new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D}, HttpStatus.OK));
 
         // Should not throw despite cleanup failure
         assertDoesNotThrow(() -> adapter.executeInContainer(inputFile, outputFile, () -> {}));

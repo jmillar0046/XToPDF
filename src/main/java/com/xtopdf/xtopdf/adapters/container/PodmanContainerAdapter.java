@@ -6,8 +6,10 @@ import com.xtopdf.xtopdf.ports.ContainerRuntimePort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +17,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.BindException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +41,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
     // Port range configuration for fallback when dynamic port allocation fails
     private static final int PORT_RANGE_START = 30000;
     private static final int PORT_RANGE_SIZE = 10000;
+    private static final int MAX_PORT_RETRIES = 3;
     
     private final ContainerConfig config;
     private final RestTemplate restTemplate;
@@ -45,12 +50,19 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
     public PodmanContainerAdapter(ContainerConfig config, boolean enabled) {
         this.config = config;
         this.enabled = enabled;
-        this.restTemplate = new RestTemplate();
+        
+        // Configure RestTemplate with timeouts from config
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        int timeoutMs = config.timeoutSeconds() * 1000;
+        requestFactory.setConnectTimeout(timeoutMs);
+        requestFactory.setReadTimeout(timeoutMs);
+        this.restTemplate = new RestTemplate(requestFactory);
         
         if (enabled) {
-            // Verify Podman is installed
+            // Verify Podman is installed using ProcessBuilder (array-based arguments)
             try {
-                Process process = Runtime.getRuntime().exec("podman --version");
+                ProcessBuilder pb = new ProcessBuilder("podman", "--version");
+                Process process = pb.start();
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
                     log.info("Podman container adapter initialized with image: {}", config.imageName());
@@ -110,17 +122,13 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
     @Override
     public String getRuntimeInfo() {
         try {
-            Process process = Runtime.getRuntime().exec("podman version");
+            ProcessBuilder pb = new ProcessBuilder("podman", "version");
+            Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder info = new StringBuilder("Podman: ");
-            String line;
-            boolean first = true;
-            while ((line = reader.readLine()) != null) {
-                if (first) {
-                    info.append(line);
-                    first = false;
-                    break;
-                }
+            String line = reader.readLine();
+            if (line != null) {
+                info.append(line);
             }
             return info.toString();
         } catch (Exception e) {
@@ -129,9 +137,37 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
     }
     
     /**
-     * Create and start a Podman container for conversion
+     * Create and start a Podman container for conversion, with port retry logic.
+     * Retries up to MAX_PORT_RETRIES times on port binding failures.
      */
-    private String createAndStartContainer(int hostPort) throws IOException, InterruptedException {
+    private String createAndStartContainer(int hostPort) throws IOException, InterruptedException, FileConversionException {
+        IOException lastException = null;
+        
+        for (int attempt = 0; attempt < MAX_PORT_RETRIES; attempt++) {
+            int portToUse = (attempt == 0) ? hostPort : findAvailablePort();
+            try {
+                return doCreateAndStartContainer(portToUse);
+            } catch (IOException e) {
+                if (isPortConflict(e)) {
+                    lastException = e;
+                    log.warn("Port {} conflict on attempt {}/{}, retrying with new port", 
+                            portToUse, attempt + 1, MAX_PORT_RETRIES);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new FileConversionException("Failed to allocate port after " + MAX_PORT_RETRIES + " attempts", lastException);
+    }
+    
+    private boolean isPortConflict(IOException e) {
+        if (e instanceof BindException) return true;
+        String message = e.getMessage();
+        return message != null && (message.contains("port") || message.contains("address already in use") 
+                || message.contains("bind"));
+    }
+    
+    private String doCreateAndStartContainer(int hostPort) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
         command.add("podman");
         command.add("run");
@@ -159,7 +195,7 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
             throw new IOException("Failed to start Podman container: " + error);
         }
         
-        log.info("Created Podman container {} for conversion job", containerId);
+        log.info("Created Podman container {} for conversion job on port {}", containerId, hostPort);
         return containerId;
     }
     
@@ -199,7 +235,8 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
     }
     
     /**
-     * Execute the conversion via container's REST API
+     * Execute the conversion via container's REST API.
+     * Retrieves the converted PDF as bytes, validates magic header, and writes to output file.
      */
     private void executeConversionInContainer(String containerUrl, 
                                              MultipartFile inputFile, 
@@ -225,18 +262,30 @@ public class PodmanContainerAdapter implements ContainerRuntimePort {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = 
                 new HttpEntity<>(body, headers);
         
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                containerUrl + "/api/convert",
-                requestEntity,
-                String.class
-        );
-        
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new FileConversionException(
-                    "Container conversion failed with status: " + response.getStatusCode());
+        try {
+            ResponseEntity<byte[]> response = restTemplate.postForEntity(
+                    containerUrl + "/api/convert",
+                    requestEntity,
+                    byte[].class
+            );
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new FileConversionException(
+                        "Container conversion failed with status: " + response.getStatusCode());
+            }
+            
+            byte[] pdfBytes = response.getBody();
+            
+            // Validate response contains valid PDF content
+            ContainerPdfValidator.validatePdfResponse(pdfBytes);
+            
+            // Write PDF bytes to output file
+            Files.write(outputFileObj.toPath(), pdfBytes);
+            
+            log.info("Conversion completed successfully in Podman container");
+        } catch (ResourceAccessException e) {
+            throw new FileConversionException("Container conversion timed out: " + e.getMessage(), e);
         }
-        
-        log.info("Conversion completed successfully in Podman container");
     }
     
     /**

@@ -14,13 +14,17 @@ import com.xtopdf.xtopdf.ports.ContainerRuntimePort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
+import java.nio.file.Files;
 
 /**
  * Docker implementation of the ContainerRuntimePort.
@@ -35,6 +39,7 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     // Port range configuration for fallback when dynamic port allocation fails
     private static final int PORT_RANGE_START = 30000;
     private static final int PORT_RANGE_SIZE = 10000;
+    private static final int MAX_PORT_RETRIES = 3;
     
     private final ContainerConfig config;
     private final DockerClient dockerClient;
@@ -44,7 +49,13 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     public DockerContainerAdapter(ContainerConfig config, boolean enabled) {
         this.config = config;
         this.enabled = enabled;
-        this.restTemplate = new RestTemplate();
+        
+        // Configure RestTemplate with timeouts from config
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        int timeoutMs = config.timeoutSeconds() * 1000;
+        requestFactory.setConnectTimeout(timeoutMs);
+        requestFactory.setReadTimeout(timeoutMs);
+        this.restTemplate = new RestTemplate(requestFactory);
         
         if (enabled) {
             // Initialize Docker client only when orchestration is enabled
@@ -121,9 +132,37 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     }
     
     /**
-     * Create and start a Docker container for conversion
+     * Create and start a Docker container for conversion, with port retry logic.
+     * Retries up to MAX_PORT_RETRIES times on port binding failures.
      */
-    private String createAndStartContainer(int hostPort) {
+    private String createAndStartContainer(int hostPort) throws FileConversionException {
+        Exception lastException = null;
+        
+        for (int attempt = 0; attempt < MAX_PORT_RETRIES; attempt++) {
+            int portToUse = (attempt == 0) ? hostPort : findAvailablePort();
+            try {
+                return doCreateAndStartContainer(portToUse);
+            } catch (Exception e) {
+                if (isPortConflict(e)) {
+                    lastException = e;
+                    log.warn("Port {} conflict on attempt {}/{}, retrying with new port", 
+                            portToUse, attempt + 1, MAX_PORT_RETRIES);
+                } else {
+                    throw new FileConversionException("Failed to create Docker container: " + e.getMessage(), e);
+                }
+            }
+        }
+        throw new FileConversionException("Failed to allocate port after " + MAX_PORT_RETRIES + " attempts", lastException);
+    }
+    
+    private boolean isPortConflict(Exception e) {
+        if (e instanceof BindException) return true;
+        String message = e.getMessage();
+        return message != null && (message.contains("port") || message.contains("address already in use") 
+                || message.contains("bind") || message.contains("Bind"));
+    }
+    
+    private String doCreateAndStartContainer(int hostPort) {
         // Expose port from container
         ExposedPort containerPort = ExposedPort.tcp(config.containerPort());
         Ports portBindings = new Ports();
@@ -191,8 +230,7 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     
     /**
      * Execute the conversion via container's REST API.
-     * The container must expose the same /api/convert endpoint as the main application,
-     * accepting multipart form data with "inputFile" and "outputFile" parameters.
+     * Retrieves the converted PDF as bytes, validates magic header, and writes to output file.
      */
     private void executeConversionInContainer(String containerUrl, 
                                              MultipartFile inputFile, 
@@ -221,19 +259,31 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = 
                 new HttpEntity<>(body, headers);
         
-        // Call container's conversion endpoint
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                containerUrl + "/api/convert",
-                requestEntity,
-                String.class
-        );
-        
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new FileConversionException(
-                    "Container conversion failed with status: " + response.getStatusCode());
+        try {
+            // Call container's conversion endpoint with byte[] response type
+            ResponseEntity<byte[]> response = restTemplate.postForEntity(
+                    containerUrl + "/api/convert",
+                    requestEntity,
+                    byte[].class
+            );
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new FileConversionException(
+                        "Container conversion failed with status: " + response.getStatusCode());
+            }
+            
+            byte[] pdfBytes = response.getBody();
+            
+            // Validate response contains valid PDF content
+            ContainerPdfValidator.validatePdfResponse(pdfBytes);
+            
+            // Write PDF bytes to output file
+            Files.write(outputFileObj.toPath(), pdfBytes);
+            
+            log.info("Conversion completed successfully in Docker container");
+        } catch (ResourceAccessException e) {
+            throw new FileConversionException("Container conversion timed out: " + e.getMessage(), e);
         }
-        
-        log.info("Conversion completed successfully in Docker container");
     }
     
     /**

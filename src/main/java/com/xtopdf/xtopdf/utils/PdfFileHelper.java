@@ -27,6 +27,8 @@ public class PdfFileHelper {
 
     /**
      * Processes a PDF file with automatic temp file management and error handling.
+     * Catches only IOException (returns HTTP 500) and IllegalArgumentException (returns HTTP 400).
+     * All other exceptions propagate to the caller.
      * 
      * @param pdfFile The uploaded PDF file
      * @param processor The processing function that operates on the temp file
@@ -49,8 +51,18 @@ public class PdfFileHelper {
                 fos.write(pdfFile.getBytes());
             }
             
-            // Process the PDF
-            processor.process(tempPdf);
+            // Process the PDF — wrap checked exceptions to allow propagation
+            try {
+                processor.process(tempPdf);
+            } catch (IOException e) {
+                throw e;
+            } catch (IllegalArgumentException e) {
+                throw e;
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             
             // Read the modified PDF
             byte[] modifiedPdfBytes = Files.readAllBytes(tempPdf.toPath());
@@ -64,9 +76,6 @@ public class PdfFileHelper {
             log.error("Invalid parameter: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (IOException e) {
-            log.error("Error processing PDF: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        } catch (Exception e) {
             log.error("Error processing PDF: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {

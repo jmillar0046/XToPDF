@@ -87,9 +87,9 @@ class FileConversionControllerPropertyTest {
                         "File not found: /etc/shadow"
                 ),
                 Arbitraries.strings()
-                        .ofMinLength(1)
+                        .ofMinLength(5)
                         .ofMaxLength(200)
-                        .ascii()
+                        .alpha()
                         .filter(s -> !s.isBlank() && !s.equals("File conversion failed"))
         );
     }

@@ -108,11 +108,12 @@ public class FileConversionService {
     /**
      * Extracts the file extension from a filename, including the leading dot.
      * Returns the extension in lowercase.
+     * Rejects dot-files (files where the only dot is at index 0, like .gitignore).
      */
     private String extractExtension(String fileName) throws FileConversionException {
         String lowerCaseFileName = fileName.toLowerCase();
         int dotIndex = lowerCaseFileName.lastIndexOf('.');
-        if (dotIndex == -1) {
+        if (dotIndex <= 0) {
             throw new FileConversionException("Unsupported file format: " + fileName);
         }
         return lowerCaseFileName.substring(dotIndex);
