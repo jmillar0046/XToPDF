@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ConversionRequest {
     /** Output PDF file name (required) */
+    @NotBlank(message = "Output file path must not be blank")
     private String outputFile;
     
     /** Whether to execute macros/recalculate formulas for Excel files */
@@ -28,6 +31,7 @@ public class ConversionRequest {
     private PageNumberRequest pageNumbers;
     
     /** Optional watermark configuration */
+    @Valid
     private WatermarkRequest watermark;
     
     /** 

@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.controllers;
 
 import com.xtopdf.xtopdf.dto.ErrorResponse;
+import com.xtopdf.xtopdf.exceptions.ConversionTimeoutException;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -128,5 +129,22 @@ public class GlobalExceptionHandler {
             correlationId
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handle conversion timeout exceptions.
+     * Triggered when a conversion operation exceeds the configured time limit.
+     */
+    @ExceptionHandler(ConversionTimeoutException.class)
+    public ResponseEntity<ErrorResponse> handleConversionTimeoutException(ConversionTimeoutException ex) {
+        String correlationId = UUID.randomUUID().toString();
+        log.error("Conversion timeout [correlationId={}]: {}", correlationId, ex.getMessage(), ex);
+
+        ErrorResponse error = new ErrorResponse(
+            "CONVERSION_TIMEOUT",
+            "Conversion timed out",
+            correlationId
+        );
+        return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(error);
     }
 }

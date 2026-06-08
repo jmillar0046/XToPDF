@@ -46,7 +46,7 @@ class ExtractExtensionPropertyTest {
         var pageNumberService = mock(com.xtopdf.xtopdf.services.operations.PageNumberService.class);
         var watermarkService = mock(com.xtopdf.xtopdf.services.operations.WatermarkService.class);
         var containerOrchestrationService = mock(com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService.class);
-        return new FileConversionService(converterRegistry, contentValidator, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService);
+        return new FileConversionService(converterRegistry, contentValidator, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService, 300);
     }
 
     private String invokeExtractExtension(FileConversionService service, String fileName) throws Throwable {
