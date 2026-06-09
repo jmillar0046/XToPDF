@@ -76,6 +76,13 @@ dependencies {
   implementation 'com.github.docker-java:docker-java-core:3.7.1'
   implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.7.1'
   
+  // Flying Saucer for production-grade HTML-to-PDF rendering
+  implementation 'org.xhtmlrenderer:flying-saucer-pdf-openpdf:9.3.2'
+  
+  // Apache Batik for production-grade SVG rendering
+  implementation 'org.apache.xmlgraphics:batik-transcoder:1.17'
+  implementation 'org.apache.xmlgraphics:batik-codec:1.17'
+  
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

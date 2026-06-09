@@ -9,20 +9,20 @@ import java.io.File;
 import java.util.Set;
 
 /**
- * Converts SVG (Scalable Vector Graphics) files to PDF format.
+ * Converts SVG (Scalable Vector Graphics) files to PDF format using Apache Batik.
  *
- * <p><b>Rendering Approach:</b> Parses SVG XML structure and renders vector elements
- * (paths, shapes, text) to PDF using PDFBox graphics primitives. The conversion
- * preserves vector fidelity where possible.</p>
+ * <p><b>Rendering Approach:</b> Uses Batik's transcoder to render SVG to a high-resolution
+ * PNG, then embeds the rendered image into a PDF via PDFBox. This supports the full
+ * SVG specification including gradients, paths, text, transforms, and filters.</p>
  *
- * <p><b>Known Limitations:</b></p>
+ * <p><b>Supported Features:</b></p>
  * <ul>
- *   <li>CSS styling within SVG is partially supported — inline styles work best</li>
- *   <li>External references (xlink:href to external files) are not resolved</li>
- *   <li>SVG filters (blur, drop-shadow) are not rendered</li>
- *   <li>Embedded fonts may not be available — falls back to system fonts</li>
- *   <li>Complex SVG features (animations, scripting, foreignObject) are ignored</li>
- *   <li>Gradient and pattern fills may be simplified</li>
+ *   <li>All SVG shape elements (path, rect, circle, ellipse, line, polyline, polygon)</li>
+ *   <li>Gradients (linear and radial)</li>
+ *   <li>Text rendering</li>
+ *   <li>CSS styling (inline and internal)</li>
+ *   <li>Transforms and filters</li>
+ *   <li>Animations stripped for static first-frame output</li>
  * </ul>
  */
 @AllArgsConstructor

@@ -8,6 +8,8 @@ import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.IOException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -15,7 +17,7 @@ import static org.mockito.Mockito.verify;
 class HtmlFileConverterTest {
 
     @Test
-    void testConvertToPDF() throws FileConversionException {
+    void testConvertToPDF() throws FileConversionException, IOException {
         HtmlToPdfService htmlToPdfService = Mockito.mock(HtmlToPdfService.class);
         HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService);
         var outputFile = "outputFile.pdf";
@@ -55,7 +57,7 @@ class HtmlFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_InvalidFileType() throws FileConversionException {
+    void testConvertToPDF_InvalidFileType() throws FileConversionException, IOException {
         HtmlToPdfService htmlToPdfService = Mockito.mock(HtmlToPdfService.class);
         HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.txt", MediaType.TEXT_PLAIN_VALUE, "plain text".getBytes());
@@ -66,7 +68,7 @@ class HtmlFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_ServiceThrowsException() throws FileConversionException {
+    void testConvertToPDF_ServiceThrowsException() throws FileConversionException, IOException {
         HtmlToPdfService htmlToPdfService = Mockito.mock(HtmlToPdfService.class);
         HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "test.html", MediaType.TEXT_HTML_VALUE, "test".getBytes());
@@ -81,7 +83,7 @@ class HtmlFileConverterTest {
     }
 
     @Test
-    void testConvertToPDF_EmptyFile() throws FileConversionException {
+    void testConvertToPDF_EmptyFile() throws FileConversionException, IOException {
         HtmlToPdfService htmlToPdfService = Mockito.mock(HtmlToPdfService.class);
         HtmlFileConverter htmlFileConverter = new HtmlFileConverter(htmlToPdfService);
         var inputFile = new MockMultipartFile("inputFile", "empty.html", MediaType.TEXT_HTML_VALUE, new byte[0]);

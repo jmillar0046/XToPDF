@@ -1,111 +1,130 @@
 package com.xtopdf.xtopdf.services.conversion.image;
 
-import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import lombok.extern.slf4j.Slf4j;
-import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.image.PNGTranscoder;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Service to convert SVG (Scalable Vector Graphics) files to PDF.
- * 
- * Note: This implementation provides SVG analysis and statistics.
- * For full SVG rendering, consider using external tools like:
- * - Apache Batik (Java SVG toolkit)
- * - Inkscape (command-line conversion)
- * - librsvg (C library with command-line tool)
- * 
- * TODO: For production-grade SVG rendering, integrate with Apache Batik or external renderer.
+ * Service to convert SVG (Scalable Vector Graphics) files to PDF using Apache Batik.
+ *
+ * <p>Uses Batik's PNGTranscoder to render SVG to a high-resolution PNG image,
+ * then embeds the rendered image into a PDF document via PDFBox. This approach
+ * supports the full SVG specification including gradients, paths, text, filters,
+ * and complex styling.</p>
+ *
+ * <p><b>Supported Features:</b></p>
+ * <ul>
+ *   <li>SVG paths, shapes (rect, circle, ellipse, line, polyline, polygon)</li>
+ *   <li>Gradients (linear and radial)</li>
+ *   <li>Text rendering with fonts</li>
+ *   <li>CSS styling (inline and internal stylesheets)</li>
+ *   <li>Transforms (translate, rotate, scale, skew)</li>
+ *   <li>Filters (blur, drop-shadow, etc.)</li>
+ *   <li>Animations converted to static first-frame representation</li>
+ * </ul>
  */
 @Slf4j
 @Service
 public class SvgToPdfService {
-    
-    private final PdfBackendProvider pdfBackend;
-    
-    @Autowired
-    public SvgToPdfService(PdfBackendProvider pdfBackend) {
-        this.pdfBackend = pdfBackend;
-    }
-    
+
+    private static final float RENDER_DPI = 300f;
+    private static final float POINTS_PER_INCH = 72f;
+
     public void convertSvgToPdf(MultipartFile svgFile, File pdfFile) throws IOException {
-        try {
-            // Parse SVG and extract information
-            String svgContent = new String(svgFile.getBytes(), StandardCharsets.UTF_8);
-            Document doc = Jsoup.parse(svgContent, "", org.jsoup.parser.Parser.xmlParser());
-            
-            Element svg = doc.selectFirst("svg");
-            if (svg == null) {
-                throw new IOException("Invalid SVG file: no <svg> element found");
-            }
-            
-            // Extract SVG properties
-            String width = svg.attr("width");
-            String height = svg.attr("height");
-            String viewBox = svg.attr("viewBox");
-            
-            // Count elements
-            int pathCount = doc.select("path").size();
-            int rectCount = doc.select("rect").size();
-            int circleCount = doc.select("circle").size();
-            int ellipseCount = doc.select("ellipse").size();
-            int lineCount = doc.select("line").size();
-            int polylineCount = doc.select("polyline").size();
-            int polygonCount = doc.select("polygon").size();
-            int textCount = doc.select("text").size();
-            int imageCount = doc.select("image").size();
-            int groupCount = doc.select("g").size();
-            
-            int totalShapes = pathCount + rectCount + circleCount + ellipseCount + 
-                             lineCount + polylineCount + polygonCount;
-            
-            // Create PDF using abstraction layer
-            try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
-                builder.addParagraph("SVG Document Analysis\n\n");
-                
-                builder.addParagraph("File: " + svgFile.getOriginalFilename() + "\n");
-                builder.addParagraph("Format: SVG (Scalable Vector Graphics)\n\n");
-                
-                builder.addParagraph("SVG Properties:\n");
-                if (width != null && !width.isEmpty()) {
-                    builder.addParagraph("  Width: " + width + "\n");
-                }
-                if (height != null && !height.isEmpty()) {
-                    builder.addParagraph("  Height: " + height + "\n");
-                }
-                if (viewBox != null && !viewBox.isEmpty()) {
-                    builder.addParagraph("  ViewBox: " + viewBox + "\n");
-                }
-                builder.addParagraph("\n");
-                
-                builder.addParagraph("Element Statistics:\n");
-                builder.addParagraph("  Total Shapes: " + totalShapes + "\n");
-                if (pathCount > 0) builder.addParagraph("  Paths: " + pathCount + "\n");
-                if (rectCount > 0) builder.addParagraph("  Rectangles: " + rectCount + "\n");
-                if (circleCount > 0) builder.addParagraph("  Circles: " + circleCount + "\n");
-                if (ellipseCount > 0) builder.addParagraph("  Ellipses: " + ellipseCount + "\n");
-                if (lineCount > 0) builder.addParagraph("  Lines: " + lineCount + "\n");
-                if (polylineCount > 0) builder.addParagraph("  Polylines: " + polylineCount + "\n");
-                if (polygonCount > 0) builder.addParagraph("  Polygons: " + polygonCount + "\n");
-                if (textCount > 0) builder.addParagraph("  Text Elements: " + textCount + "\n");
-                if (imageCount > 0) builder.addParagraph("  Images: " + imageCount + "\n");
-                if (groupCount > 0) builder.addParagraph("  Groups: " + groupCount + "\n");
-                
-                builder.addParagraph("\nNote: This PDF contains SVG statistics. For visual rendering, use SVG viewers or convert to PDF using Inkscape or Apache Batik.");
-                
-                builder.save(pdfFile);
-            }
+        var svgContent = new String(svgFile.getBytes(), StandardCharsets.UTF_8);
+
+        // Strip SVG animations for static rendering
+        var staticSvg = stripAnimations(svgContent);
+
+        // Render SVG to PNG using Batik
+        byte[] pngData = renderSvgToPng(staticSvg);
+
+        // Embed PNG into PDF using PDFBox
+        createPdfFromImage(pngData, pdfFile);
+
+        log.info("PDF created successfully from SVG: {}", pdfFile.getName());
+    }
+
+    /**
+     * Renders SVG content to a PNG byte array using Apache Batik's PNGTranscoder.
+     */
+    byte[] renderSvgToPng(String svgContent) throws IOException {
+        try (var svgInput = new StringReader(svgContent);
+             var pngOutput = new ByteArrayOutputStream()) {
+
+            var transcoder = new PNGTranscoder();
+            transcoder.addTranscodingHint(PNGTranscoder.KEY_PIXEL_UNIT_TO_MILLIMETER, 25.4f / RENDER_DPI);
+
+            var input = new TranscoderInput(svgInput);
+            var output = new TranscoderOutput(pngOutput);
+
+            transcoder.transcode(input, output);
+            pngOutput.flush();
+
+            return pngOutput.toByteArray();
         } catch (Exception e) {
-            throw new IOException("Error creating PDF from SVG: " + e.getMessage(), e);
+            throw new IOException("Error rendering SVG with Batik: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Creates a PDF document with the rendered image embedded on a single page.
+     * The page is sized to match the image dimensions at the configured DPI.
+     */
+    void createPdfFromImage(byte[] imageData, File pdfFile) throws IOException {
+        try (var document = new PDDocument()) {
+            var image = PDImageXObject.createFromByteArray(document, imageData, "svg-render");
+
+            // Convert pixel dimensions to points at render DPI
+            float pageWidth = image.getWidth() * POINTS_PER_INCH / RENDER_DPI;
+            float pageHeight = image.getHeight() * POINTS_PER_INCH / RENDER_DPI;
+
+            // Ensure minimum page size (A4 minimum dimensions)
+            pageWidth = Math.max(pageWidth, PDRectangle.A4.getWidth());
+            pageHeight = Math.max(pageHeight, PDRectangle.A4.getHeight());
+
+            var page = new PDPage(new PDRectangle(pageWidth, pageHeight));
+            document.addPage(page);
+
+            try (var contentStream = new PDPageContentStream(document, page)) {
+                // Center the image on the page
+                float imageWidthPt = image.getWidth() * POINTS_PER_INCH / RENDER_DPI;
+                float imageHeightPt = image.getHeight() * POINTS_PER_INCH / RENDER_DPI;
+                float x = (pageWidth - imageWidthPt) / 2;
+                float y = (pageHeight - imageHeightPt) / 2;
+
+                contentStream.drawImage(image, x, y, imageWidthPt, imageHeightPt);
+            }
+
+            document.save(pdfFile);
+        }
+    }
+
+    /**
+     * Strips SVG animation elements (animate, animateTransform, animateMotion, set)
+     * to produce a static first-frame representation.
+     */
+    String stripAnimations(String svgContent) {
+        // Remove animation elements for static rendering
+        return svgContent
+                .replaceAll("<animate[^>]*/>", "")
+                .replaceAll("<animate[^>]*>.*?</animate>", "")
+                .replaceAll("<animateTransform[^>]*/>", "")
+                .replaceAll("<animateTransform[^>]*>.*?</animateTransform>", "")
+                .replaceAll("<animateMotion[^>]*/>", "")
+                .replaceAll("<animateMotion[^>]*>.*?</animateMotion>", "")
+                .replaceAll("<set[^>]*/>", "")
+                .replaceAll("<set[^>]*>.*?</set>", "");
     }
 }

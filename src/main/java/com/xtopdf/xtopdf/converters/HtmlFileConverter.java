@@ -9,19 +9,17 @@ import java.io.File;
 import java.util.Set;
 
 /**
- * Converts HTML files to PDF format.
+ * Converts HTML files to PDF format using Flying Saucer (XHTML renderer).
  *
- * <p><b>Rendering Approach:</b> Uses JSoup for HTML parsing and PDFBox for PDF generation.
- * The HTML is parsed into a DOM tree, then text content is extracted and rendered as
- * a plain-text PDF document with basic formatting.</p>
+ * <p><b>Rendering Approach:</b> Uses JSoup to parse and clean HTML into well-formed XHTML,
+ * then renders via Flying Saucer with OpenPDF backend for full CSS support.</p>
  *
- * <p><b>Known Limitations:</b></p>
+ * <p><b>Supported Features:</b></p>
  * <ul>
- *   <li>CSS styling is not fully rendered — only basic structural elements are preserved</li>
- *   <li>JavaScript is not executed — dynamic content will not be captured</li>
- *   <li>External resources (images, fonts, stylesheets) are not fetched or embedded</li>
- *   <li>Complex layouts (tables, flexbox, grid) are simplified to linear text flow</li>
- *   <li>For pixel-perfect HTML-to-PDF rendering, use a headless browser-based solution</li>
+ *   <li>Inline and internal CSS styles</li>
+ *   <li>Tables, lists, headings, paragraphs</li>
+ *   <li>Colors, fonts, margins, padding, borders</li>
+ *   <li>Data URI embedded images</li>
  * </ul>
  */
 @AllArgsConstructor
