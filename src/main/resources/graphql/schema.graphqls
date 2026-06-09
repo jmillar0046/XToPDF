@@ -1,0 +1,36 @@
+type Query {
+    """List all supported file format extensions for conversion to PDF."""
+    supportedFormats: [String!]!
+
+    """Get the status of an async conversion job by ID."""
+    conversionJob(id: ID!): ConversionResult
+}
+
+type Mutation {
+    """Submit a file for conversion to PDF. Returns the conversion result metadata."""
+    convertFile(fileName: String!, fileSize: Long!): ConversionResult!
+}
+
+"""Result of a file conversion operation."""
+type ConversionResult {
+    """Unique identifier for the conversion job."""
+    id: ID!
+
+    """Original file name submitted for conversion."""
+    fileName: String!
+
+    """Current status of the conversion: PENDING, PROCESSING, COMPLETED, or FAILED."""
+    status: String!
+
+    """File size in bytes."""
+    fileSize: Long
+
+    """ISO-8601 timestamp when the conversion was submitted."""
+    submittedAt: String
+
+    """ISO-8601 timestamp when the conversion completed (null if still in progress)."""
+    completedAt: String
+
+    """Error message if conversion failed (null on success)."""
+    errorMessage: String
+}

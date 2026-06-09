@@ -1,0 +1,67 @@
+groups:
+  - name: xtopdf_alerts
+    rules:
+      # High Error Rate: >5% of conversions failing over 5 minutes
+      - alert: HighConversionErrorRate
+        expr: |
+          (
+            sum(rate(conversion_total{status="failure"}[5m]))
+            /
+            sum(rate(conversion_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: xtopdf
+        annotations:
+          summary: "High conversion error rate detected"
+          description: "More than 5% of conversions are failing over the last 5 minutes. Current failure rate: {{ $value | humanizePercentage }}."
+          runbook_url: "https://github.com/your-org/xtopdf/blob/main/docs/runbooks/high-error-rate.md"
+
+      # High Latency: P95 conversion time >10s over 5 minutes
+      - alert: HighConversionLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(conversion_duration_seconds_bucket[5m])) by (le))
+          > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: xtopdf
+        annotations:
+          summary: "High conversion latency detected"
+          description: "P95 conversion time exceeds 10 seconds over the last 5 minutes. Current P95: {{ $value | humanizeDuration }}."
+          runbook_url: "https://github.com/your-org/xtopdf/blob/main/docs/runbooks/high-latency.md"
+
+      # High Memory Usage: >85% heap for 5 minutes
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            jvm_memory_used_bytes{area="heap"}
+            /
+            jvm_memory_max_bytes{area="heap"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: xtopdf
+        annotations:
+          summary: "High JVM heap memory usage"
+          description: "JVM heap usage exceeds 85% for the last 5 minutes. Current usage: {{ $value | humanizePercentage }}."
+          runbook_url: "https://github.com/your-org/xtopdf/blob/main/docs/runbooks/high-memory.md"
+
+      # Rate Limit Saturation: >50% of requests hitting 429
+      - alert: RateLimitSaturation
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status="429"}[5m]))
+            /
+            sum(rate(http_server_requests_seconds_count[5m]))
+          ) > 0.50
+        for: 5m
+        labels:
+          severity: warning
+          service: xtopdf
+        annotations:
+          summary: "Rate limit saturation detected"
+          description: "More than 50% of requests are being rate-limited (HTTP 429) over the last 5 minutes. Current rate: {{ $value | humanizePercentage }}."
+          runbook_url: "https://github.com/your-org/xtopdf/blob/main/docs/runbooks/rate-limit-saturation.md"
