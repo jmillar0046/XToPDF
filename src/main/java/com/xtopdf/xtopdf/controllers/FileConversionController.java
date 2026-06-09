@@ -16,6 +16,11 @@ import com.xtopdf.xtopdf.enums.WatermarkOrientation;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.utils.ConversionConfigHelper;
 import tools.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,6 +39,7 @@ import java.nio.file.Paths;
 @RestController
 @RequestMapping("/api/convert")
 @Slf4j
+@Tag(name = "File Conversion", description = "Endpoints for converting files to PDF format")
 public class FileConversionController {
      private final FileConversionService fileConversionService;
      private final ObjectMapper objectMapper;
@@ -49,6 +55,14 @@ public class FileConversionController {
      }
 
      @PostMapping
+     @Operation(summary = "Convert file to PDF", description = "Converts a single file to PDF format with optional page numbers, watermarks, and merging")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "File converted successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid request parameters or conversion error"),
+             @ApiResponse(responseCode = "413", description = "File size exceeds maximum limit"),
+             @ApiResponse(responseCode = "429", description = "Rate limit exceeded"),
+             @ApiResponse(responseCode = "504", description = "Conversion timed out")
+     })
      public ResponseEntity<SuccessResponse> convertFile(
              @RequestParam("inputFile") MultipartFile inputFile, 
              @RequestParam("outputFile") String outputFile,
@@ -111,6 +125,13 @@ public class FileConversionController {
      * Supports the same features as the main endpoint but with a cleaner JSON structure.
      */
     @PostMapping(value = "/json", consumes = "multipart/form-data")
+    @Operation(summary = "Convert file to PDF (JSON config)", description = "Converts a file to PDF using a JSON configuration object for structured request parameters")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File converted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters or conversion error"),
+            @ApiResponse(responseCode = "413", description = "File size exceeds maximum limit"),
+            @ApiResponse(responseCode = "504", description = "Conversion timed out")
+    })
     public ResponseEntity<SuccessResponse> convertFileWithJson(
             @RequestPart("inputFile") MultipartFile inputFile,
             @RequestPart(value = "existingPdf", required = false) MultipartFile existingPdf,
