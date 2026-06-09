@@ -1,19 +1,16 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.services.conversion.image.WmfToPdfService;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.util.Set;
 
-import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Component;
-
-import com.xtopdf.xtopdf.services.conversion.image.WmfToPdfService;
-import org.springframework.web.multipart.MultipartFile;
-
 @AllArgsConstructor
 @Component
-public class WmfFileConverter implements FileConverter {
+public class WmfFileConverter extends AbstractFileConverter {
     private final WmfToPdfService wmfToPdfService;
 
     @Override
@@ -22,17 +19,12 @@ public class WmfFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile wmfFile, String outputFile) throws FileConversionException {
-        if (wmfFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            wmfToPdfService.convertWmfToPdf(wmfFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting WMF to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "WMF";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        wmfToPdfService.convertWmfToPdf(inputFile, new File(outputFile));
     }
 }

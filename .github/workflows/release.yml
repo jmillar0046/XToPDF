@@ -58,8 +58,20 @@ jobs:
           MINOR=${VERSION_PARTS[1]:-0}
           PATCH=${VERSION_PARTS[2]:-0}
           
-          # Increment patch version
-          PATCH=$((PATCH + 1))
+          # Get commit message for version bump keyword parsing
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          # Determine version bump based on commit message keywords
+          if echo "$COMMIT_MSG" | grep -q "\[major\]"; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif echo "$COMMIT_MSG" | grep -q "\[minor\]"; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
           
           # Create new version
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"

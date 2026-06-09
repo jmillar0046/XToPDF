@@ -24,6 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = PdfOperationsController.class)
 class PdfOperationsControllerTest {
 
+    private static final byte[] VALID_PDF_CONTENT = new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34}; // %PDF-1.4
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -39,9 +41,9 @@ class PdfOperationsControllerTest {
     @Test
     void testMergePdfs_Success() throws Exception {
         MockMultipartFile pdf1 = new MockMultipartFile("pdf1", "file1.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 1".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
         MockMultipartFile pdf2 = new MockMultipartFile("pdf2", "file2.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 2".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(pdfMergeService).mergePdfs(any(File.class), any(), anyString());
 
@@ -59,9 +61,9 @@ class PdfOperationsControllerTest {
     @Test
     void testMergePdfs_FrontPosition_Success() throws Exception {
         MockMultipartFile pdf1 = new MockMultipartFile("pdf1", "file1.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 1".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
         MockMultipartFile pdf2 = new MockMultipartFile("pdf2", "file2.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 2".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(pdfMergeService).mergePdfs(any(File.class), any(), anyString());
 
@@ -78,9 +80,9 @@ class PdfOperationsControllerTest {
     @Test
     void testMergePdfs_InvalidPosition_BadRequest() throws Exception {
         MockMultipartFile pdf1 = new MockMultipartFile("pdf1", "file1.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 1".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
         MockMultipartFile pdf2 = new MockMultipartFile("pdf2", "file2.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 2".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/merge")
                         .file(pdf1)
@@ -94,9 +96,9 @@ class PdfOperationsControllerTest {
     @Test
     void testMergePdfs_MergeServiceThrowsException_InternalServerError() throws Exception {
         MockMultipartFile pdf1 = new MockMultipartFile("pdf1", "file1.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 1".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
         MockMultipartFile pdf2 = new MockMultipartFile("pdf2", "file2.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content 2".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doThrow(new RuntimeException("Merge failed"))
                 .when(pdfMergeService).mergePdfs(any(File.class), any(), anyString());
@@ -111,7 +113,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddPageNumbers_Success() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(pageNumberService).addPageNumbers(any(File.class), any(PageNumberConfig.class));
 
@@ -130,7 +132,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddPageNumbers_DefaultValues_Success() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(pageNumberService).addPageNumbers(any(File.class), any(PageNumberConfig.class));
 
@@ -145,7 +147,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddPageNumbers_InvalidPosition_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-page-numbers")
                         .file(pdfFile)
@@ -158,7 +160,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddPageNumbers_InvalidAlignment_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-page-numbers")
                         .file(pdfFile)
@@ -171,7 +173,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddPageNumbers_InvalidStyle_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-page-numbers")
                         .file(pdfFile)
@@ -184,7 +186,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_Success() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(watermarkService).addWatermark(any(File.class), any(WatermarkConfig.class));
 
@@ -204,7 +206,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_DefaultValues_Success() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         doNothing().when(watermarkService).addWatermark(any(File.class), any(WatermarkConfig.class));
 
@@ -220,7 +222,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_MissingText_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile))
@@ -232,7 +234,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_EmptyText_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile)
@@ -245,7 +247,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_FontSizeTooSmall_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile)
@@ -259,7 +261,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_FontSizeTooLarge_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile)
@@ -273,7 +275,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_InvalidLayer_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile)
@@ -287,7 +289,7 @@ class PdfOperationsControllerTest {
     @Test
     void testAddWatermark_InvalidOrientation_BadRequest() throws Exception {
         MockMultipartFile pdfFile = new MockMultipartFile("pdfFile", "test.pdf", 
-                MediaType.APPLICATION_PDF_VALUE, "PDF content".getBytes());
+                MediaType.APPLICATION_PDF_VALUE, VALID_PDF_CONTENT);
 
         mockMvc.perform(multipart("/api/pdf/add-watermark")
                         .file(pdfFile)

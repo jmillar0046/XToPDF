@@ -1,6 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.services.conversion.spreadsheet.DelimiterSeparatedToPdfService;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,7 +12,7 @@ import java.util.Set;
  * Two instances are registered as Spring beans via DelimiterConverterConfig:
  * one for CSV (comma) and one for TSV (tab).
  */
-public class DelimiterSeparatedConverter implements FileConverter {
+public class DelimiterSeparatedConverter extends AbstractFileConverter {
 
     private final DelimiterSeparatedToPdfService toPdfService;
     private final char delimiter;
@@ -37,18 +36,12 @@ public class DelimiterSeparatedConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile inputFile, String outputFile) throws FileConversionException {
-        if (inputFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            toPdfService.convertDelimiterSeparatedToPdf(inputFile, pdfFile, delimiter);
-        } catch (Exception e) {
-            throw new FileConversionException("Error converting " + formatName + " to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return formatName;
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        toPdfService.convertDelimiterSeparatedToPdf(inputFile, new File(outputFile), delimiter);
     }
 }

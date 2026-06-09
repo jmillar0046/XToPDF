@@ -8,6 +8,7 @@ import com.xtopdf.xtopdf.services.operations.PageNumberService;
 import com.xtopdf.xtopdf.services.operations.PdfMergeService;
 import com.xtopdf.xtopdf.services.operations.WatermarkService;
 import com.xtopdf.xtopdf.utils.PdfFileHelper;
+import com.xtopdf.xtopdf.validation.PdfContentValidator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/pdf")
@@ -32,6 +34,23 @@ public class PdfOperationsController {
             @RequestParam("pdf2") MultipartFile pdf2,
             @RequestParam(value = "position", required = false, defaultValue = "back") String position) {
         
+        // Validate PDF content
+        try {
+            if (!PdfContentValidator.isPdf(pdf1)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body("{\"error\":\"File 'pdf1' is not a valid PDF\"}".getBytes());
+            }
+            if (!PdfContentValidator.isPdf(pdf2)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body("{\"error\":\"File 'pdf2' is not a valid PDF\"}".getBytes());
+            }
+        } catch (IOException e) {
+            log.error("Error validating PDF content: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
         // Validate position parameter
         if (!position.equalsIgnoreCase("front") && !position.equalsIgnoreCase("back")) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -76,6 +95,18 @@ public class PdfOperationsController {
             @RequestParam(value = "alignment", required = false, defaultValue = "CENTER") String alignment,
             @RequestParam(value = "style", required = false, defaultValue = "ARABIC") String style) {
         
+        // Validate PDF content
+        try {
+            if (!PdfContentValidator.isPdf(pdfFile)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body("{\"error\":\"File is not a valid PDF\"}".getBytes());
+            }
+        } catch (IOException e) {
+            log.error("Error validating PDF content: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
         try {
             // Parse and validate parameters
             PageNumberConfig config = PageNumberConfig.builder()
@@ -105,6 +136,18 @@ public class PdfOperationsController {
             @RequestParam(value = "layer", required = false, defaultValue = "FOREGROUND") String layer,
             @RequestParam(value = "orientation", required = false, defaultValue = "DIAGONAL_UP") String orientation) {
         
+        // Validate PDF content
+        try {
+            if (!PdfContentValidator.isPdf(pdfFile)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body("{\"error\":\"File is not a valid PDF\"}".getBytes());
+            }
+        } catch (IOException e) {
+            log.error("Error validating PDF content: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
         // Validate watermark text
         if (watermarkText == null || watermarkText.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

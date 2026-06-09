@@ -113,16 +113,16 @@ class PdfFileHelperTest {
                 "PDF content".getBytes()
         );
 
-        ResponseEntity<byte[]> response = PdfFileHelper.processPdfFile(
-                pdfFile,
-                file -> {
-                    throw new RuntimeException("Generic error");
-                },
-                "output.pdf"
-        );
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
+        // Per Requirement 11.2: non-IOException exceptions propagate as-is
+        assertThrows(RuntimeException.class, () -> {
+            PdfFileHelper.processPdfFile(
+                    pdfFile,
+                    file -> {
+                        throw new RuntimeException("Generic error");
+                    },
+                    "output.pdf"
+            );
+        });
     }
 
     @Test

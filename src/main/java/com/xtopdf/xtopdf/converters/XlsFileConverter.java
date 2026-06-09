@@ -11,7 +11,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class XlsFileConverter implements FileConverter {
+public class XlsFileConverter extends AbstractFileConverter {
     private final ExcelToPdfService excelToPdfService;
 
     @Override
@@ -20,23 +20,29 @@ public class XlsFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile xlsFile, String outputFile) throws FileConversionException {
-        convertToPDF(xlsFile, outputFile, false);
+    protected String getFormatName() {
+        return "XLS";
     }
 
     @Override
-    public void convertToPDF(MultipartFile xlsFile, String outputFile, boolean executeMacros) throws FileConversionException {
-        if (xlsFile == null) {
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        excelToPdfService.convertExcelToPdf(inputFile, new File(outputFile), false);
+    }
+
+    @Override
+    public void convertToPDF(MultipartFile inputFile, String outputFile, boolean executeMacros)
+            throws FileConversionException {
+        if (inputFile == null) {
             throw new FileConversionException("Input file must not be null");
         }
         if (outputFile == null) {
             throw new FileConversionException("Output file path must not be null");
         }
         try {
-            var pdfFile = new File(outputFile);
-            excelToPdfService.convertExcelToPdf(xlsFile, pdfFile, executeMacros);
+            excelToPdfService.convertExcelToPdf(inputFile, new File(outputFile), executeMacros);
         } catch (Exception e) {
-            throw new FileConversionException("Error converting XLS to PDF: " + e.getMessage(), e);
+            throw new FileConversionException(
+                "Error converting " + getFormatName() + " to PDF: " + e.getMessage(), e);
         }
     }
 }

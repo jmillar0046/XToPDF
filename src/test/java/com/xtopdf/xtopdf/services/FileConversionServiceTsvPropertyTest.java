@@ -45,7 +45,7 @@ class FileConversionServiceTsvPropertyTest {
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
                 mock(PdfMergeService.class), mock(PageNumberService.class),
-                mock(WatermarkService.class), containerService
+                mock(WatermarkService.class), containerService, 300
         );
 
         MockMultipartFile inputFile = new MockMultipartFile(
@@ -89,7 +89,7 @@ class FileConversionServiceTsvPropertyTest {
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
                 mock(PdfMergeService.class), mock(PageNumberService.class),
-                mock(WatermarkService.class), containerService
+                mock(WatermarkService.class), containerService, 300
         );
 
         MockMultipartFile inputFile = new MockMultipartFile(

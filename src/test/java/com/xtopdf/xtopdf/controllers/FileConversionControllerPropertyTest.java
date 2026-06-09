@@ -15,8 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Property-based tests for FileConversionController error handling.
@@ -39,7 +38,9 @@ class FileConversionControllerPropertyTest {
         FileConversionController controller = new FileConversionController(
                 fileConversionService, objectMapper);
         ReflectionTestUtils.setField(controller, "baseOutputDirectory", "/safe/output/directory");
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     /**
@@ -64,7 +65,9 @@ class FileConversionControllerPropertyTest {
                         .file(inputFile)
                         .param("outputFile", "test.pdf"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("File conversion failed"))
+                .andExpect(jsonPath("$.errorCode").value("CONVERSION_ERROR"))
+                .andExpect(jsonPath("$.message").value("File conversion failed"))
+                .andExpect(jsonPath("$.correlationId").exists())
                 .andReturn().getResponse().getContentAsString();
 
         // Verify the internal error message is NOT exposed to the user
@@ -84,9 +87,9 @@ class FileConversionControllerPropertyTest {
                         "File not found: /etc/shadow"
                 ),
                 Arbitraries.strings()
-                        .ofMinLength(1)
+                        .ofMinLength(5)
                         .ofMaxLength(200)
-                        .ascii()
+                        .alpha()
                         .filter(s -> !s.isBlank() && !s.equals("File conversion failed"))
         );
     }

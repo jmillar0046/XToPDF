@@ -1,7 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
 import com.xtopdf.xtopdf.services.conversion.document.OdtToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class OdtFileConverter implements FileConverter {
+public class OdtFileConverter extends AbstractFileConverter {
     private final OdtToPdfService odtToPdfService;
 
     @Override
@@ -21,17 +19,12 @@ public class OdtFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile odtFile, String outputFile) throws FileConversionException {
-        if (odtFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            odtToPdfService.convertOdtToPdf(odtFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting ODT to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "ODT";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        odtToPdfService.convertOdtToPdf(inputFile, new File(outputFile));
     }
 }

@@ -1,7 +1,5 @@
 package com.xtopdf.xtopdf.converters;
 
-import com.xtopdf.xtopdf.exceptions.FileConversionException;
-
 import com.xtopdf.xtopdf.services.conversion.presentation.PptToPdfService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import java.util.Set;
 
 @AllArgsConstructor
 @Component
-public class PptFileConverter implements FileConverter {
+public class PptFileConverter extends AbstractFileConverter {
     private final PptToPdfService pptToPdfService;
 
     @Override
@@ -21,17 +19,12 @@ public class PptFileConverter implements FileConverter {
     }
 
     @Override
-    public void convertToPDF(MultipartFile pptFile, String outputFile) throws FileConversionException {
-        if (pptFile == null) {
-            throw new FileConversionException("Input file must not be null");
-        }
-        if (outputFile == null) {
-            throw new FileConversionException("Output file path must not be null");
-        }
-        try {
-            var pdfFile = new File(outputFile);
-            pptToPdfService.convertPptToPdf(pptFile, pdfFile);        } catch (Exception e) {
-            throw new FileConversionException("Error converting PPT to PDF: " + e.getMessage(), e);
-        }
+    protected String getFormatName() {
+        return "PPT";
+    }
+
+    @Override
+    protected void doConvert(MultipartFile inputFile, String outputFile) throws Exception {
+        pptToPdfService.convertPptToPdf(inputFile, new File(outputFile));
     }
 }

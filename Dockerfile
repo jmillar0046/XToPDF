@@ -16,7 +16,7 @@ RUN chmod +x ./gradlew
 RUN git init && git config user.email "build@docker" && git config user.name "docker" && git commit --allow-empty -m "docker build"
 
 # Download dependencies (cached if dependencies don't change)
-RUN ./gradlew dependencies --no-daemon -Dorg.gradle.jvmargs="-Xmx512m" || true
+RUN ./gradlew dependencies --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"
 
 # Copy source code
 COPY src ./src
@@ -50,6 +50,10 @@ USER appuser
 
 # Expose port
 EXPOSE 8080
+
+# Health check using wget (available in alpine)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 # Run the application with preview features enabled
 ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]
