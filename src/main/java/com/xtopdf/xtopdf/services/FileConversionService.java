@@ -3,6 +3,7 @@ package com.xtopdf.xtopdf.services;
 import java.util.Objects;
 import java.util.concurrent.*;
 
+import com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics;
 import com.xtopdf.xtopdf.converters.ConverterRegistry;
 import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.dto.ConversionParameters;
@@ -14,6 +15,8 @@ import com.xtopdf.xtopdf.services.operations.PdfMergeService;
 import com.xtopdf.xtopdf.services.operations.WatermarkService;
 import com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService;
 import com.xtopdf.xtopdf.validation.FileContentValidator;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.observation.annotation.Observed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class FileConversionService {
     private final PageNumberService pageNumberService;
     private final WatermarkService watermarkService;
     private final ContainerOrchestrationService containerOrchestrationService;
+    private final ConversionMetrics conversionMetrics;
     private final int timeoutSeconds;
 
     public FileConversionService(
@@ -37,6 +41,7 @@ public class FileConversionService {
             PageNumberService pageNumberService,
             WatermarkService watermarkService,
             ContainerOrchestrationService containerOrchestrationService,
+            ConversionMetrics conversionMetrics,
             @Value("${xtopdf.conversion.timeout-seconds:300}") int timeoutSeconds) {
         this.converterRegistry = converterRegistry;
         this.contentValidator = contentValidator;
@@ -44,6 +49,7 @@ public class FileConversionService {
         this.pageNumberService = pageNumberService;
         this.watermarkService = watermarkService;
         this.containerOrchestrationService = containerOrchestrationService;
+        this.conversionMetrics = conversionMetrics;
         this.timeoutSeconds = timeoutSeconds;
     }
 
@@ -53,6 +59,8 @@ public class FileConversionService {
      * @param params the conversion parameters
      * @throws FileConversionException if the conversion fails
      */
+    @Observed(name = "file.conversion", contextualName = "convert-file",
+            lowCardinalityKeyValues = {"operation", "convertFile"})
     public void convertFile(ConversionParameters params) throws FileConversionException {
         if (params.inputFile() == null) {
             throw new FileConversionException("Input file is required");
@@ -63,6 +71,12 @@ public class FileConversionService {
 
         String fileName = Objects.requireNonNull(params.inputFile().getOriginalFilename());
         String extension = extractExtension(fileName);
+        String format = extension.startsWith(".") ? extension.substring(1) : extension;
+
+        // Record metrics
+        conversionMetrics.incrementRequestCount(format);
+        conversionMetrics.recordFileSize(params.inputFile().getSize());
+        Timer.Sample timerSample = conversionMetrics.startTimer();
 
         contentValidator.validate(params.inputFile(), extension);
         FileConverter converter = converterRegistry.getConverter(extension);
@@ -131,12 +145,15 @@ public class FileConversionService {
 
         try {
             future.get(timeoutSeconds, TimeUnit.SECONDS);
+            conversionMetrics.stopTimer(timerSample, format);
         } catch (TimeoutException e) {
             future.cancel(true);
+            conversionMetrics.incrementErrorCount(format, "timeout");
             log.error("Conversion timed out after {}s for file: {}", timeoutSeconds, fileName);
             throw new ConversionTimeoutException(
                     "Conversion of " + fileName + " timed out after " + timeoutSeconds + " seconds", e);
         } catch (ExecutionException e) {
+            conversionMetrics.incrementErrorCount(format, "execution_error");
             var cause = e.getCause();
             if (cause instanceof ConversionRuntimeException cre) {
                 throw cre.getFileConversionException();
@@ -145,6 +162,7 @@ public class FileConversionService {
             }
             throw new FileConversionException("Unexpected error converting " + fileName + ": " + cause.getMessage(), cause);
         } catch (InterruptedException e) {
+            conversionMetrics.incrementErrorCount(format, "interrupted");
             Thread.currentThread().interrupt();
             throw new FileConversionException("Conversion of " + fileName + " was interrupted", e);
         } finally {

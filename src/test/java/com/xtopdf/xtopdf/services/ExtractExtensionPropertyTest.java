@@ -46,7 +46,9 @@ class ExtractExtensionPropertyTest {
         var pageNumberService = mock(com.xtopdf.xtopdf.services.operations.PageNumberService.class);
         var watermarkService = mock(com.xtopdf.xtopdf.services.operations.WatermarkService.class);
         var containerOrchestrationService = mock(com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService.class);
-        return new FileConversionService(converterRegistry, contentValidator, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService, 300);
+        return new FileConversionService(converterRegistry, contentValidator, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService,
+                new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
+                        new io.micrometer.core.instrument.simple.SimpleMeterRegistry()), 300);
     }
 
     private String invokeExtractExtension(FileConversionService service, String fileName) throws Throwable {

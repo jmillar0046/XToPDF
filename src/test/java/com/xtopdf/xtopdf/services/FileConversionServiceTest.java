@@ -54,6 +54,8 @@ class FileConversionServiceTest {
                 pageNumberService,
                 watermarkService,
                 containerOrchestrationService,
+                new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
+                        new io.micrometer.core.instrument.simple.SimpleMeterRegistry()),
                 300
         );
     }
