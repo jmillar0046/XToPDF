@@ -37,7 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Paths;
 
 @RestController
-@RequestMapping("/api/convert")
+@RequestMapping({"/api/convert", "/v1/api/convert"})
 @Slf4j
 @Tag(name = "File Conversion", description = "Endpoints for converting files to PDF format")
 public class FileConversionController {

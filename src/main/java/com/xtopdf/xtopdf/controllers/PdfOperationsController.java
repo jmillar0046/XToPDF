@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/pdf")
+@RequestMapping({"/api/pdf", "/v1/api/pdf"})
 @AllArgsConstructor
 @Slf4j
 @Tag(name = "PDF Operations", description = "Endpoints for PDF manipulation operations (merge, page numbers, watermarks)")

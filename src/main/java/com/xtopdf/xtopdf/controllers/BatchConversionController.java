@@ -23,7 +23,7 @@ import java.util.List;
  * Accepts multiple files and processes them in parallel.
  */
 @RestController
-@RequestMapping("/api/convert/batch")
+@RequestMapping({"/api/convert/batch", "/v1/api/convert/batch"})
 @AllArgsConstructor
 @Slf4j
 @Tag(name = "Batch Conversion", description = "Endpoints for batch file conversion to PDF")

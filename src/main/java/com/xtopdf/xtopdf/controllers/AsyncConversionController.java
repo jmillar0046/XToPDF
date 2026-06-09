@@ -29,7 +29,7 @@ import java.util.concurrent.Executors;
  * Submits jobs that run in background virtual threads, returning a job ID immediately.
  */
 @RestController
-@RequestMapping("/api/convert/async")
+@RequestMapping({"/api/convert/async", "/v1/api/convert/async"})
 @Slf4j
 @Tag(name = "Async Conversion", description = "Endpoints for asynchronous file conversion with job tracking")
 public class AsyncConversionController {
