@@ -5,12 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Filter that adds Deprecation and Sunset headers to responses for non-versioned API paths.
@@ -25,8 +24,8 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class DeprecationHeaderFilter extends OncePerRequestFilter {
 
-    private static final String SUNSET_DATE = LocalDate.now().plusMonths(6)
-            .format(DateTimeFormatter.ISO_DATE);
+    @Value("${xtopdf.deprecation.sunset-date:2026-01-01}")
+    private String sunsetDate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -36,10 +35,11 @@ public class DeprecationHeaderFilter extends OncePerRequestFilter {
         // Only add deprecation headers to non-versioned API paths
         if (isDeprecatedPath(requestUri)) {
             response.setHeader("Deprecation", "true");
-            response.setHeader("Sunset", SUNSET_DATE);
+            response.setHeader("Sunset", sunsetDate);
 
-            // Add Link header pointing to the versioned equivalent
-            var versionedPath = "/v1" + requestUri;
+            // Strip CRLF to prevent header injection
+            var sanitizedUri = requestUri.replaceAll("[\\r\\n]", "");
+            var versionedPath = "/v1" + sanitizedUri;
             response.setHeader("Link", "<" + versionedPath + ">; rel=\"successor-version\"");
         }
 

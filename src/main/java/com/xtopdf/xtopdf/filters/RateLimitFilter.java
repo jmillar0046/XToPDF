@@ -1,5 +1,7 @@
 package com.xtopdf.xtopdf.filters;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,7 +12,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Rate limiting filter that restricts requests per client IP using a token bucket algorithm.
@@ -24,7 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private final ConcurrentHashMap<String, TokenBucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, TokenBucket> buckets = Caffeine.newBuilder()
+            .maximumSize(100_000)
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .build();
 
     @Value("${xtopdf.rate-limit.enabled:true}")
     private boolean enabled;
@@ -35,6 +39,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${xtopdf.rate-limit.window-seconds:60}")
     private int windowSeconds;
 
+    @Value("${xtopdf.rate-limit.trust-proxy-headers:false}")
+    private boolean trustProxyHeaders;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -44,7 +51,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String clientIp = getClientIp(request);
-        TokenBucket bucket = buckets.computeIfAbsent(clientIp,
+        TokenBucket bucket = buckets.get(clientIp,
                 k -> new TokenBucket(requestsPerMinute, Duration.ofSeconds(windowSeconds)));
 
         if (bucket.tryConsume()) {
@@ -58,9 +65,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
+        if (trustProxyHeaders) {
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+                return xForwardedFor.split(",")[0].trim();
+            }
         }
         return request.getRemoteAddr();
     }

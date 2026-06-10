@@ -43,14 +43,14 @@ class TokenBucket {
      *         bucket is exhausted (rate limit exceeded)
      */
     boolean tryConsume() {
-        refillIfNeeded();
-        int currentTokens = tokens.getAndDecrement();
-        if (currentTokens > 0) {
-            return true;
+        synchronized (this) {
+            refillIfNeeded();
+            if (tokens.get() > 0) {
+                tokens.decrementAndGet();
+                return true;
+            }
+            return false;
         }
-        // Restore the token count to avoid going negative indefinitely
-        tokens.getAndIncrement();
-        return false;
     }
 
     private void refillIfNeeded() {

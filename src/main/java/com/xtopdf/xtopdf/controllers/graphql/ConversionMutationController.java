@@ -1,8 +1,7 @@
 package com.xtopdf.xtopdf.controllers.graphql;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import com.xtopdf.xtopdf.dto.ConversionJob;
+import com.xtopdf.xtopdf.services.JobTrackingService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.stereotype.Controller;
@@ -13,17 +12,31 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ConversionMutationController {
 
+  private final JobTrackingService jobTrackingService;
+
+  public ConversionMutationController(JobTrackingService jobTrackingService) {
+    this.jobTrackingService = jobTrackingService;
+  }
+
   /**
-   * Submits a file for conversion. In a real implementation, this would accept an Upload scalar
-   * and delegate to the FileConversionService. For now, it creates a job record and returns
-   * immediately with PENDING status.
+   * Submits a file for conversion. Creates a job record and returns immediately with PENDING status.
+   *
+   * <p>Note: Actual file conversion requires a file upload which GraphQL doesn't easily support.
+   * This mutation creates and tracks the job. The actual conversion must be triggered via the
+   * REST endpoint with file upload. This serves as a job submission/tracking entry point.</p>
    */
   @MutationMapping
   public ConversionResult convertFile(@Argument String fileName, @Argument Long fileSize) {
-    String jobId = UUID.randomUUID().toString();
-    String submittedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    String outputFileName = fileName.replaceAll("\\.[^.]+$", ".pdf");
+    ConversionJob job = jobTrackingService.submit(fileName, outputFileName, null);
 
     return new ConversionResult(
-        jobId, fileName, "PENDING", fileSize, submittedAt, null, null);
+        job.id(),
+        job.inputFileName(),
+        job.status().name(),
+        fileSize,
+        job.createdAt() != null ? job.createdAt().toString() : null,
+        null,
+        null);
   }
 }

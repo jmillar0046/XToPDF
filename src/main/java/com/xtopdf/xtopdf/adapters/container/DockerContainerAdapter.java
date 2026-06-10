@@ -313,7 +313,11 @@ public class DockerContainerAdapter implements ContainerRuntimePort {
     }
     
     /**
-     * Find an available port for the container
+     * Find an available port for the container.
+     *
+     * Note: Ephemeral port allocation has an inherent TOCTOU race.
+     * The 3-retry logic mitigates but doesn't eliminate this.
+     * For production, consider using Docker's native port mapping (-P) with port inspection.
      */
     private int findAvailablePort() {
         try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {

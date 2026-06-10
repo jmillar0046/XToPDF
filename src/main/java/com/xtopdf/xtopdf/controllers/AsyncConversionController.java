@@ -23,6 +23,9 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import jakarta.annotation.PreDestroy;
 
 /**
  * Controller for async file conversion operations.
@@ -50,6 +53,19 @@ public class AsyncConversionController {
         this.webhookService = webhookService;
         this.baseOutputDirectory = baseOutputDirectory;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+    }
+
+    @PreDestroy
+    void shutdownExecutor() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**

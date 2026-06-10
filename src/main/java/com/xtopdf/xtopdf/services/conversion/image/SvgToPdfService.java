@@ -60,11 +60,14 @@ public class SvgToPdfService {
      * Renders SVG content to a PNG byte array using Apache Batik's PNGTranscoder.
      */
     byte[] renderSvgToPng(String svgContent) throws IOException {
-        try (var svgInput = new StringReader(svgContent);
+        var sanitized = sanitizeSvg(svgContent);
+
+        try (var svgInput = new StringReader(sanitized);
              var pngOutput = new ByteArrayOutputStream()) {
 
             var transcoder = new PNGTranscoder();
             transcoder.addTranscodingHint(PNGTranscoder.KEY_PIXEL_UNIT_TO_MILLIMETER, 25.4f / RENDER_DPI);
+            transcoder.addTranscodingHint(PNGTranscoder.KEY_ALLOW_EXTERNAL_RESOURCES, Boolean.FALSE);
 
             var input = new TranscoderInput(svgInput);
             var output = new TranscoderOutput(pngOutput);
@@ -76,6 +79,18 @@ public class SvgToPdfService {
         } catch (Exception e) {
             throw new IOException("Error rendering SVG with Batik: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Sanitizes SVG content by removing DOCTYPE declarations and external entity references
+     * to prevent XXE and SSRF attacks.
+     */
+    String sanitizeSvg(String svgContent) {
+        // Remove DOCTYPE declarations (including any entity definitions)
+        String sanitized = svgContent.replaceAll("(?si)<!DOCTYPE[^>]*>", "");
+        // Remove any remaining entity references like &xxe;
+        sanitized = sanitized.replaceAll("&(?!amp;|lt;|gt;|quot;|apos;|#)[a-zA-Z0-9]+;", "");
+        return sanitized;
     }
 
     /**

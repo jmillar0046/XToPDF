@@ -1,25 +1,33 @@
 package com.xtopdf.xtopdf.services;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xtopdf.xtopdf.dto.ConversionJob;
 import com.xtopdf.xtopdf.dto.ConversionJob.JobStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Service for tracking async conversion jobs in-memory.
- * Uses ConcurrentHashMap for thread-safe job storage.
+ * Uses Caffeine caches with eviction to prevent memory leaks.
  */
 @Service
 @Slf4j
 public class JobTrackingService {
 
-    private final ConcurrentMap<String, ConversionJob> jobs = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, byte[]> results = new ConcurrentHashMap<>();
+    private final Cache<String, ConversionJob> jobs = Caffeine.newBuilder()
+            .maximumSize(10_000)
+            .expireAfterWrite(Duration.ofHours(2))
+            .build();
+
+    private final Cache<String, byte[]> results = Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .expireAfterWrite(Duration.ofHours(1))
+            .build();
 
     /**
      * Submits a new conversion job and returns the job with a generated UUID.
@@ -44,7 +52,7 @@ public class JobTrackingService {
      * @return the job if found, empty otherwise
      */
     public Optional<ConversionJob> getStatus(String jobId) {
-        return Optional.ofNullable(jobs.get(jobId));
+        return Optional.ofNullable(jobs.getIfPresent(jobId));
     }
 
     /**
@@ -54,7 +62,7 @@ public class JobTrackingService {
      * @return the PDF bytes if the job is completed, empty otherwise
      */
     public Optional<byte[]> getResult(String jobId) {
-        return Optional.ofNullable(results.get(jobId));
+        return Optional.ofNullable(results.getIfPresent(jobId));
     }
 
     /**
@@ -63,7 +71,10 @@ public class JobTrackingService {
      * @param jobId the job ID
      */
     public void markProcessing(String jobId) {
-        jobs.computeIfPresent(jobId, (id, job) -> job.withProcessing());
+        var existing = jobs.getIfPresent(jobId);
+        if (existing != null) {
+            jobs.put(jobId, existing.withProcessing());
+        }
         log.debug("Job processing: id={}", jobId);
     }
 
@@ -74,7 +85,10 @@ public class JobTrackingService {
      * @param pdfBytes the converted PDF bytes
      */
     public void markCompleted(String jobId, byte[] pdfBytes) {
-        jobs.computeIfPresent(jobId, (id, job) -> job.withCompleted());
+        var existing = jobs.getIfPresent(jobId);
+        if (existing != null) {
+            jobs.put(jobId, existing.withCompleted());
+        }
         results.put(jobId, pdfBytes);
         log.info("Job completed: id={}", jobId);
     }
@@ -86,7 +100,10 @@ public class JobTrackingService {
      * @param errorMessage description of what went wrong
      */
     public void markFailed(String jobId, String errorMessage) {
-        jobs.computeIfPresent(jobId, (id, job) -> job.withFailed(errorMessage));
+        var existing = jobs.getIfPresent(jobId);
+        if (existing != null) {
+            jobs.put(jobId, existing.withFailed(errorMessage));
+        }
         log.error("Job failed: id={}, error={}", jobId, errorMessage);
     }
 }

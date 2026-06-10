@@ -30,22 +30,10 @@ public class ContainerRuntimeHealthIndicator implements HealthIndicator {
         }
 
         try {
-            var runtimeInfo = containerRuntimePort.getRuntimeInfo();
-            if (runtimeInfo != null && !runtimeInfo.startsWith("Failed")) {
-                return Health.up()
-                        .withDetail("runtime", runtimeInfo)
-                        .build();
-            } else {
-                return Health.down()
-                        .withDetail("reason", runtimeInfo != null ? runtimeInfo : "No runtime info available")
-                        .build();
-            }
+            var info = containerRuntimePort.getRuntimeInfo();
+            return Health.up().withDetail("runtime", info).build();
         } catch (Exception e) {
-            log.warn("Container runtime health check failed: {}", e.getMessage());
-            return Health.down()
-                    .withDetail("reason", "Container runtime unavailable")
-                    .withException(e)
-                    .build();
+            return Health.down().withDetail("reason", "Runtime unavailable").build();
         }
     }
 }

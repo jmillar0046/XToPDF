@@ -12,6 +12,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.concurrent.TimeUnit;
 
+// TODO: Integrate into FileConversionService once file-based conversion is refactored to return bytes
+
 /**
  * Caching service for file conversion results.
  * Uses Caffeine in-memory cache with configurable TTL and max size.
@@ -45,16 +47,32 @@ public class ConversionCacheService {
 
     /**
      * Computes the cache key from file content bytes and output extension.
+     * Convenience method that passes null for optionsHash.
      *
      * @param fileContent the raw file bytes
      * @param outputExtension the target output extension (e.g., ".pdf")
      * @return SHA-256 hash as hex string
      */
     public String computeCacheKey(byte[] fileContent, String outputExtension) {
+        return computeCacheKey(fileContent, outputExtension, null);
+    }
+
+    /**
+     * Computes the cache key from file content bytes, output extension, and conversion options.
+     *
+     * @param fileContent the raw file bytes
+     * @param outputExtension the target output extension (e.g., ".pdf")
+     * @param optionsHash serialized conversion options string (nullable)
+     * @return SHA-256 hash as hex string
+     */
+    public String computeCacheKey(byte[] fileContent, String outputExtension, String optionsHash) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(fileContent);
             digest.update(outputExtension.getBytes());
+            if (optionsHash != null) {
+                digest.update(optionsHash.getBytes());
+            }
             byte[] hash = digest.digest();
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {

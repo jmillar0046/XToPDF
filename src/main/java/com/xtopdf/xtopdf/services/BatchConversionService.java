@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -106,6 +107,6 @@ public class BatchConversionService {
     private String generateOutputFileName(String inputFileName) {
         int dotIndex = inputFileName.lastIndexOf('.');
         String baseName = dotIndex > 0 ? inputFileName.substring(0, dotIndex) : inputFileName;
-        return baseName + ".pdf";
+        return baseName + "-" + UUID.randomUUID().toString().substring(0, 8) + ".pdf";
     }
 }

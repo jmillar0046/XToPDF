@@ -4,6 +4,7 @@ import com.xtopdf.xtopdf.dto.ConversionJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -42,11 +43,19 @@ public class WebhookService {
      * Sends a webhook notification for a completed/failed job.
      * Retries with exponential backoff on failure.
      *
+     * Note: Retry loop blocks the calling virtual thread. For production with high
+     * webhook volume, consider moving to an async message queue (e.g., Spring Events + @Async).
+     *
      * @param job        the conversion job that completed
      * @param webhookUrl the URL to POST the notification to
      */
     public void notifyCompletion(ConversionJob job, String webhookUrl) {
         if (webhookUrl == null || webhookUrl.isBlank()) {
+            return;
+        }
+
+        if (!isUrlSafe(webhookUrl)) {
+            log.warn("Webhook URL rejected (unsafe destination): {}", webhookUrl);
             return;
         }
 
@@ -111,6 +120,46 @@ public class WebhookService {
         }
         sb.append("}");
         return sb.toString();
+    }
+
+    /**
+     * Validates that a webhook URL is safe to call (no SSRF).
+     * Rejects private, loopback, and link-local addresses.
+     */
+    private boolean isUrlSafe(String url) {
+        try {
+            var uri = URI.create(url);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+                return false;
+            }
+
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                return false;
+            }
+
+            String hostLower = host.toLowerCase();
+            if (hostLower.equals("localhost") || hostLower.endsWith(".localhost")) {
+                return false;
+            }
+
+            InetAddress address = InetAddress.getByName(host);
+            if (address.isLoopbackAddress() || address.isLinkLocalAddress()
+                    || address.isSiteLocalAddress() || address.isAnyLocalAddress()) {
+                return false;
+            }
+
+            // Reject IPv6 unique local addresses (fc00::/7)
+            byte[] addr = address.getAddress();
+            if (addr.length == 16 && (addr[0] & 0xFE) == 0xFC) {
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String escapeJson(String value) {

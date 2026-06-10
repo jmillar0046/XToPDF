@@ -1,6 +1,7 @@
 package com.xtopdf.xtopdf.controllers.graphql;
 
 import com.xtopdf.xtopdf.converters.ConverterRegistry;
+import com.xtopdf.xtopdf.services.JobTrackingService;
 import java.util.List;
 import java.util.Set;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -14,9 +15,12 @@ import org.springframework.stereotype.Controller;
 public class ConversionQueryController {
 
   private final ConverterRegistry converterRegistry;
+  private final JobTrackingService jobTrackingService;
 
-  public ConversionQueryController(ConverterRegistry converterRegistry) {
+  public ConversionQueryController(ConverterRegistry converterRegistry,
+                                   JobTrackingService jobTrackingService) {
     this.converterRegistry = converterRegistry;
+    this.jobTrackingService = jobTrackingService;
   }
 
   /**
@@ -33,8 +37,15 @@ public class ConversionQueryController {
    */
   @QueryMapping
   public ConversionResult conversionJob(@Argument String id) {
-    // Placeholder: In a full implementation this would look up job status
-    // from the JobTrackingService. For now return null (not found).
-    return null;
+    return jobTrackingService.getStatus(id)
+        .map(job -> new ConversionResult(
+            job.id(),
+            job.inputFileName(),
+            job.status().name(),
+            null,
+            job.createdAt() != null ? job.createdAt().toString() : null,
+            job.completedAt() != null ? job.completedAt().toString() : null,
+            job.errorMessage()))
+        .orElse(null);
   }
 }

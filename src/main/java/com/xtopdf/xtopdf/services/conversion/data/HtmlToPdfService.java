@@ -53,6 +53,8 @@ public class HtmlToPdfService {
     /**
      * Converts raw HTML to well-formed XHTML suitable for Flying Saucer.
      * Uses JSoup to parse potentially malformed HTML and output clean XHTML.
+     * Strips external resource references (http/https) to prevent Flying Saucer
+     * from resolving external URLs, which could cause SSRF or slowdowns.
      */
     String convertToXhtml(String html) {
         Document doc = Jsoup.parse(html);
@@ -72,6 +74,10 @@ public class HtmlToPdfService {
         if (head != null && head.select("meta[http-equiv=Content-Type]").isEmpty()) {
             head.prepend("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />");
         }
+
+        // Remove external resource references to prevent SSRF and external resolution by Flying Saucer
+        doc.select("link[href~=(?i)^https?://]").remove();
+        doc.select("img[src~=(?i)^https?://]").remove();
 
         return doc.html();
     }
