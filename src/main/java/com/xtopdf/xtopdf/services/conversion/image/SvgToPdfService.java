@@ -86,8 +86,28 @@ public class SvgToPdfService {
      * to prevent XXE and SSRF attacks.
      */
     String sanitizeSvg(String svgContent) {
-        // Remove DOCTYPE declarations including internal subsets (may contain > inside [...])
-        String sanitized = svgContent.replaceAll("(?si)<!DOCTYPE[^\\[>]*(\\[[^\\]]*\\])?>", "");
+        // Remove DOCTYPE declarations using simple indexOf-based approach (no regex backtracking)
+        String sanitized = svgContent;
+        int doctypeStart = sanitized.toLowerCase().indexOf("<!doctype");
+        while (doctypeStart >= 0) {
+            // Find the matching > accounting for internal subset [...]
+            int bracketStart = sanitized.indexOf('[', doctypeStart);
+            int angleEnd = sanitized.indexOf('>', doctypeStart);
+            int end;
+            if (bracketStart >= 0 && bracketStart < angleEnd) {
+                // Has internal subset — find matching ]>
+                int bracketEnd = sanitized.indexOf(']', bracketStart);
+                end = (bracketEnd >= 0) ? sanitized.indexOf('>', bracketEnd) : angleEnd;
+            } else {
+                end = angleEnd;
+            }
+            if (end >= 0) {
+                sanitized = sanitized.substring(0, doctypeStart) + sanitized.substring(end + 1);
+            } else {
+                break;
+            }
+            doctypeStart = sanitized.toLowerCase().indexOf("<!doctype");
+        }
         // Remove parameter entity references (%name;)
         sanitized = sanitized.replaceAll("%[a-zA-Z0-9]+;", "");
         // Remove custom entity references (preserve standard: amp, lt, gt, quot, apos, numeric)
@@ -131,17 +151,11 @@ public class SvgToPdfService {
     /**
      * Strips SVG animation elements (animate, animateTransform, animateMotion, set)
      * to produce a static first-frame representation.
+     * Uses JSoup XML parser instead of regex to avoid ReDoS vulnerabilities.
      */
     String stripAnimations(String svgContent) {
-        // Remove animation elements for static rendering
-        return svgContent
-                .replaceAll("<animate[^>]*/>", "")
-                .replaceAll("<animate[^>]*>.*?</animate>", "")
-                .replaceAll("<animateTransform[^>]*/>", "")
-                .replaceAll("<animateTransform[^>]*>.*?</animateTransform>", "")
-                .replaceAll("<animateMotion[^>]*/>", "")
-                .replaceAll("<animateMotion[^>]*>.*?</animateMotion>", "")
-                .replaceAll("<set[^>]*/>", "")
-                .replaceAll("<set[^>]*>.*?</set>", "");
+        var doc = org.jsoup.Jsoup.parse(svgContent, "", org.jsoup.parser.Parser.xmlParser());
+        doc.select("animate, animateTransform, animateMotion, set").remove();
+        return doc.outerHtml();
     }
 }
