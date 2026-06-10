@@ -9,6 +9,7 @@ import com.xtopdf.xtopdf.converters.FileConverter;
 import com.xtopdf.xtopdf.dto.ConversionParameters;
 import com.xtopdf.xtopdf.exceptions.ConversionTimeoutException;
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.services.VirusScanService;
 import com.xtopdf.xtopdf.services.model.ConversionRuntimeException;
 import com.xtopdf.xtopdf.services.operations.PageNumberService;
 import com.xtopdf.xtopdf.services.operations.PdfMergeService;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileConversionService {
     private final ConverterRegistry converterRegistry;
     private final FileContentValidator contentValidator;
+    private final VirusScanService virusScanService;
     private final PdfMergeService pdfMergeService;
     private final PageNumberService pageNumberService;
     private final WatermarkService watermarkService;
@@ -37,6 +39,7 @@ public class FileConversionService {
     public FileConversionService(
             ConverterRegistry converterRegistry,
             FileContentValidator contentValidator,
+            VirusScanService virusScanService,
             PdfMergeService pdfMergeService,
             PageNumberService pageNumberService,
             WatermarkService watermarkService,
@@ -45,6 +48,7 @@ public class FileConversionService {
             @Value("${xtopdf.conversion.timeout-seconds:300}") int timeoutSeconds) {
         this.converterRegistry = converterRegistry;
         this.contentValidator = contentValidator;
+        this.virusScanService = virusScanService;
         this.pdfMergeService = pdfMergeService;
         this.pageNumberService = pageNumberService;
         this.watermarkService = watermarkService;
@@ -79,6 +83,13 @@ public class FileConversionService {
         Timer.Sample timerSample = conversionMetrics.startTimer();
 
         contentValidator.validate(params.inputFile(), extension);
+
+        // Virus scan after content validation, before conversion
+        VirusScanService.ScanResult scanResult = virusScanService.scan(params.inputFile());
+        if (!scanResult.clean()) {
+            throw new FileConversionException("File rejected: virus scan failed");
+        }
+
         FileConverter converter = converterRegistry.getConverter(extension);
 
         // Define the conversion logic as a Runnable

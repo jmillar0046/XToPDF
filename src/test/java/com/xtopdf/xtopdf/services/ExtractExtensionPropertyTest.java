@@ -42,11 +42,12 @@ class ExtractExtensionPropertyTest {
     private FileConversionService createService() {
         var converterRegistry = mock(ConverterRegistry.class);
         var contentValidator = mock(FileContentValidator.class);
+        var virusScanService = mock(com.xtopdf.xtopdf.services.VirusScanService.class);
         var pdfMergeService = mock(com.xtopdf.xtopdf.services.operations.PdfMergeService.class);
         var pageNumberService = mock(com.xtopdf.xtopdf.services.operations.PageNumberService.class);
         var watermarkService = mock(com.xtopdf.xtopdf.services.operations.WatermarkService.class);
         var containerOrchestrationService = mock(com.xtopdf.xtopdf.services.orchestration.ContainerOrchestrationService.class);
-        return new FileConversionService(converterRegistry, contentValidator, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService,
+        return new FileConversionService(converterRegistry, contentValidator, virusScanService, pdfMergeService, pageNumberService, watermarkService, containerOrchestrationService,
                 new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
                         new io.micrometer.core.instrument.simple.SimpleMeterRegistry()), 300);
     }

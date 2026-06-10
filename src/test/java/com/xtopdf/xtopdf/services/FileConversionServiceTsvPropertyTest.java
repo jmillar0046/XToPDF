@@ -44,6 +44,7 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
+                mock(VirusScanService.class),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
                 mock(WatermarkService.class), containerService,
                 new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
@@ -90,6 +91,7 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
+                mock(VirusScanService.class),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
                 mock(WatermarkService.class), containerService,
                 new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
