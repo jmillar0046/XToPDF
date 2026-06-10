@@ -40,7 +40,7 @@ jobs:
     - name: Build and test
       run: |
         chmod +x ./gradlew
-        ./gradlew build -x spotlessCheck
+        ./gradlew build
 
     - name: Check test coverage
       run: ./gradlew jacocoTestCoverageVerification
