@@ -7,7 +7,7 @@ public record ConversionResult(
         String id,
         String fileName,
         String status,
-        Long fileSize,
+        Integer fileSize,
         String submittedAt,
         String completedAt,
         String errorMessage) {}

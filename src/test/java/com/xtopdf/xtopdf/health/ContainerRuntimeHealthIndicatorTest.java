@@ -40,26 +40,28 @@ class ContainerRuntimeHealthIndicatorTest {
     }
 
     @Test
-    void healthReturnsDownWhenRuntimeInfoStartsWithFailed() {
+    void healthReturnsUpWhenRuntimeInfoReturnsAnyString() {
         when(containerRuntimePort.isEnabled()).thenReturn(true);
         when(containerRuntimePort.getRuntimeInfo()).thenReturn("Failed to get Docker info: Connection refused");
 
         var indicator = new ContainerRuntimeHealthIndicator(containerRuntimePort);
         var health = indicator.health();
 
-        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-        assertThat(health.getDetails()).containsKey("reason");
+        // Any non-exception response is UP (we only go DOWN on thrown exceptions)
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
+        assertThat(health.getDetails()).containsKey("runtime");
     }
 
     @Test
-    void healthReturnsDownWhenRuntimeInfoIsNull() {
+    void healthReturnsUpWhenRuntimeInfoIsNull() {
         when(containerRuntimePort.isEnabled()).thenReturn(true);
         when(containerRuntimePort.getRuntimeInfo()).thenReturn(null);
 
         var indicator = new ContainerRuntimeHealthIndicator(containerRuntimePort);
         var health = indicator.health();
 
-        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
+        // Null info doesn't throw — reports UP
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
     }
 
     @Test

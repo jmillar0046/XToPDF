@@ -26,7 +26,7 @@ public class ConversionMutationController {
    * REST endpoint with file upload. This serves as a job submission/tracking entry point.</p>
    */
   @MutationMapping
-  public ConversionResult convertFile(@Argument String fileName, @Argument Long fileSize) {
+  public ConversionResult convertFile(@Argument String fileName, @Argument Integer fileSize) {
     String outputFileName = fileName.replaceAll("\\.[^.]+$", ".pdf");
     ConversionJob job = jobTrackingService.submit(fileName, outputFileName, null);
 

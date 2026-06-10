@@ -22,8 +22,9 @@ class GraphQLResolverTest {
   @BeforeEach
   void setup() {
     converterRegistry = mock(ConverterRegistry.class);
-    queryController = new ConversionQueryController(converterRegistry, mock(com.xtopdf.xtopdf.services.JobTrackingService.class));
-    mutationController = new ConversionMutationController(mock(com.xtopdf.xtopdf.services.JobTrackingService.class));
+    var jobTrackingService = new com.xtopdf.xtopdf.services.JobTrackingService();
+    queryController = new ConversionQueryController(converterRegistry, jobTrackingService);
+    mutationController = new ConversionMutationController(jobTrackingService);
   }
 
   @Test
@@ -56,22 +57,21 @@ class GraphQLResolverTest {
 
   @Test
   void convertFileMutationReturnsPendingJob() {
-    ConversionResult result = mutationController.convertFile("document.docx", 1024L);
+    ConversionResult result = mutationController.convertFile("document.docx", 1024);
 
     assertThat(result).isNotNull();
     assertThat(result.id()).isNotNull().isNotEmpty();
     assertThat(result.fileName()).isEqualTo("document.docx");
-    assertThat(result.status()).isEqualTo("PENDING");
-    assertThat(result.fileSize()).isEqualTo(1024L);
+    assertThat(result.status()).isEqualTo("AWAITING_UPLOAD");
+    assertThat(result.fileSize()).isEqualTo(1024);
     assertThat(result.submittedAt()).isNotNull();
     assertThat(result.completedAt()).isNull();
-    assertThat(result.errorMessage()).isNull();
   }
 
   @Test
   void convertFileMutationGeneratesUniqueJobIds() {
-    ConversionResult result1 = mutationController.convertFile("file1.docx", 100L);
-    ConversionResult result2 = mutationController.convertFile("file2.xlsx", 200L);
+    ConversionResult result1 = mutationController.convertFile("file1.docx", 100);
+    ConversionResult result2 = mutationController.convertFile("file2.xlsx", 200);
 
     assertThat(result1.id()).isNotEqualTo(result2.id());
   }

@@ -42,12 +42,18 @@ class MemoryHealthIndicatorTest {
     }
 
     @Test
-    void buildHealthStatusReturnsDownWhenAboveCriticalThreshold() {
-        var builder = indicator.buildHealthStatus(0.95);
-        var health = builder.build();
+    void buildHealthStatusReturnsDownAfterConsecutiveCriticalChecks() {
+        // First critical check returns WARNING (count 1/3)
+        var builder1 = indicator.buildHealthStatus(0.95);
+        assertThat(builder1.build().getStatus()).isEqualTo(new Status("WARNING"));
 
-        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-        assertThat(health.getDetails()).containsKey("reason");
+        // Second critical check returns WARNING (count 2/3)
+        var builder2 = indicator.buildHealthStatus(0.95);
+        assertThat(builder2.build().getStatus()).isEqualTo(new Status("WARNING"));
+
+        // Third critical check returns DOWN (count 3/3)
+        var builder3 = indicator.buildHealthStatus(0.95);
+        assertThat(builder3.build().getStatus()).isEqualTo(Status.DOWN);
     }
 
     @Test
@@ -59,10 +65,11 @@ class MemoryHealthIndicatorTest {
     }
 
     @Test
-    void buildHealthStatusAtExactCriticalThresholdReturnsDown() {
+    void buildHealthStatusAtExactCriticalThresholdReturnsWarningOnFirstCheck() {
         var builder = indicator.buildHealthStatus(0.90);
         var health = builder.build();
 
-        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
+        // First check at critical: returns WARNING due to hysteresis (needs 3 consecutive)
+        assertThat(health.getStatus()).isEqualTo(new Status("WARNING"));
     }
 }

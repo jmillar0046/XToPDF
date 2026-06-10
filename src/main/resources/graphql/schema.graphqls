@@ -8,7 +8,7 @@ type Query {
 
 type Mutation {
     """Submit a file for conversion to PDF. Returns the conversion result metadata."""
-    convertFile(fileName: String!, fileSize: Long!): ConversionResult!
+    convertFile(fileName: String!, fileSize: Int!): ConversionResult!
 }
 
 """Result of a file conversion operation."""
@@ -23,7 +23,7 @@ type ConversionResult {
     status: String!
 
     """File size in bytes."""
-    fileSize: Long
+    fileSize: Int
 
     """ISO-8601 timestamp when the conversion was submitted."""
     submittedAt: String
