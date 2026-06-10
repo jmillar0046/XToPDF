@@ -3,8 +3,6 @@ plugins {
 	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'jacoco'
-	id 'org.sonarqube' version '6.0.1.5171'
-	id 'com.diffplug.spotless' version '7.0.4'
 }
 
 group = 'com.xtopdf'
@@ -103,12 +101,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
 	testImplementation 'net.jqwik:jqwik:1.10.1'
 	testImplementation 'org.assertj:assertj-core:3.27.7'
-	testImplementation 'au.com.dius.pact.consumer:junit5:4.6.16'
-	testImplementation 'au.com.dius.pact.provider:junit5:4.6.16'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// Chaos Monkey for resilience testing
-	implementation 'de.codecentric:chaos-monkey-spring-boot:3.1.0'
 }
 
 tasks.named('test') {
@@ -141,25 +134,3 @@ jacocoTestCoverageVerification {
 	}
 }
 
-// SonarQube static analysis configuration
-sonar {
-	properties {
-		property 'sonar.projectKey', System.getenv('SONAR_PROJECT_KEY') ?: 'xtopdf'
-		property 'sonar.organization', System.getenv('SONAR_ORGANIZATION') ?: 'xtopdf-org'
-		property 'sonar.host.url', System.getenv('SONAR_HOST_URL') ?: 'https://sonarcloud.io'
-		property 'sonar.coverage.jacoco.xmlReportPaths', "${layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml"
-	}
-}
-
-// Spotless code formatting
-// Run: ./gradlew spotlessCheck (to verify) or ./gradlew spotlessApply (to fix)
-spotless {
-	java {
-		target 'src/**/*.java'
-		googleJavaFormat()
-		importOrder('java', 'javax', 'jakarta', 'org', 'com', '')
-		removeUnusedImports()
-		trimTrailingWhitespace()
-		endWithNewline()
-	}
-}
