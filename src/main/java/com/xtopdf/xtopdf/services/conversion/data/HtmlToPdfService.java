@@ -75,9 +75,10 @@ public class HtmlToPdfService {
             head.prepend("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />");
         }
 
-        // Remove external resource references to prevent SSRF and external resolution by Flying Saucer
-        doc.select("link[href~=(?i)^https?://]").remove();
-        doc.select("img[src~=(?i)^https?://]").remove();
+        // Remove external resource references to prevent SSRF
+        doc.select("link[href~=(?i)^(https?:)?//]").remove();
+        doc.select("img[src~=(?i)^(https?:)?//]").remove();
+        doc.select("script, iframe, object, embed").remove();
 
         return doc.html();
     }

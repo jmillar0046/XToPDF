@@ -86,9 +86,11 @@ public class SvgToPdfService {
      * to prevent XXE and SSRF attacks.
      */
     String sanitizeSvg(String svgContent) {
-        // Remove DOCTYPE declarations (including any entity definitions)
-        String sanitized = svgContent.replaceAll("(?si)<!DOCTYPE[^>]*>", "");
-        // Remove any remaining entity references like &xxe;
+        // Remove DOCTYPE declarations including internal subsets (may contain > inside [...])
+        String sanitized = svgContent.replaceAll("(?si)<!DOCTYPE[^\\[>]*(\\[[^\\]]*\\])?>", "");
+        // Remove parameter entity references (%name;)
+        sanitized = sanitized.replaceAll("%[a-zA-Z0-9]+;", "");
+        // Remove custom entity references (preserve standard: amp, lt, gt, quot, apos, numeric)
         sanitized = sanitized.replaceAll("&(?!amp;|lt;|gt;|quot;|apos;|#)[a-zA-Z0-9]+;", "");
         return sanitized;
     }

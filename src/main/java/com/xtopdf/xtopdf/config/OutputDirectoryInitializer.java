@@ -29,7 +29,7 @@ public class OutputDirectoryInitializer {
                 Files.createDirectories(outputPath);
                 log.info("Created output directory: {}", outputPath.toAbsolutePath());
             } catch (IOException e) {
-                log.error("Failed to create output directory: {}", outputPath.toAbsolutePath());
+                throw new IllegalStateException("Failed to create output directory: " + outputPath.toAbsolutePath(), e);
             }
         } else {
             log.info("Output directory already exists: {}", outputPath.toAbsolutePath());

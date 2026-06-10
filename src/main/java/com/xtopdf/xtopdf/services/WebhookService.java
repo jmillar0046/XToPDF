@@ -122,6 +122,12 @@ public class WebhookService {
         return sb.toString();
     }
 
+    // KNOWN LIMITATION: DNS rebinding attacks are not fully mitigated.
+    // The hostname is resolved once for validation but HttpClient may resolve again.
+    // For production deployments with untrusted webhook URLs, consider:
+    // 1. Using a webhook allowlist instead of blocklist
+    // 2. Running webhook delivery through a forward proxy
+    // 3. Implementing pinned DNS resolution
     /**
      * Validates that a webhook URL is safe to call (no SSRF).
      * Rejects private, loopback, and link-local addresses.
@@ -154,6 +160,22 @@ public class WebhookService {
             byte[] addr = address.getAddress();
             if (addr.length == 16 && (addr[0] & 0xFE) == 0xFC) {
                 return false;
+            }
+
+            // Check for IPv4-mapped IPv6 addresses (e.g., ::ffff:10.0.0.1)
+            if (address instanceof java.net.Inet6Address inet6) {
+                byte[] addrBytes = inet6.getAddress();
+                // IPv4-mapped IPv6: first 10 bytes zero, bytes 10-11 are 0xFF
+                if (addrBytes[10] == (byte)0xFF && addrBytes[11] == (byte)0xFF) {
+                    // Extract the embedded IPv4 address and re-check
+                    byte[] ipv4Bytes = new byte[4];
+                    System.arraycopy(addrBytes, 12, ipv4Bytes, 0, 4);
+                    InetAddress ipv4 = InetAddress.getByAddress(ipv4Bytes);
+                    if (ipv4.isLoopbackAddress() || ipv4.isLinkLocalAddress()
+                            || ipv4.isSiteLocalAddress() || ipv4.isAnyLocalAddress()) {
+                        return false;
+                    }
+                }
             }
 
             return true;

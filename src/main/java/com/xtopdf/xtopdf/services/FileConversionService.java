@@ -139,7 +139,7 @@ public class FileConversionService {
         };
 
         // Execute conversion either in container or locally, with timeout
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         Future<?> future = executor.submit(() -> {
             try {
                 containerOrchestrationService.executeInContainer(params.inputFile(), params.outputFile(), conversionLogic);

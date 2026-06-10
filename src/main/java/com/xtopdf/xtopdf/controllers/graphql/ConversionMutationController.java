@@ -33,10 +33,10 @@ public class ConversionMutationController {
     return new ConversionResult(
         job.id(),
         job.inputFileName(),
-        job.status().name(),
+        "AWAITING_UPLOAD",  // Distinct from PENDING to indicate file must be uploaded via REST
         fileSize,
         job.createdAt() != null ? job.createdAt().toString() : null,
         null,
-        null);
+        "Upload file via POST /api/convert/async to begin conversion");
   }
 }

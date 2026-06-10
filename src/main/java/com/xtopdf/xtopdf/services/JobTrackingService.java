@@ -26,7 +26,7 @@ public class JobTrackingService {
 
     private final Cache<String, byte[]> results = Caffeine.newBuilder()
             .maximumSize(1_000)
-            .expireAfterWrite(Duration.ofHours(1))
+            .expireAfterWrite(Duration.ofHours(2))
             .build();
 
     /**
