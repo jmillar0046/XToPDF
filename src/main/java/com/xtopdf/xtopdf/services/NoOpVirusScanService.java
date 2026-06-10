@@ -19,6 +19,6 @@ public class NoOpVirusScanService implements VirusScanService {
     public ScanResult scan(MultipartFile file) {
         log.debug("Virus scanning disabled — skipping scan for file: {}",
                 file.getOriginalFilename());
-        return ScanResult.clean();
+        return ScanResult.ok();
     }
 }

@@ -15,8 +15,8 @@ public interface VirusScanService {
      * @param clean   true if the file passed the scan
      * @param message human-readable result description
      */
-    record ScanResult(boolean clean, String message) {
-        public static ScanResult clean() {
+    record ScanResult(boolean isClean, String message) {
+        public static ScanResult ok() {
             return new ScanResult(true, "OK");
         }
 

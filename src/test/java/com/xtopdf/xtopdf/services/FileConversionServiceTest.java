@@ -49,7 +49,7 @@ class FileConversionServiceTest {
         }).when(containerOrchestrationService).executeInContainer(any(), any(), any());
 
         // Default: virus scan returns clean
-        lenient().when(virusScanService.scan(any())).thenReturn(VirusScanService.ScanResult.clean());
+        lenient().when(virusScanService.scan(any())).thenReturn(VirusScanService.ScanResult.ok());
 
         fileConversionService = new FileConversionService(
                 converterRegistry,

@@ -86,7 +86,7 @@ public class FileConversionService {
 
         // Virus scan after content validation, before conversion
         VirusScanService.ScanResult scanResult = virusScanService.scan(params.inputFile());
-        if (!scanResult.clean()) {
+        if (!scanResult.isClean()) {
             throw new FileConversionException("File rejected: virus scan failed");
         }
 

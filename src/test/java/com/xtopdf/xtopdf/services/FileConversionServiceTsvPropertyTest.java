@@ -44,7 +44,7 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
-                mock(VirusScanService.class),
+                mockVirusScan(),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
                 mock(WatermarkService.class), containerService,
                 new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
@@ -91,7 +91,7 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
-                mock(VirusScanService.class),
+                mockVirusScan(),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
                 mock(WatermarkService.class), containerService,
                 new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
@@ -113,5 +113,11 @@ class FileConversionServiceTsvPropertyTest {
     Arbitrary<String> nonTsvExtensions() {
         return Arbitraries.of(".txt", ".csv", ".pdf", ".doc", ".docx", ".xls", ".xlsx",
                 ".json", ".xml", ".html", ".md", ".rtf");
+    }
+
+    private static VirusScanService mockVirusScan() {
+        var mock = mock(VirusScanService.class);
+        when(mock.scan(any())).thenReturn(new VirusScanService.ScanResult(true, "OK"));
+        return mock;
     }
 }

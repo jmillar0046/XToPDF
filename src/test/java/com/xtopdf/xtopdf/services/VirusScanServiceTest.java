@@ -33,7 +33,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "test.txt", "text/plain", "hello".getBytes());
             var result = service.scan(file);
 
-            assertThat(result.clean()).isTrue();
+            assertThat(result.isClean()).isTrue();
             assertThat(result.message()).isEqualTo("OK");
         }
 
@@ -43,7 +43,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
             var result = service.scan(file);
 
-            assertThat(result.clean()).isTrue();
+            assertThat(result.isClean()).isTrue();
         }
 
         @Test
@@ -53,7 +53,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "large.bin", "application/octet-stream", largeContent);
             var result = service.scan(file);
 
-            assertThat(result.clean()).isTrue();
+            assertThat(result.isClean()).isTrue();
         }
     }
 
@@ -70,7 +70,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "clean.txt", "text/plain", "safe content".getBytes());
             var result = service.scan(file);
 
-            assertThat(result.clean()).isTrue();
+            assertThat(result.isClean()).isTrue();
             assertThat(result.message()).isEqualTo("OK");
         }
 
@@ -83,7 +83,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "virus.exe", "application/octet-stream", "EICAR".getBytes());
             var result = service.scan(file);
 
-            assertThat(result.clean()).isFalse();
+            assertThat(result.isClean()).isFalse();
             assertThat(result.message()).contains("Win.Test.EICAR_HDB-1");
         }
 
@@ -100,7 +100,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "test.txt", "text/plain", "content".getBytes());
             var result = service.scan(file);
 
-            assertThat(result.clean()).isFalse();
+            assertThat(result.isClean()).isFalse();
             assertThat(result.message()).isEqualTo("Virus scan unavailable");
         }
 
@@ -113,7 +113,7 @@ class VirusScanServiceTest {
             var file = new MockMultipartFile("file", "test.txt", "text/plain", "content".getBytes());
             var result = service.scan(file);
 
-            assertThat(result.clean()).isFalse();
+            assertThat(result.isClean()).isFalse();
             assertThat(result.message()).contains("Scan inconclusive");
         }
 

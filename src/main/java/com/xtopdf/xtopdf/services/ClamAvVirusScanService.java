@@ -82,7 +82,7 @@ public class ClamAvVirusScanService implements VirusScanService {
             log.debug("ClamAV response: {}", response);
 
             if (response.contains("OK")) {
-                return ScanResult.clean();
+                return ScanResult.ok();
             } else if (response.contains("FOUND")) {
                 String virusName = extractVirusName(response);
                 log.warn("Virus detected in file {}: {}", file.getOriginalFilename(), virusName);
