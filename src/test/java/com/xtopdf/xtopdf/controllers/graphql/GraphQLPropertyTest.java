@@ -36,7 +36,7 @@ class GraphQLPropertyTest {
     // Arrange
     ConverterRegistry registry = mock(ConverterRegistry.class);
     when(registry.getSupportedExtensions()).thenReturn(extensions);
-    ConversionQueryController controller = new ConversionQueryController(registry);
+    ConversionQueryController controller = new ConversionQueryController(registry, mock(com.xtopdf.xtopdf.services.JobTrackingService.class));
 
     // Act
     List<String> result = controller.supportedFormats();

@@ -22,8 +22,8 @@ class GraphQLResolverTest {
   @BeforeEach
   void setup() {
     converterRegistry = mock(ConverterRegistry.class);
-    queryController = new ConversionQueryController(converterRegistry);
-    mutationController = new ConversionMutationController();
+    queryController = new ConversionQueryController(converterRegistry, mock(com.xtopdf.xtopdf.services.JobTrackingService.class));
+    mutationController = new ConversionMutationController(mock(com.xtopdf.xtopdf.services.JobTrackingService.class));
   }
 
   @Test
