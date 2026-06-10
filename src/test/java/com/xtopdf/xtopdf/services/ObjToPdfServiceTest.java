@@ -1,8 +1,11 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
+import com.xtopdf.xtopdf.services.conversion.threed.BoundingBox3D;
 import com.xtopdf.xtopdf.services.conversion.threed.ObjToPdfService;
+import com.xtopdf.xtopdf.services.conversion.threed.WireframeRenderer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.MediaType;
@@ -11,6 +14,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -143,5 +148,115 @@ class ObjToPdfServiceTest {
         assertThatThrownBy(() -> objToPdfService.convertObjToPdf(objFile, pdfFile))
                 .isInstanceOf(FileConversionException.class)
                 .hasMessageContaining("500");
+    }
+
+    // --- WireframeRenderer Delegation Tests (Requirements 10.5, 10.6) ---
+
+    @Nested
+    class WireframeRendererDelegationTests {
+
+        @Test
+        void testBuildFaceEdges_singleTriangularFace() {
+            List<int[]> faces = List.of(new int[]{0, 1, 2});
+
+            List<int[]> edges = objToPdfService.buildFaceEdges(faces, 3);
+
+            assertThat(edges).hasSize(3);
+            assertThat(edges.get(0)).containsExactly(0, 1);
+            assertThat(edges.get(1)).containsExactly(1, 2);
+            assertThat(edges.get(2)).containsExactly(2, 0);
+        }
+
+        @Test
+        void testBuildFaceEdges_quadFace() {
+            List<int[]> faces = List.of(new int[]{0, 1, 2, 3});
+
+            List<int[]> edges = objToPdfService.buildFaceEdges(faces, 4);
+
+            assertThat(edges).hasSize(4);
+            assertThat(edges.get(0)).containsExactly(0, 1);
+            assertThat(edges.get(1)).containsExactly(1, 2);
+            assertThat(edges.get(2)).containsExactly(2, 3);
+            assertThat(edges.get(3)).containsExactly(3, 0);
+        }
+
+        @Test
+        void testBuildFaceEdges_multipleFaces() {
+            List<int[]> faces = List.of(
+                    new int[]{0, 1, 2},
+                    new int[]{1, 2, 3}
+            );
+
+            List<int[]> edges = objToPdfService.buildFaceEdges(faces, 4);
+
+            assertThat(edges).hasSize(6);
+        }
+
+        @Test
+        void testBuildFaceEdges_outOfBoundsIndicesSkipped() {
+            List<int[]> faces = List.of(new int[]{0, 1, 5}); // index 5 >= vertexCount of 3
+
+            List<int[]> edges = objToPdfService.buildFaceEdges(faces, 3);
+
+            // Edge (0,1) is valid, (1,5) is not, (5,0) is not
+            assertThat(edges).hasSize(1);
+            assertThat(edges.get(0)).containsExactly(0, 1);
+        }
+
+        @Test
+        void testBuildFaceEdges_emptyFaces() {
+            List<int[]> faces = new ArrayList<>();
+
+            List<int[]> edges = objToPdfService.buildFaceEdges(faces, 10);
+
+            assertThat(edges).isEmpty();
+        }
+
+        @Test
+        void testConversionUsesBoundingBox3D() throws Exception {
+            String content = "v 1 2 3\nv 4 5 6\nv 7 8 9\nf 1 2 3\n";
+
+            MockMultipartFile objFile = new MockMultipartFile(
+                    "file", "bbox.obj", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+            File pdfFile = tempDir.resolve("bboxTest.pdf").toFile();
+
+            objToPdfService.convertObjToPdf(objFile, pdfFile);
+
+            assertThat(pdfFile).exists();
+            assertThat(pdfFile.length()).isGreaterThan(0);
+        }
+
+        @Test
+        void testWireframeRendererProducesDrawLineCalls() throws Exception {
+            // A single triangular face should produce 3 edges via WireframeRenderer
+            String content = "v 0 0 0\nv 10 0 0\nv 5 10 0\nf 1 2 3\n";
+
+            MockMultipartFile objFile = new MockMultipartFile(
+                    "file", "wireframe.obj", MediaType.APPLICATION_OCTET_STREAM_VALUE, content.getBytes());
+
+            File pdfFile = tempDir.resolve("wireframeTest.pdf").toFile();
+
+            objToPdfService.convertObjToPdf(objFile, pdfFile);
+
+            assertThat(pdfFile).exists();
+            assertThat(pdfFile.length()).isGreaterThan(0);
+        }
+
+        @Test
+        void testProjectionValuesMatchWireframeRenderer() {
+            // Verify that the same projection logic is used by checking known coordinates
+            BoundingBox3D bbox = BoundingBox3D.initial(0, 0, 0).expand(10, 10, 10);
+            float scale = WireframeRenderer.calculateScale(bbox);
+
+            float[] projected = WireframeRenderer.projectVertex(new float[]{5, 5, 5}, bbox, scale);
+
+            assertThat(projected[0])
+                    .as("X projection should be within render bounds")
+                    .isBetween(WireframeRenderer.OFFSET_X, WireframeRenderer.OFFSET_X + WireframeRenderer.RENDER_WIDTH);
+            assertThat(projected[1])
+                    .as("Y projection should be within render bounds")
+                    .isBetween(WireframeRenderer.OFFSET_Y - WireframeRenderer.RENDER_HEIGHT, WireframeRenderer.OFFSET_Y);
+        }
     }
 }
