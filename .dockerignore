@@ -1,0 +1,45 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Build output
+build/
+out/
+
+# Gradle caches
+.gradle/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Kiro specs and steering
+.kiro/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Test files (not needed in production image)
+src/test/
+
+# CI/CD configuration
+.github/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated PDF files
+*.pdf
+
+# jqwik database
+.jqwik-database
+
+# Logs
+*.log

@@ -9,6 +9,11 @@ import com.xtopdf.xtopdf.services.operations.PdfMergeService;
 import com.xtopdf.xtopdf.services.operations.WatermarkService;
 import com.xtopdf.xtopdf.utils.PdfFileHelper;
 import com.xtopdf.xtopdf.validation.PdfContentValidator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,15 +25,21 @@ import java.io.File;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/pdf")
+@RequestMapping({"/api/pdf", "/v1/api/pdf"})
 @AllArgsConstructor
 @Slf4j
+@Tag(name = "PDF Operations", description = "Endpoints for PDF manipulation operations (merge, page numbers, watermarks)")
 public class PdfOperationsController {
     private final PdfMergeService pdfMergeService;
     private final PageNumberService pageNumberService;
     private final WatermarkService watermarkService;
 
     @PostMapping("/merge")
+    @Operation(summary = "Merge two PDFs", description = "Merges two PDF files together at the specified position")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "PDFs merged successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid PDF file or parameters")
+    })
     public ResponseEntity<byte[]> mergePdfs(
             @RequestParam("pdf1") MultipartFile pdf1,
             @RequestParam("pdf2") MultipartFile pdf2,
@@ -89,6 +100,11 @@ public class PdfOperationsController {
     }
 
     @PostMapping("/add-page-numbers")
+    @Operation(summary = "Add page numbers to PDF", description = "Adds page numbers to an existing PDF with configurable position, alignment, and style")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Page numbers added successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid PDF file or parameters")
+    })
     public ResponseEntity<byte[]> addPageNumbers(
             @RequestParam("pdfFile") MultipartFile pdfFile,
             @RequestParam(value = "position", required = false, defaultValue = "BOTTOM") String position,
@@ -129,6 +145,11 @@ public class PdfOperationsController {
     }
 
     @PostMapping("/add-watermark")
+    @Operation(summary = "Add watermark to PDF", description = "Adds a text watermark to an existing PDF with configurable font size, layer, and orientation")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Watermark added successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid PDF file or parameters")
+    })
     public ResponseEntity<byte[]> addWatermark(
             @RequestParam("pdfFile") MultipartFile pdfFile,
             @RequestParam("watermarkText") String watermarkText,

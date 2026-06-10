@@ -30,6 +30,7 @@ class FileConversionServiceTest {
 
     @Mock private ConverterRegistry converterRegistry;
     @Mock private FileContentValidator contentValidator;
+    @Mock private VirusScanService virusScanService;
     @Mock private PdfMergeService pdfMergeService;
     @Mock private PageNumberService pageNumberService;
     @Mock private WatermarkService watermarkService;
@@ -47,13 +48,19 @@ class FileConversionServiceTest {
             return null;
         }).when(containerOrchestrationService).executeInContainer(any(), any(), any());
 
+        // Default: virus scan returns clean
+        lenient().when(virusScanService.scan(any())).thenReturn(VirusScanService.ScanResult.ok());
+
         fileConversionService = new FileConversionService(
                 converterRegistry,
                 contentValidator,
+                virusScanService,
                 pdfMergeService,
                 pageNumberService,
                 watermarkService,
                 containerOrchestrationService,
+                new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
+                        new io.micrometer.core.instrument.simple.SimpleMeterRegistry()),
                 300
         );
     }

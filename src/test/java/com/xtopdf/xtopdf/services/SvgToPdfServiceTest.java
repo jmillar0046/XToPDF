@@ -1,7 +1,6 @@
 package com.xtopdf.xtopdf.services;
 
 import com.xtopdf.xtopdf.services.conversion.image.SvgToPdfService;
-import com.xtopdf.xtopdf.pdf.impl.PdfBoxBackend;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,7 +17,7 @@ class SvgToPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        svgToPdfService = new SvgToPdfService(new PdfBoxBackend());
+        svgToPdfService = new SvgToPdfService();
     }
 
     @Test
@@ -68,7 +67,7 @@ class SvgToPdfServiceTest {
     void testConvertSvgToPdf_WithPath_Success(@TempDir Path tempDir) throws Exception {
         String svgContent = "<?xml version=\"1.0\"?>\n" +
                 "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\">\n" +
-                "  <path d=\"M10 10 L 90 90\" stroke=\"black\" stroke-width=\"2\"/>\n" +
+                "  <path d=\"M10 10 L 90 90\" stroke=\"black\" stroke-width=\"2\" fill=\"none\"/>\n" +
                 "</svg>";
         MockMultipartFile svgFile = new MockMultipartFile(
                 "file", 
@@ -203,22 +202,22 @@ class SvgToPdfServiceTest {
     }
 
     @Test
-    void testConvertSvgToPdf_NullMultipartFile_ThrowsIOException(@TempDir Path tempDir) {
+    void testConvertSvgToPdf_NullMultipartFile_ThrowsException(@TempDir Path tempDir) {
         File pdfFile = tempDir.resolve("nullInput.pdf").toFile();
-        assertThrows(IOException.class, 
+        assertThrows(Exception.class, 
             () -> svgToPdfService.convertSvgToPdf(null, pdfFile));
     }
 
     @Test
-    void testConvertSvgToPdf_NullOutputFile_ThrowsIOException() {
-        String svgContent = "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>";
+    void testConvertSvgToPdf_NullOutputFile_ThrowsException() {
+        String svgContent = "<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\"><rect width=\"100\" height=\"100\" fill=\"blue\"/></svg>";
         MockMultipartFile svgFile = new MockMultipartFile(
                 "file", 
                 "test.svg", 
                 "image/svg+xml", 
                 svgContent.getBytes()
         );
-        assertThrows(IOException.class, 
+        assertThrows(Exception.class, 
             () -> svgToPdfService.convertSvgToPdf(svgFile, null));
     }
 

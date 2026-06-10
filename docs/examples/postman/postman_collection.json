@@ -1,0 +1,370 @@
+{
+  "info": {
+    "name": "XToPDF API",
+    "description": "XToPDF file-to-PDF conversion API. Supports 50+ file formats with batch processing, async conversion, and PDF operations (watermark, page numbers, merge).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "File Conversion",
+      "item": [
+        {
+          "name": "Convert File to PDF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "File to convert (max 100MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/convert?outputFileName=output.pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert"],
+              "query": [
+                {
+                  "key": "outputFileName",
+                  "value": "output.pdf",
+                  "description": "Desired output filename"
+                }
+              ]
+            },
+            "description": "Convert a single file to PDF. Supports 50+ formats including DOCX, XLSX, PPTX, HTML, Markdown, images, and CAD files."
+          },
+          "response": []
+        },
+        {
+          "name": "Convert File to JSON (Base64)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "File to convert"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/convert/json",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert", "json"]
+            },
+            "description": "Convert a file and return the PDF as a base64-encoded JSON response."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Batch Conversion",
+      "item": [
+        {
+          "name": "Batch Convert Files",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "",
+                  "description": "First file to convert"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "",
+                  "description": "Second file to convert"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "",
+                  "description": "Third file to convert (add more as needed)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/convert/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert", "batch"]
+            },
+            "description": "Convert multiple files in parallel. Returns a ZIP archive containing all converted PDFs. Individual failures do not stop the batch."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Async Conversion",
+      "item": [
+        {
+          "name": "Submit Async Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "File to convert asynchronously"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/convert/async",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert", "async"],
+              "query": [
+                {
+                  "key": "webhookUrl",
+                  "value": "https://myapp.com/webhook",
+                  "description": "Optional webhook URL for completion notification",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Submit a file for async conversion. Returns a job ID immediately (HTTP 202). Poll the status endpoint or provide a webhook URL."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/convert/async/:jobId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert", "async", ":jobId"],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Job ID returned from submit endpoint"
+                }
+              ]
+            },
+            "description": "Check the status of an async conversion job. Returns PENDING, PROCESSING, COMPLETED, or FAILED."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Job Result",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/convert/async/:jobId/result",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "convert", "async", ":jobId", "result"],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Job ID of a completed conversion"
+                }
+              ]
+            },
+            "description": "Download the converted PDF for a completed async job."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PDF Operations",
+      "item": [
+        {
+          "name": "Add Watermark",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "PDF file to watermark"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pdf/watermark?text=CONFIDENTIAL&layer=FOREGROUND",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pdf", "watermark"],
+              "query": [
+                {
+                  "key": "text",
+                  "value": "CONFIDENTIAL",
+                  "description": "Watermark text"
+                },
+                {
+                  "key": "layer",
+                  "value": "FOREGROUND",
+                  "description": "FOREGROUND or BACKGROUND"
+                }
+              ]
+            },
+            "description": "Add a text watermark to an existing PDF. Supports foreground and background placement."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Page Numbers",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "PDF file to number"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pdf/page-numbers?position=BOTTOM&alignment=CENTER&style=ARABIC",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pdf", "page-numbers"],
+              "query": [
+                {
+                  "key": "position",
+                  "value": "BOTTOM",
+                  "description": "TOP or BOTTOM"
+                },
+                {
+                  "key": "alignment",
+                  "value": "CENTER",
+                  "description": "LEFT, CENTER, or RIGHT"
+                },
+                {
+                  "key": "style",
+                  "value": "ARABIC",
+                  "description": "ARABIC, ROMAN, or ALPHABETIC"
+                }
+              ]
+            },
+            "description": "Add page numbers to an existing PDF. Configurable position, alignment, and numbering style."
+          },
+          "response": []
+        },
+        {
+          "name": "Merge PDFs",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Main PDF file"
+                },
+                {
+                  "key": "overlayFile",
+                  "type": "file",
+                  "src": "",
+                  "description": "PDF to merge with main file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pdf/merge?position=back",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pdf", "merge"],
+              "query": [
+                {
+                  "key": "position",
+                  "value": "back",
+                  "description": "front or back - where to place the overlay"
+                }
+              ]
+            },
+            "description": "Merge two PDF files. The overlay file is placed at the front or back of the main file."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health & Monitoring",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Application health status."
+          },
+          "response": []
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/prometheus",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "prometheus"]
+            },
+            "description": "Prometheus-format metrics including conversion counters, timers, and gauges."
+          },
+          "response": []
+        },
+        {
+          "name": "Application Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "info"]
+            },
+            "description": "Application information (version, build details)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

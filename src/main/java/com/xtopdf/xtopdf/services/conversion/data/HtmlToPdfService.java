@@ -1,63 +1,85 @@
 package com.xtopdf.xtopdf.services.conversion.data;
 
-import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
-import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jsoup.nodes.Entities;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Service to convert HTML files to PDF.
- * 
- * Note: This implementation extracts text content from HTML using Jsoup.
- * For full HTML rendering with CSS and images, consider using external tools like:
- * - wkhtmltopdf (command-line tool)
- * - Playwright/Puppeteer (headless browser)
- * - Apache FOP with XHTML
- * 
- * TODO: For production-grade HTML rendering, integrate with external rendering engine.
+ * Service to convert HTML files to PDF using Flying Saucer (OpenPDF backend).
+ *
+ * <p>Flying Saucer renders well-formed XHTML with CSS support to PDF.
+ * HTML input is first cleaned and converted to XHTML using JSoup, then
+ * rendered to PDF via Flying Saucer's ITextRenderer.</p>
+ *
+ * <p><b>Supported Features:</b></p>
+ * <ul>
+ *   <li>Inline CSS styles</li>
+ *   <li>Internal &lt;style&gt; blocks</li>
+ *   <li>Basic CSS layout (margins, padding, borders, colors, fonts)</li>
+ *   <li>Tables, lists, headings</li>
+ *   <li>Data URI embedded images</li>
+ * </ul>
  */
 @Service
 @Slf4j
 public class HtmlToPdfService {
-    
-    private final PdfBackendProvider pdfBackend;
-    
-    @Autowired
-    public HtmlToPdfService(PdfBackendProvider pdfBackend) {
-        this.pdfBackend = pdfBackend;
-    }
-    
-    public void convertHtmlToPdf(MultipartFile htmlFile, File pdfFile) {
-        try {
-            // Parse HTML and extract text content
-            String htmlContent = new String(htmlFile.getBytes(), StandardCharsets.UTF_8);
-            Document doc = Jsoup.parse(htmlContent);
-            
-            // Extract text (preserves paragraphs and spacing)
-            String textContent = doc.body().text();
-            String title = doc.title();
-            
-            // Create PDF using abstraction layer
-            try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
-                if (title != null && !title.isEmpty()) {
-                    builder.addParagraph(title + "\n\n");
-                }
-                
-                builder.addParagraph(textContent);
-                builder.save(pdfFile);
-            }
-            
-            log.info("PDF created successfully from HTML: {}", pdfFile.getName());
-        } catch (IOException e) {
-            log.error("Error during HTML to PDF conversion: {}", e.getMessage(), e);
+
+    public void convertHtmlToPdf(MultipartFile htmlFile, File pdfFile) throws IOException {
+        var htmlContent = new String(htmlFile.getBytes(), StandardCharsets.UTF_8);
+        var xhtml = convertToXhtml(htmlContent);
+
+        try (OutputStream os = new FileOutputStream(pdfFile)) {
+            var renderer = new ITextRenderer();
+            renderer.setDocumentFromString(xhtml);
+            renderer.layout();
+            renderer.createPDF(os);
+        } catch (Exception e) {
+            throw new IOException("Error converting HTML to PDF: " + e.getMessage(), e);
         }
+
+        log.info("PDF created successfully from HTML: {}", pdfFile.getName());
+    }
+
+    /**
+     * Converts raw HTML to well-formed XHTML suitable for Flying Saucer.
+     * Uses JSoup to parse potentially malformed HTML and output clean XHTML.
+     * Strips external resource references (http/https) to prevent Flying Saucer
+     * from resolving external URLs, which could cause SSRF or slowdowns.
+     */
+    String convertToXhtml(String html) {
+        Document doc = Jsoup.parse(html);
+        doc.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.xhtml)
+                .charset(StandardCharsets.UTF_8);
+
+        // Ensure html element has proper namespace for XHTML
+        var htmlElement = doc.selectFirst("html");
+        if (htmlElement != null && !htmlElement.hasAttr("xmlns")) {
+            htmlElement.attr("xmlns", "http://www.w3.org/1999/xhtml");
+        }
+
+        // Ensure there's a head element with content-type meta
+        var head = doc.head();
+        if (head != null && head.select("meta[http-equiv=Content-Type]").isEmpty()) {
+            head.prepend("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />");
+        }
+
+        // Remove external resource references to prevent SSRF
+        doc.select("link[href~=(?i)^(https?:)?//]").remove();
+        doc.select("img[src~=(?i)^(https?:)?//]").remove();
+        doc.select("script, iframe, object, embed").remove();
+
+        return doc.html();
     }
 }

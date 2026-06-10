@@ -65,7 +65,7 @@ class ConverterExceptionPropertyTest {
                         (svc) -> new BmpFileConverter(svc)),
                 createThrowingConverter("HTML", runtimeException,
                         com.xtopdf.xtopdf.services.conversion.data.HtmlToPdfService.class,
-                        (svc) -> { doThrow(runtimeException).when(svc).convertHtmlToPdf(any(), any()); },
+                        (svc) -> { try { doThrow(runtimeException).when(svc).convertHtmlToPdf(any(), any()); } catch (Exception e) { throw new RuntimeException(e); } },
                         (svc) -> new HtmlFileConverter(svc)),
                 createThrowingConverter("JSON", runtimeException,
                         com.xtopdf.xtopdf.services.conversion.data.JsonToPdfService.class,

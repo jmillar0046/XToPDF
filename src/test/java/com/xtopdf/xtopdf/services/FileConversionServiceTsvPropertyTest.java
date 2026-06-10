@@ -44,8 +44,11 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
+                mockVirusScan(),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
-                mock(WatermarkService.class), containerService, 300
+                mock(WatermarkService.class), containerService,
+                new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
+                        new io.micrometer.core.instrument.simple.SimpleMeterRegistry()), 300
         );
 
         MockMultipartFile inputFile = new MockMultipartFile(
@@ -88,8 +91,11 @@ class FileConversionServiceTsvPropertyTest {
 
         FileConversionService service = new FileConversionService(
                 registry, contentValidator,
+                mockVirusScan(),
                 mock(PdfMergeService.class), mock(PageNumberService.class),
-                mock(WatermarkService.class), containerService, 300
+                mock(WatermarkService.class), containerService,
+                new com.xtopdf.xtopdf.config.MetricsConfiguration.ConversionMetrics(
+                        new io.micrometer.core.instrument.simple.SimpleMeterRegistry()), 300
         );
 
         MockMultipartFile inputFile = new MockMultipartFile(
@@ -107,5 +113,11 @@ class FileConversionServiceTsvPropertyTest {
     Arbitrary<String> nonTsvExtensions() {
         return Arbitraries.of(".txt", ".csv", ".pdf", ".doc", ".docx", ".xls", ".xlsx",
                 ".json", ".xml", ".html", ".md", ".rtf");
+    }
+
+    private static VirusScanService mockVirusScan() {
+        var mock = mock(VirusScanService.class);
+        when(mock.scan(any())).thenReturn(new VirusScanService.ScanResult(true, "OK"));
+        return mock;
     }
 }
