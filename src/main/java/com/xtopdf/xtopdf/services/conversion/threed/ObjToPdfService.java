@@ -1,8 +1,10 @@
 package com.xtopdf.xtopdf.services.conversion.threed;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,12 +21,19 @@ import java.util.List;
 public class ObjToPdfService {
     
     private final PdfBackendProvider pdfBackend;
+
+    @Value("${xtopdf.max-3d-file-size:52428800}")
+    private long maxFileSize;
     
     public ObjToPdfService(PdfBackendProvider pdfBackend) {
         this.pdfBackend = pdfBackend;
     }
     
-    public void convertObjToPdf(MultipartFile objFile, File pdfFile) throws IOException {
+    public void convertObjToPdf(MultipartFile objFile, File pdfFile) throws IOException, FileConversionException {
+        if (objFile.getSize() > maxFileSize) {
+            throw new FileConversionException(
+                    "OBJ file exceeds maximum size limit of " + maxFileSize + " bytes");
+        }
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             ObjFileData objData = parseObjFile(objFile);
             

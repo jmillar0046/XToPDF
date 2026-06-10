@@ -1,8 +1,10 @@
 package com.xtopdf.xtopdf.services.conversion.threed;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,12 +23,19 @@ import java.util.List;
 public class StlToPdfService {
     
     private final PdfBackendProvider pdfBackend;
-    
+
+    @Value("${xtopdf.max-3d-file-size:52428800}")
+    private long maxFileSize;
+
     public StlToPdfService(PdfBackendProvider pdfBackend) {
         this.pdfBackend = pdfBackend;
     }
-    
-    public void convertStlToPdf(MultipartFile stlFile, File pdfFile) throws IOException {
+
+    public void convertStlToPdf(MultipartFile stlFile, File pdfFile) throws IOException, FileConversionException {
+        if (stlFile.getSize() > maxFileSize) {
+            throw new FileConversionException(
+                    "STL file exceeds maximum size limit of " + maxFileSize + " bytes");
+        }
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Parse STL file
             StlFileData stlData = parseStlFile(stlFile);
