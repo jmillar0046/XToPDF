@@ -25,10 +25,10 @@ public class PngToPdfService {
     
     public void convertPngToPdf(MultipartFile pngFile, File pdfFile) throws IOException {
         if (pngFile == null) {
-            throw new NullPointerException("PNG file cannot be null");
+            throw new IOException("Input file must not be null");
         }
         if (pdfFile == null) {
-            throw new NullPointerException("Output PDF file cannot be null");
+            throw new IOException("Output file must not be null");
         }
         
         try {
@@ -43,7 +43,7 @@ public class PngToPdfService {
                 builder.save(pdfFile);
             }
         } catch (Exception e) {
-            throw new IOException("Error creating PDF from PNG: " + e.getMessage(), e);
+            throw new IOException("Error creating PDF from PNG", e);
         }
     }
 }

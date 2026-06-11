@@ -294,12 +294,11 @@ public class DwgToDxfService {
                     block.setBaseX(baseX);
                     block.setBaseY(baseY);
                     
-                    // Recursively parse block entities
-                    for (int i = 0; i < numEntities; i++) {
-                        byte blockEntityType = dis.readByte();
-                        // Note: In a full implementation, would recursively parse entities here
-                        // For simplicity, this shows the structure
-                    }
+                    // Skip block entities: the binary layout of recursive entities is
+                    // variable-length and format-dependent. Attempting to parse them with
+                    // a single readByte() per entity corrupts the stream position.
+                    // We record the block header but do not parse child entities.
+                    log.debug("Skipping {} child entities in block '{}' — recursive parsing not supported", numEntities, name);
                     entities.add(block);
                     
                 } else if (entityType == TYPE_INSERT) {

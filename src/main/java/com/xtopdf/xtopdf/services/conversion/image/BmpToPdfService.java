@@ -45,7 +45,9 @@ public class BmpToPdfService {
                 builder.save(pdfFile);
             }
         } catch (IOException e) {
-            throw new IOException("Error converting BMP to PDF: " + e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Error converting BMP to PDF", e);
         }
     }
 }

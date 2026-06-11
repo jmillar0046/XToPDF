@@ -64,7 +64,7 @@ public class IgesToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error converting IGES to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting IGES to PDF", e);
         }
     }
     

@@ -94,7 +94,7 @@ class MarkdownToPdfServiceTest {
         var pdfFile = tempDir.resolve("nullInput.pdf").toFile();
 
         assertThatThrownBy(() -> markdownToPdfService.convertMarkdownToPdf(null, pdfFile))
-                .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(IOException.class);
     }
 
     @Test

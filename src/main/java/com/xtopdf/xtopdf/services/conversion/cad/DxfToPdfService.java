@@ -71,7 +71,7 @@ public class DxfToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error creating PDF from DXF: " + e.getMessage(), e);
+            throw new IOException("Error creating PDF from DXF", e);
         }
     }
 }

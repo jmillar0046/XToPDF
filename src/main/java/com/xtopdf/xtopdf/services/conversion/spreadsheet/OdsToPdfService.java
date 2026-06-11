@@ -16,6 +16,9 @@ import java.util.List;
 @Slf4j
 public class OdsToPdfService {
     
+    private static final int MAX_ROWS = 10000;
+    private static final int MAX_COLS = 1000;
+    
     private final PdfBackendProvider pdfBackend;
     
     public OdsToPdfService(PdfBackendProvider pdfBackend) {
@@ -38,8 +41,8 @@ public class OdsToPdfService {
                 
                 builder.addParagraph("Sheet: " + table.getTableName() + "\n");
                 
-                int rowCount = table.getRowCount();
-                int colCount = table.getColumnCount();
+                int rowCount = Math.min(table.getRowCount(), MAX_ROWS);
+                int colCount = Math.min(table.getColumnCount(), MAX_COLS);
                 
                 if (rowCount == 0 || colCount == 0) {
                     builder.addParagraph("(Empty sheet)\n");
@@ -64,8 +67,8 @@ public class OdsToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            log.error("Error processing ODS file: {}", e.getMessage(), e);
-            throw new IOException("Error processing ODS file: " + e.getMessage(), e);
+            log.error("Error processing ODS file", e);
+            throw new IOException("Error processing ODS file", e);
         }
     }
 }

@@ -35,6 +35,9 @@ import java.nio.charset.StandardCharsets;
 public class HtmlToPdfService {
 
     public void convertHtmlToPdf(MultipartFile htmlFile, File pdfFile) throws IOException {
+        if (htmlFile == null) {
+            throw new IOException("Input file must not be null");
+        }
         var htmlContent = new String(htmlFile.getBytes(), StandardCharsets.UTF_8);
         var xhtml = convertToXhtml(htmlContent);
 
@@ -44,7 +47,7 @@ public class HtmlToPdfService {
             renderer.layout();
             renderer.createPDF(os);
         } catch (Exception e) {
-            throw new IOException("Error converting HTML to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting HTML to PDF", e);
         }
 
         log.info("PDF created successfully from HTML: {}", pdfFile.getName());

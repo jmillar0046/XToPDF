@@ -38,6 +38,9 @@ public class MarkdownToPdfService {
     }
 
     public void convertMarkdownToPdf(MultipartFile markdownFile, File pdfFile) throws IOException {
+        if (markdownFile == null) {
+            throw new IOException("Input file must not be null");
+        }
         if (pdfFile == null) {
             throw new IOException("Output file must not be null");
         }
