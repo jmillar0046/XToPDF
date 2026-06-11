@@ -1,8 +1,10 @@
 package com.xtopdf.xtopdf.services.conversion.threed;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,18 +17,33 @@ import java.util.List;
 /**
  * Service to convert STL files to PDF with 2D wireframe projection.
  * STL (Stereolithography) is a 3D mesh format used for 3D printing.
+ * Delegates wireframe rendering to {@link WireframeRenderer}.
  */
 @Slf4j
 @Service
 public class StlToPdfService {
     
     private final PdfBackendProvider pdfBackend;
-    
+
+    @Value("${xtopdf.max-3d-file-size:52428800}")
+    private long maxFileSize;
+
     public StlToPdfService(PdfBackendProvider pdfBackend) {
         this.pdfBackend = pdfBackend;
     }
-    
-    public void convertStlToPdf(MultipartFile stlFile, File pdfFile) throws IOException {
+
+    public void convertStlToPdf(MultipartFile stlFile, File pdfFile) throws IOException, FileConversionException {
+        if (stlFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
+        if (stlFile.getSize() > maxFileSize) {
+            throw new FileConversionException(
+                    "STL file exceeds maximum size limit of " + maxFileSize + " bytes");
+        }
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             // Parse STL file
             StlFileData stlData = parseStlFile(stlFile);
@@ -43,71 +60,48 @@ public class StlToPdfService {
             if (stlData.boundingBox != null) {
                 builder.addParagraph("\nBounding Box:");
                 builder.addParagraph(String.format("  X: %.3f to %.3f (size: %.3f)", 
-                    stlData.boundingBox[0], stlData.boundingBox[1], 
-                    stlData.boundingBox[1] - stlData.boundingBox[0]));
+                    stlData.boundingBox.minX(), stlData.boundingBox.maxX(), 
+                    stlData.boundingBox.width()));
                 builder.addParagraph(String.format("  Y: %.3f to %.3f (size: %.3f)", 
-                    stlData.boundingBox[2], stlData.boundingBox[3], 
-                    stlData.boundingBox[3] - stlData.boundingBox[2]));
+                    stlData.boundingBox.minY(), stlData.boundingBox.maxY(), 
+                    stlData.boundingBox.height()));
                 builder.addParagraph(String.format("  Z: %.3f to %.3f (size: %.3f)", 
-                    stlData.boundingBox[4], stlData.boundingBox[5], 
-                    stlData.boundingBox[5] - stlData.boundingBox[4]));
+                    stlData.boundingBox.minZ(), stlData.boundingBox.maxZ(), 
+                    stlData.boundingBox.depth()));
             }
             
-            // Render 2D projection if we have vertices
+            // Render 2D projection if we have vertices — delegate to WireframeRenderer
             if (!stlData.vertices.isEmpty()) {
                 builder.addParagraph("\n2D Wireframe Projection (Top View):\n");
-                renderWireframe(builder, stlData);
+                List<int[]> edges = buildTriangleEdges(stlData.triangleCount, stlData.vertices.size());
+                WireframeRenderer.renderEdges(builder, stlData.vertices, edges, stlData.boundingBox, 600);
             }
             
             builder.addParagraph("\nNote: Showing 2D projection of 3D model. For full 3D visualization, use specialized 3D viewing software.");
             
             builder.save(pdfFile);
+
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IOException("Error converting STL to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting STL to PDF", e);
         }
     }
     
-    private void renderWireframe(PdfDocumentBuilder builder, StlFileData stlData) throws IOException {
-        if (stlData.vertices.isEmpty() || stlData.boundingBox == null) {
-            return;
+    /**
+     * Builds edge list from triangle vertices. For each triangle i, edges are:
+     * [i*3, i*3+1], [i*3+1, i*3+2], [i*3+2, i*3]
+     */
+    List<int[]> buildTriangleEdges(int triangleCount, int vertexCount) {
+        List<int[]> edges = new ArrayList<>();
+        for (int i = 0; i < triangleCount; i++) {
+            int base = i * 3;
+            if (base + 2 >= vertexCount) break;
+            edges.add(new int[]{base, base + 1});
+            edges.add(new int[]{base + 1, base + 2});
+            edges.add(new int[]{base + 2, base});
         }
-        
-        // Calculate scaling to fit in PDF (use 400x400 area)
-        float renderWidth = 400;
-        float renderHeight = 400;
-        float offsetX = 100;
-        float offsetY = 350; // Y-axis inverted in PDF
-        
-        float modelWidth = stlData.boundingBox[1] - stlData.boundingBox[0];
-        float modelHeight = stlData.boundingBox[3] - stlData.boundingBox[2];
-        
-        float scale = Math.min(renderWidth / Math.max(modelWidth, 0.001f), 
-                               renderHeight / Math.max(modelHeight, 0.001f)) * 0.9f;
-        
-        // Draw sample of triangles (limit to avoid overwhelming the PDF)
-        int maxTriangles = Math.min(stlData.triangleCount, 200);
-        int step = Math.max(1, stlData.triangleCount / maxTriangles);
-        
-        for (int i = 0; i < stlData.triangleCount; i += step) {
-            if (i * 3 + 2 >= stlData.vertices.size()) break;
-            
-            float[] v1 = stlData.vertices.get(i * 3);
-            float[] v2 = stlData.vertices.get(i * 3 + 1);
-            float[] v3 = stlData.vertices.get(i * 3 + 2);
-            
-            // Project to 2D (top view - use X and Y coordinates)
-            float x1 = offsetX + (v1[0] - stlData.boundingBox[0]) * scale;
-            float y1 = offsetY - (v1[1] - stlData.boundingBox[2]) * scale;
-            float x2 = offsetX + (v2[0] - stlData.boundingBox[0]) * scale;
-            float y2 = offsetY - (v2[1] - stlData.boundingBox[2]) * scale;
-            float x3 = offsetX + (v3[0] - stlData.boundingBox[0]) * scale;
-            float y3 = offsetY - (v3[1] - stlData.boundingBox[2]) * scale;
-            
-            // Draw triangle edges
-            builder.drawLine(x1, y1, x2, y2);
-            builder.drawLine(x2, y2, x3, y3);
-            builder.drawLine(x3, y3, x1, y1);
-        }
+        return edges;
     }
     
     private StlFileData parseStlFile(MultipartFile file) throws IOException {
@@ -137,7 +131,9 @@ public class StlToPdfService {
                     float y = buffer.getFloat();
                     float z = buffer.getFloat();
                     data.vertices.add(new float[]{x, y, z});
-                    data.updateBoundingBox(x, y, z);
+                    data.boundingBox = data.boundingBox == null
+                            ? BoundingBox3D.initial(x, y, z)
+                            : data.boundingBox.expand(x, y, z);
                 }
                 
                 buffer.position(buffer.position() + 2); // Skip attribute byte count
@@ -160,7 +156,9 @@ public class StlToPdfService {
                             float y = Float.parseFloat(parts[2]);
                             float z = Float.parseFloat(parts[3]);
                             data.vertices.add(new float[]{x, y, z});
-                            data.updateBoundingBox(x, y, z);
+                            data.boundingBox = data.boundingBox == null
+                                    ? BoundingBox3D.initial(x, y, z)
+                                    : data.boundingBox.expand(x, y, z);
                         } catch (NumberFormatException e) {
                             // Skip invalid vertex
                         }
@@ -172,23 +170,10 @@ public class StlToPdfService {
         return data;
     }
     
-    private static class StlFileData {
+    static class StlFileData {
         boolean isBinary = false;
         int triangleCount = 0;
-        float[] boundingBox = null;
+        BoundingBox3D boundingBox = null;
         List<float[]> vertices = new ArrayList<>();
-        
-        void updateBoundingBox(float x, float y, float z) {
-            if (boundingBox == null) {
-                boundingBox = new float[]{x, x, y, y, z, z};
-            } else {
-                boundingBox[0] = Math.min(boundingBox[0], x);
-                boundingBox[1] = Math.max(boundingBox[1], x);
-                boundingBox[2] = Math.min(boundingBox[2], y);
-                boundingBox[3] = Math.max(boundingBox[3], y);
-                boundingBox[4] = Math.min(boundingBox[4], z);
-                boundingBox[5] = Math.max(boundingBox[5], z);
-            }
-        }
     }
 }

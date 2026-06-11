@@ -1,8 +1,10 @@
 package com.xtopdf.xtopdf.services.conversion.threed;
 
+import com.xtopdf.xtopdf.exceptions.FileConversionException;
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import lombok.extern.slf4j.Slf4j;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,18 +15,33 @@ import java.util.List;
 /**
  * Service to convert OBJ files to PDF with 2D wireframe projection.
  * OBJ is a 3D geometry format.
+ * Delegates wireframe rendering to {@link WireframeRenderer}.
  */
 @Slf4j
 @Service
 public class ObjToPdfService {
     
     private final PdfBackendProvider pdfBackend;
+
+    @Value("${xtopdf.max-3d-file-size:52428800}")
+    private long maxFileSize;
     
     public ObjToPdfService(PdfBackendProvider pdfBackend) {
         this.pdfBackend = pdfBackend;
     }
     
-    public void convertObjToPdf(MultipartFile objFile, File pdfFile) throws IOException {
+    public void convertObjToPdf(MultipartFile objFile, File pdfFile) throws IOException, FileConversionException {
+        if (objFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
+        if (objFile.getSize() > maxFileSize) {
+            throw new FileConversionException(
+                    "OBJ file exceeds maximum size limit of " + maxFileSize + " bytes");
+        }
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             ObjFileData objData = parseObjFile(objFile);
             
@@ -37,58 +54,42 @@ public class ObjToPdfService {
             
             if (objData.boundingBox != null) {
                 builder.addParagraph("\nBounding Box:");
-                builder.addParagraph(String.format("  X: %.3f to %.3f", objData.boundingBox[0], objData.boundingBox[1]));
-                builder.addParagraph(String.format("  Y: %.3f to %.3f", objData.boundingBox[2], objData.boundingBox[3]));
-                builder.addParagraph(String.format("  Z: %.3f to %.3f", objData.boundingBox[4], objData.boundingBox[5]));
+                builder.addParagraph(String.format("  X: %.3f to %.3f", objData.boundingBox.minX(), objData.boundingBox.maxX()));
+                builder.addParagraph(String.format("  Y: %.3f to %.3f", objData.boundingBox.minY(), objData.boundingBox.maxY()));
+                builder.addParagraph(String.format("  Z: %.3f to %.3f", objData.boundingBox.minZ(), objData.boundingBox.maxZ()));
             }
             
-            // Render wireframe if we have data
+            // Render wireframe if we have data — delegate to WireframeRenderer
             if (!objData.vertices.isEmpty() && !objData.faces.isEmpty()) {
                 builder.addParagraph("\n2D Wireframe Projection:\n");
-                renderWireframe(builder, objData);
+                List<int[]> edges = buildFaceEdges(objData.faces, objData.vertices.size());
+                WireframeRenderer.renderEdges(builder, objData.vertices, edges, objData.boundingBox, 900);
             }
             
             builder.addParagraph("\nNote: Showing 2D projection of 3D model.");
             builder.save(pdfFile);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IOException("Error converting OBJ to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting OBJ to PDF", e);
         }
     }
     
-    private void renderWireframe(PdfDocumentBuilder builder, ObjFileData objData) throws IOException {
-        if (objData.vertices.isEmpty() || objData.boundingBox == null) return;
-        
-        float renderWidth = 400;
-        float renderHeight = 400;
-        float offsetX = 100;
-        float offsetY = 350;
-        
-        float modelWidth = objData.boundingBox[1] - objData.boundingBox[0];
-        float modelHeight = objData.boundingBox[3] - objData.boundingBox[2];
-        float scale = Math.min(renderWidth / Math.max(modelWidth, 0.001f), 
-                               renderHeight / Math.max(modelHeight, 0.001f)) * 0.9f;
-        
-        // Draw faces (limit to avoid overwhelming)
-        int maxFaces = Math.min(objData.faces.size(), 300);
-        for (int i = 0; i < maxFaces; i++) {
-            int[] face = objData.faces.get(i);
+    /**
+     * Builds edge list from faces. For each face, creates edges between consecutive vertices.
+     */
+    List<int[]> buildFaceEdges(List<int[]> faces, int vertexCount) {
+        List<int[]> edges = new ArrayList<>();
+        for (int[] face : faces) {
             for (int j = 0; j < face.length; j++) {
                 int v1Idx = face[j];
                 int v2Idx = face[(j + 1) % face.length];
-                
-                if (v1Idx < objData.vertices.size() && v2Idx < objData.vertices.size()) {
-                    float[] v1 = objData.vertices.get(v1Idx);
-                    float[] v2 = objData.vertices.get(v2Idx);
-                    
-                    float x1 = offsetX + (v1[0] - objData.boundingBox[0]) * scale;
-                    float y1 = offsetY - (v1[1] - objData.boundingBox[2]) * scale;
-                    float x2 = offsetX + (v2[0] - objData.boundingBox[0]) * scale;
-                    float y2 = offsetY - (v2[1] - objData.boundingBox[2]) * scale;
-                    
-                    builder.drawLine(x1, y1, x2, y2);
+                if (v1Idx >= 0 && v1Idx < vertexCount && v2Idx >= 0 && v2Idx < vertexCount) {
+                    edges.add(new int[]{v1Idx, v2Idx});
                 }
             }
         }
+        return edges;
     }
     
     private ObjFileData parseObjFile(MultipartFile file) throws IOException {
@@ -107,7 +108,9 @@ public class ObjToPdfService {
                             float y = Float.parseFloat(parts[2]);
                             float z = Float.parseFloat(parts[3]);
                             data.vertices.add(new float[]{x, y, z});
-                            data.updateBoundingBox(x, y, z);
+                            data.boundingBox = data.boundingBox == null
+                                    ? BoundingBox3D.initial(x, y, z)
+                                    : data.boundingBox.expand(x, y, z);
                             data.vertexCount++;
                         } catch (NumberFormatException e) {
                             // Skip invalid vertex
@@ -117,17 +120,21 @@ public class ObjToPdfService {
                     // Face
                     String[] parts = line.split("\\s+");
                     int[] faceIndices = new int[parts.length - 1];
+                    boolean validFace = true;
                     for (int i = 1; i < parts.length; i++) {
                         try {
                             String[] indexParts = parts[i].split("/");
                             int vIdx = Integer.parseInt(indexParts[0]) - 1; // OBJ is 1-indexed
                             faceIndices[i - 1] = vIdx;
                         } catch (Exception e) {
-                            faceIndices[i - 1] = 0;
+                            validFace = false;
+                            break;
                         }
                     }
-                    data.faces.add(faceIndices);
-                    data.faceCount++;
+                    if (validFace) {
+                        data.faces.add(faceIndices);
+                        data.faceCount++;
+                    }
                 }
             }
         }
@@ -135,24 +142,11 @@ public class ObjToPdfService {
         return data;
     }
     
-    private static class ObjFileData {
+    static class ObjFileData {
         int vertexCount = 0;
         int faceCount = 0;
-        float[] boundingBox = null;
+        BoundingBox3D boundingBox = null;
         List<float[]> vertices = new ArrayList<>();
         List<int[]> faces = new ArrayList<>();
-        
-        void updateBoundingBox(float x, float y, float z) {
-            if (boundingBox == null) {
-                boundingBox = new float[]{x, x, y, y, z, z};
-            } else {
-                boundingBox[0] = Math.min(boundingBox[0], x);
-                boundingBox[1] = Math.max(boundingBox[1], x);
-                boundingBox[2] = Math.min(boundingBox[2], y);
-                boundingBox[3] = Math.max(boundingBox[3], y);
-                boundingBox[4] = Math.min(boundingBox[4], z);
-                boundingBox[5] = Math.max(boundingBox[5], z);
-            }
-        }
     }
 }
