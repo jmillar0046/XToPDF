@@ -24,7 +24,7 @@ public class PptxToPdfService {
 
     public void convertPptxToPdf(MultipartFile pptxFile, File pdfFile) throws IOException {
         if (pptxFile == null) {
-            throw new NullPointerException("Input file must not be null");
+            throw new IOException("Input file must not be null");
         }
         if (pdfFile == null) {
             throw new IOException("Output file must not be null");
@@ -59,7 +59,7 @@ public class PptxToPdfService {
         }
     }
 
-    public void renderTextShape(PdfDocumentBuilder builder, XSLFTextShape textShape) throws IOException {
+    void renderTextShape(PdfDocumentBuilder builder, XSLFTextShape textShape) throws IOException {
         for (XSLFTextParagraph para : textShape.getTextParagraphs()) {
             for (XSLFTextRun run : para.getTextRuns()) {
                 String text = run.getRawText();
@@ -72,7 +72,7 @@ public class PptxToPdfService {
         }
     }
 
-    public void renderPictureShape(PdfDocumentBuilder builder, XSLFPictureShape picShape) throws IOException {
+    void renderPictureShape(PdfDocumentBuilder builder, XSLFPictureShape picShape) throws IOException {
         try {
             byte[] imageData = picShape.getPictureData().getData();
             builder.addImage(imageData);

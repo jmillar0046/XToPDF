@@ -58,8 +58,10 @@ public class OdtToPdfService {
         }
     }
 
-    public void processOdtNode(PdfDocumentBuilder builder, Node node, int indentLevel) throws IOException {
-        if (node == null) {
+    private static final int MAX_NESTING_DEPTH = 20;
+
+    void processOdtNode(PdfDocumentBuilder builder, Node node, int indentLevel) throws IOException {
+        if (node == null || indentLevel > MAX_NESTING_DEPTH) {
             return;
         }
         String nodeName = node.getNodeName();
@@ -75,7 +77,7 @@ public class OdtToPdfService {
         }
     }
 
-    public void renderHeading(PdfDocumentBuilder builder, Node node) throws IOException {
+    void renderHeading(PdfDocumentBuilder builder, Node node) throws IOException {
         int level = 1;
         if (node instanceof Element element) {
             String levelAttr = element.getAttribute("text:outline-level");
@@ -91,11 +93,11 @@ public class OdtToPdfService {
         renderInlineContent(builder, node, fontSize, true);
     }
 
-    public void renderParagraph(PdfDocumentBuilder builder, Node node, float fontSize) throws IOException {
+    void renderParagraph(PdfDocumentBuilder builder, Node node, float fontSize) throws IOException {
         renderInlineContent(builder, node, fontSize, false);
     }
 
-    public void renderInlineContent(PdfDocumentBuilder builder, Node node, float fontSize,
+    void renderInlineContent(PdfDocumentBuilder builder, Node node, float fontSize,
                                     boolean boldDefault) throws IOException {
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -117,7 +119,7 @@ public class OdtToPdfService {
         builder.endParagraph();
     }
 
-    public void renderList(PdfDocumentBuilder builder, Node listNode, int indentLevel) throws IOException {
+    void renderList(PdfDocumentBuilder builder, Node listNode, int indentLevel) throws IOException {
         NodeList items = listNode.getChildNodes();
         for (int i = 0; i < items.getLength(); i++) {
             Node item = items.item(i);
@@ -132,7 +134,7 @@ public class OdtToPdfService {
         }
     }
 
-    public void renderTable(PdfDocumentBuilder builder, Node tableNode) throws IOException {
+    void renderTable(PdfDocumentBuilder builder, Node tableNode) throws IOException {
         NodeList tableChildren = tableNode.getChildNodes();
         List<String[]> rows = new ArrayList<>();
         int maxCols = 0;
@@ -166,7 +168,7 @@ public class OdtToPdfService {
         }
     }
 
-    public boolean isBold(Node spanNode) {
+    boolean isBold(Node spanNode) {
         if (spanNode instanceof Element element) {
             String fontWeight = element.getAttribute("fo:font-weight");
             if ("bold".equalsIgnoreCase(fontWeight)) {
@@ -180,7 +182,7 @@ public class OdtToPdfService {
         return false;
     }
 
-    public boolean isItalic(Node spanNode) {
+    boolean isItalic(Node spanNode) {
         if (spanNode instanceof Element element) {
             String fontStyle = element.getAttribute("fo:font-style");
             if ("italic".equalsIgnoreCase(fontStyle)) {

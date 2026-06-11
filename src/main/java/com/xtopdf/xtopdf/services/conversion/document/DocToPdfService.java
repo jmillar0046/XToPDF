@@ -27,6 +27,13 @@ public class DocToPdfService {
     }
 
     public void convertDocToPdf(MultipartFile docFile, File pdfFile) throws IOException {
+        if (docFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
         try (var is = docFile.getInputStream();
              HWPFDocument doc = new HWPFDocument(is);
              PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
@@ -49,7 +56,7 @@ public class DocToPdfService {
         }
     }
 
-    public void renderParagraphRuns(PdfDocumentBuilder builder, Paragraph para,
+    void renderParagraphRuns(PdfDocumentBuilder builder, Paragraph para,
                              float fontSize) throws IOException {
         for (int r = 0; r < para.numCharacterRuns(); r++) {
             CharacterRun run = para.getCharacterRun(r);
@@ -62,7 +69,7 @@ public class DocToPdfService {
         builder.endParagraph();
     }
 
-    public float detectHeadingSize(Paragraph para, org.apache.poi.hwpf.model.StyleSheet styles) {
+    float detectHeadingSize(Paragraph para, org.apache.poi.hwpf.model.StyleSheet styles) {
         try {
             int styleIndex = para.getStyleIndex();
             var styleDesc = styles.getStyleDescription(styleIndex);

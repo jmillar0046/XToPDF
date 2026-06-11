@@ -31,6 +31,13 @@ public class ObjToPdfService {
     }
     
     public void convertObjToPdf(MultipartFile objFile, File pdfFile) throws IOException, FileConversionException {
+        if (objFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
         if (objFile.getSize() > maxFileSize) {
             throw new FileConversionException(
                     "OBJ file exceeds maximum size limit of " + maxFileSize + " bytes");
@@ -61,6 +68,8 @@ public class ObjToPdfService {
             
             builder.addParagraph("\nNote: Showing 2D projection of 3D model.");
             builder.save(pdfFile);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             throw new IOException("Error converting OBJ to PDF", e);
         }
@@ -69,7 +78,7 @@ public class ObjToPdfService {
     /**
      * Builds edge list from faces. For each face, creates edges between consecutive vertices.
      */
-    public List<int[]> buildFaceEdges(List<int[]> faces, int vertexCount) {
+    List<int[]> buildFaceEdges(List<int[]> faces, int vertexCount) {
         List<int[]> edges = new ArrayList<>();
         for (int[] face : faces) {
             for (int j = 0; j < face.length; j++) {

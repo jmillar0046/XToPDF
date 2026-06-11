@@ -29,6 +29,8 @@ import java.nio.charset.StandardCharsets;
 @Service
 public class MarkdownToPdfService {
 
+    // Retained for API compatibility with MarkdownFileConverter (constructor injection)
+    @SuppressWarnings("unused")
     private final PdfBackendProvider pdfBackend;
 
     public MarkdownToPdfService(PdfBackendProvider pdfBackend) {

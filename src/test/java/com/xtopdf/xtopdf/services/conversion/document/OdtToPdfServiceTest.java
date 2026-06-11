@@ -1,9 +1,7 @@
-package com.xtopdf.xtopdf.services;
+package com.xtopdf.xtopdf.services.conversion.document;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
-import com.xtopdf.xtopdf.services.conversion.document.DocToPdfService;
-import com.xtopdf.xtopdf.services.conversion.document.OdtToPdfService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

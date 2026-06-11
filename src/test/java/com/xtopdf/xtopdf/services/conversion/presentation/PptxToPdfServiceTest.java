@@ -1,8 +1,7 @@
-package com.xtopdf.xtopdf.services;
+package com.xtopdf.xtopdf.services.conversion.presentation;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
-import com.xtopdf.xtopdf.services.conversion.presentation.PptxToPdfService;
 import org.apache.poi.xslf.usermodel.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -257,10 +256,10 @@ class PptxToPdfServiceTest {
     }
 
     @Test
-    void nullInputFileThrowsNullPointerException(@TempDir Path tempDir) {
+    void nullInputFileThrowsIOException(@TempDir Path tempDir) {
         File pdfFile = tempDir.resolve("output.pdf").toFile();
         assertThatThrownBy(() -> pptxToPdfService.convertPptxToPdf(null, pdfFile))
-                .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(IOException.class);
     }
 
     @Test

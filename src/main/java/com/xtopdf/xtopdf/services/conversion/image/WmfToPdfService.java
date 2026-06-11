@@ -24,6 +24,9 @@ import java.nio.ByteOrder;
 @Service
 public class WmfToPdfService {
 
+    private static final int MIN_RENDER_DIMENSION = 100;
+    private static final int MAX_RENDER_DIMENSION = 2000;
+
     private final PdfBackendProvider pdfBackend;
 
     public WmfToPdfService(PdfBackendProvider pdfBackend) {
@@ -31,6 +34,13 @@ public class WmfToPdfService {
     }
 
     public void convertWmfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
+        if (inputFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
             byte[] imageBytes = renderWmfToImage(inputFile);
 
@@ -40,6 +50,8 @@ public class WmfToPdfService {
                 renderFallbackStatistics(builder, inputFile);
             }
             builder.save(pdfFile);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             throw new IOException("Error converting WMF to PDF", e);
         }
@@ -60,10 +72,10 @@ public class WmfToPdfService {
                 return null;
             }
 
-            int width = Math.max(Math.abs(header.boundsRight - header.boundsLeft), 100);
-            int height = Math.max(Math.abs(header.boundsBottom - header.boundsTop), 100);
-            width = Math.min(width, 2000);
-            height = Math.min(height, 2000);
+            int width = Math.max(Math.abs(header.boundsRight - header.boundsLeft), MIN_RENDER_DIMENSION);
+            int height = Math.max(Math.abs(header.boundsBottom - header.boundsTop), MIN_RENDER_DIMENSION);
+            width = Math.min(width, MAX_RENDER_DIMENSION);
+            height = Math.min(height, MAX_RENDER_DIMENSION);
 
             BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = image.createGraphics();

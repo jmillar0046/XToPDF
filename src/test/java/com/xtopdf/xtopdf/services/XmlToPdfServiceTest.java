@@ -167,10 +167,10 @@ class XmlToPdfServiceTest {
     }
 
     @Test
-    void testConvertXmlToPdf_NullMultipartFile_ThrowsNullPointerException(@TempDir Path tempDir) {
+    void testConvertXmlToPdf_NullMultipartFile_ThrowsIOException(@TempDir Path tempDir) {
         File pdfFile = tempDir.resolve("nullInput.pdf").toFile();
         assertThatThrownBy(() -> xmlToPdfService.convertXmlToPdf(null, pdfFile))
-                .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(IOException.class);
     }
 
     @Test

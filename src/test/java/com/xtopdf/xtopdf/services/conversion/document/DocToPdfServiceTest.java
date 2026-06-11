@@ -1,8 +1,7 @@
-package com.xtopdf.xtopdf.services;
+package com.xtopdf.xtopdf.services.conversion.document;
 
 import com.xtopdf.xtopdf.pdf.PdfBackendProvider;
 import com.xtopdf.xtopdf.pdf.PdfDocumentBuilder;
-import com.xtopdf.xtopdf.services.conversion.document.DocToPdfService;
 import org.apache.poi.hwpf.usermodel.CharacterRun;
 import org.apache.poi.hwpf.usermodel.Paragraph;
 import org.junit.jupiter.api.BeforeEach;

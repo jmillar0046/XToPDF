@@ -33,6 +33,13 @@ public class StlToPdfService {
     }
 
     public void convertStlToPdf(MultipartFile stlFile, File pdfFile) throws IOException, FileConversionException {
+        if (stlFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
         if (stlFile.getSize() > maxFileSize) {
             throw new FileConversionException(
                     "STL file exceeds maximum size limit of " + maxFileSize + " bytes");
@@ -74,6 +81,8 @@ public class StlToPdfService {
             
             builder.save(pdfFile);
 
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             throw new IOException("Error converting STL to PDF", e);
         }
@@ -83,7 +92,7 @@ public class StlToPdfService {
      * Builds edge list from triangle vertices. For each triangle i, edges are:
      * [i*3, i*3+1], [i*3+1, i*3+2], [i*3+2, i*3]
      */
-    public List<int[]> buildTriangleEdges(int triangleCount, int vertexCount) {
+    List<int[]> buildTriangleEdges(int triangleCount, int vertexCount) {
         List<int[]> edges = new ArrayList<>();
         for (int i = 0; i < triangleCount; i++) {
             int base = i * 3;

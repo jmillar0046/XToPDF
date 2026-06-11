@@ -1,9 +1,6 @@
-package com.xtopdf.xtopdf.services;
+package com.xtopdf.xtopdf.services.conversion.threed;
 
 import com.xtopdf.xtopdf.exceptions.FileConversionException;
-import com.xtopdf.xtopdf.services.conversion.threed.BoundingBox3D;
-import com.xtopdf.xtopdf.services.conversion.threed.StlToPdfService;
-import com.xtopdf.xtopdf.services.conversion.threed.WireframeRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

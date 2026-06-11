@@ -182,11 +182,11 @@ class JsonToPdfServiceTest {
     }
 
     @Test
-    void convertJsonToPdf_nullMultipartFile_throwsNullPointerException(@TempDir Path tempDir) {
+    void convertJsonToPdf_nullMultipartFile_throwsIOException(@TempDir Path tempDir) {
         File pdfFile = tempDir.resolve("nullInput.pdf").toFile();
 
         assertThatThrownBy(() -> jsonToPdfService.convertJsonToPdf(null, pdfFile))
-                .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(IOException.class);
     }
 
     @Test

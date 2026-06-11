@@ -31,6 +31,9 @@ public class XmlToPdfService {
     }
 
     public void convertXmlToPdf(MultipartFile xmlFile, File pdfFile) throws IOException {
+        if (xmlFile == null) {
+            throw new IOException("Input file must not be null");
+        }
         if (pdfFile == null) {
             throw new IOException("Output file must not be null");
         }
