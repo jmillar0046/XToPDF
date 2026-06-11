@@ -111,17 +111,21 @@ public class ObjToPdfService {
                     // Face
                     String[] parts = line.split("\\s+");
                     int[] faceIndices = new int[parts.length - 1];
+                    boolean validFace = true;
                     for (int i = 1; i < parts.length; i++) {
                         try {
                             String[] indexParts = parts[i].split("/");
                             int vIdx = Integer.parseInt(indexParts[0]) - 1; // OBJ is 1-indexed
                             faceIndices[i - 1] = vIdx;
                         } catch (Exception e) {
-                            faceIndices[i - 1] = 0;
+                            validFace = false;
+                            break;
                         }
                     }
-                    data.faces.add(faceIndices);
-                    data.faceCount++;
+                    if (validFace) {
+                        data.faces.add(faceIndices);
+                        data.faceCount++;
+                    }
                 }
             }
         }

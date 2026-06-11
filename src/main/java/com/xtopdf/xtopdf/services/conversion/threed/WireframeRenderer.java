@@ -43,6 +43,9 @@ public final class WireframeRenderer {
     public static void renderEdges(PdfDocumentBuilder builder, List<float[]> vertices,
                                     List<int[]> edges, BoundingBox3D bbox, int maxEdges)
                                     throws IOException {
+        if (bbox == null || vertices.isEmpty() || edges.isEmpty()) {
+            return;
+        }
         float scale = calculateScale(bbox);
         int count = Math.min(edges.size(), maxEdges);
         for (int i = 0; i < count; i++) {

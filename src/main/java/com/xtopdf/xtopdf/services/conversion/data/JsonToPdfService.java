@@ -29,6 +29,9 @@ public class JsonToPdfService {
     }
 
     public void convertJsonToPdf(MultipartFile jsonFile, File pdfFile) throws IOException {
+        if (jsonFile == null) {
+            throw new NullPointerException("Input file must not be null");
+        }
         if (pdfFile == null) {
             throw new IOException("Output file must not be null");
         }
