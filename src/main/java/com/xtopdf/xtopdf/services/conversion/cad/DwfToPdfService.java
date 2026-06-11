@@ -54,6 +54,13 @@ public class DwfToPdfService {
     // --- Public conversion method ---
 
     public void convertDwfToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
+        if (inputFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
         DwfPackageInfo packageInfo = parseDwfPackage(inputFile);
 
         try (PdfDocumentBuilder builder = pdfBackend.createBuilder()) {
@@ -220,12 +227,14 @@ public class DwfToPdfService {
     }
 
     private void extractTagValue(String xml, String tagName, Map<String, String> metadata) {
-        String openTag = "<" + tagName + ">";
-        String closeTag = "</" + tagName + ">";
-        int startIdx = xml.indexOf(openTag);
+        // Case-insensitive search for the tag
+        String xmlLower = xml.toLowerCase();
+        String openTagLower = "<" + tagName.toLowerCase() + ">";
+        String closeTagLower = "</" + tagName.toLowerCase() + ">";
+        int startIdx = xmlLower.indexOf(openTagLower);
         if (startIdx >= 0) {
-            int valueStart = startIdx + openTag.length();
-            int endIdx = xml.indexOf(closeTag, valueStart);
+            int valueStart = startIdx + openTagLower.length();
+            int endIdx = xmlLower.indexOf(closeTagLower, valueStart);
             if (endIdx > valueStart) {
                 String value = xml.substring(valueStart, endIdx).trim();
                 if (!value.isEmpty() && value.length() < 500) {

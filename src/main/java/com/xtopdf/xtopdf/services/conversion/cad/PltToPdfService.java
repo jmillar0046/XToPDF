@@ -56,7 +56,14 @@ public class PltToPdfService {
     }
 
     public void convertPltToPdf(MultipartFile inputFile, File pdfFile) throws IOException {
-        String content = new String(inputFile.getBytes());
+        if (inputFile == null) {
+            throw new IOException("Input file must not be null");
+        }
+        if (pdfFile == null) {
+            throw new IOException("Output file must not be null");
+        }
+
+        String content = new String(inputFile.getBytes(), java.nio.charset.StandardCharsets.US_ASCII);
 
         List<HpglCommand> commands = parseHpglCommands(content);
 
