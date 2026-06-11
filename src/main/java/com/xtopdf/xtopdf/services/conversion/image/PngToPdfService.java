@@ -42,6 +42,8 @@ public class PngToPdfService {
                 builder.addImage(imageBytes);
                 builder.save(pdfFile);
             }
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             throw new IOException("Error creating PDF from PNG", e);
         }
