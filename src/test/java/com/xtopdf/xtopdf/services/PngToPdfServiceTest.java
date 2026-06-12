@@ -146,7 +146,7 @@ class PngToPdfServiceTest {
     @Test
     void testConvertPngToPdf_NullMultipartFile_ThrowsNullPointerException(@TempDir Path tempDir) {
         File pdfFile = tempDir.resolve("nullInput.pdf").toFile();
-        assertThrows(NullPointerException.class, 
+        assertThrows(IOException.class, 
             () -> pngToPdfService.convertPngToPdf(null, pdfFile));
     }
 
@@ -159,7 +159,7 @@ class PngToPdfServiceTest {
                 "image/png", 
                 pngData
         );
-        assertThrows(NullPointerException.class, 
+        assertThrows(IOException.class, 
             () -> pngToPdfService.convertPngToPdf(pngFile, null));
     }
 

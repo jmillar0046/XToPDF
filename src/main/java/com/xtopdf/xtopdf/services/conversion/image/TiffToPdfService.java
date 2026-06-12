@@ -46,7 +46,9 @@ public class TiffToPdfService {
                 builder.save(pdfFile);
             }
         } catch (IOException e) {
-            throw new IOException("Error processing TIFF file: " + e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Error processing TIFF file", e);
         }
     }
 }

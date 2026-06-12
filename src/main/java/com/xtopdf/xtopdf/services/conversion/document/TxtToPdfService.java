@@ -41,7 +41,7 @@ public class TxtToPdfService {
             builder.addParagraph(textContent.toString());
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error creating PDF from .txt file: " + e.getMessage(), e);
+            throw new IOException("Error creating PDF from .txt file", e);
         }
     }
 }

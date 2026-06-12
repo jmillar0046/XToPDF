@@ -44,9 +44,9 @@ public class RtfToPdfService {
                 builder.save(pdfFile);
             }
         } catch (BadLocationException e) {
-            throw new IOException("Error parsing RTF content: " + e.getMessage(), e);
+            throw new IOException("Error parsing RTF content", e);
         } catch (Exception e) {
-            throw new IOException("Error creating PDF from RTF: " + e.getMessage(), e);
+            throw new IOException("Error creating PDF from RTF", e);
         }
     }
 }

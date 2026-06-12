@@ -294,13 +294,13 @@ public class DwgToDxfService {
                     block.setBaseX(baseX);
                     block.setBaseY(baseY);
                     
-                    // Recursively parse block entities
-                    for (int i = 0; i < numEntities; i++) {
-                        byte blockEntityType = dis.readByte();
-                        // Note: In a full implementation, would recursively parse entities here
-                        // For simplicity, this shows the structure
-                    }
+                    // Block child entities are stored inline in the binary stream with
+                    // variable-length format. We cannot reliably skip past them without
+                    // parsing each one recursively. Stop reading further entities to avoid
+                    // stream corruption — entities parsed before this block are still valid.
+                    log.debug("Encountered block '{}' with {} inline child entities — stopping parse to avoid stream corruption", name, numEntities);
                     entities.add(block);
+                    break; // Exit the parsing loop — can't skip inline child bytes safely
                     
                 } else if (entityType == TYPE_INSERT) {
                     // INSERT: nameLength, name, x, y, scaleX, scaleY, rotation

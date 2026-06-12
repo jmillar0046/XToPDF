@@ -61,8 +61,8 @@ public class DocxToPdfService {
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error processing DOCX file: {}", e.getMessage(), e);
-            throw new IOException("Error processing DOCX file: " + e.getMessage(), e);
+            log.error("Error processing DOCX file", e);
+            throw new IOException("Error processing DOCX file", e);
         }
     }
 

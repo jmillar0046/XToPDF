@@ -60,7 +60,7 @@ public class WrlToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error converting VRML to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting VRML to PDF", e);
         }
     }
     

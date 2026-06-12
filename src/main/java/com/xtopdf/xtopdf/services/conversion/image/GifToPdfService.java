@@ -33,7 +33,7 @@ public class GifToPdfService {
                 builder.save(pdfFile);
             }
         } catch (Exception e) {
-            throw new IOException("Error converting GIF to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting GIF to PDF", e);
         }
     }
 }

@@ -57,7 +57,7 @@ public class PptToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error processing PPT file: " + e.getMessage(), e);
+            throw new IOException("Error processing PPT file", e);
         }
     }
 }

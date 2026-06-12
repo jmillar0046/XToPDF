@@ -71,7 +71,7 @@ public class ThreeMfToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error converting 3MF to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting 3MF to PDF", e);
         }
     }
     
@@ -90,7 +90,7 @@ public class ThreeMfToPdfService {
                 }
             }
         } catch (Exception e) {
-            throw new IOException("Error parsing 3MF file: " + e.getMessage(), e);
+            throw new IOException("Error parsing 3MF file", e);
         }
         
         return data;

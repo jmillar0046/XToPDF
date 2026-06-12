@@ -72,7 +72,7 @@ public class X3dToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            throw new IOException("Error converting X3D to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting X3D to PDF", e);
         }
     }
     
@@ -100,7 +100,7 @@ public class X3dToPdfService {
             countNodes(root, data);
             
         } catch (Exception e) {
-            throw new IOException("Error parsing X3D file: " + e.getMessage(), e);
+            throw new IOException("Error parsing X3D file", e);
         }
         
         return data;

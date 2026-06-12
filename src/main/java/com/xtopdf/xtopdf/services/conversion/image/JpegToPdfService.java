@@ -36,8 +36,10 @@ public class JpegToPdfService {
                 builder.addImage(imageBytes);
                 builder.save(pdfFile);
             }
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IOException("Error converting JPEG to PDF: " + e.getMessage(), e);
+            throw new IOException("Error converting JPEG to PDF", e);
         }
     }
 }

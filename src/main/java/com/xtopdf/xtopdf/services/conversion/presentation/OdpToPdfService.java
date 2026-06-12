@@ -42,8 +42,8 @@ public class OdpToPdfService {
             
             builder.save(pdfFile);
         } catch (Exception e) {
-            log.error("Error processing ODP file: {}", e.getMessage(), e);
-            throw new IOException("Error processing ODP file: " + e.getMessage(), e);
+            log.error("Error processing ODP file", e);
+            throw new IOException("Error processing ODP file", e);
         }
     }
 }

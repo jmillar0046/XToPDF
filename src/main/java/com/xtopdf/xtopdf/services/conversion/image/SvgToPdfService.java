@@ -77,7 +77,7 @@ public class SvgToPdfService {
 
             return pngOutput.toByteArray();
         } catch (Exception e) {
-            throw new IOException("Error rendering SVG with Batik: " + e.getMessage(), e);
+            throw new IOException("Error rendering SVG with Batik", e);
         }
     }
 
@@ -108,11 +108,102 @@ public class SvgToPdfService {
             }
             doctypeStart = sanitized.toLowerCase().indexOf("<!doctype");
         }
-        // Remove parameter entity references (%name;)
-        sanitized = sanitized.replaceAll("%[a-zA-Z0-9]+;", "");
+        // Remove parameter entity references (%name;) using indexOf-based loop
+        sanitized = removeParameterEntityReferences(sanitized);
         // Remove custom entity references (preserve standard: amp, lt, gt, quot, apos, numeric)
-        sanitized = sanitized.replaceAll("&(?!amp;|lt;|gt;|quot;|apos;|#)[a-zA-Z0-9]+;", "");
+        sanitized = removeCustomEntityReferences(sanitized);
         return sanitized;
+    }
+
+    /**
+     * Removes parameter entity references (%name;) using an indexOf-based loop
+     * instead of regex to avoid ReDoS vulnerabilities on user content.
+     */
+    private String removeParameterEntityReferences(String input) {
+        StringBuilder result = new StringBuilder(input.length());
+        int i = 0;
+        while (i < input.length()) {
+            if (input.charAt(i) == '%') {
+                // Look for a valid entity pattern: %[a-zA-Z0-9]+;
+                int start = i;
+                i++;
+                boolean valid = false;
+                while (i < input.length()) {
+                    char c = input.charAt(i);
+                    if (c == ';') {
+                        // Found end — valid if we consumed at least one alphanumeric
+                        if (i > start + 1) {
+                            valid = true;
+                        }
+                        i++;
+                        break;
+                    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+                if (!valid) {
+                    // Not a valid entity reference — keep the original characters
+                    result.append(input, start, i);
+                }
+                // If valid, we skip it (remove it)
+            } else {
+                result.append(input.charAt(i));
+                i++;
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Removes custom entity references while preserving standard XML entities
+     * (amp, lt, gt, quot, apos, and numeric &#). Uses indexOf-based loop
+     * instead of regex to avoid ReDoS vulnerabilities on user content.
+     */
+    private String removeCustomEntityReferences(String input) {
+        StringBuilder result = new StringBuilder(input.length());
+        int i = 0;
+        while (i < input.length()) {
+            if (input.charAt(i) == '&') {
+                int start = i;
+                i++;
+                if (i < input.length() && input.charAt(i) == '#') {
+                    // Numeric entity reference (&#...) — always preserve
+                    result.append(input.charAt(start));
+                    continue;
+                }
+                // Collect the entity name
+                int nameStart = i;
+                while (i < input.length()) {
+                    char c = input.charAt(i);
+                    if (c == ';') {
+                        break;
+                    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+                if (i < input.length() && input.charAt(i) == ';' && i > nameStart) {
+                    String name = input.substring(nameStart, i);
+                    i++; // skip the semicolon
+                    // Preserve standard entities
+                    if (name.equals("amp") || name.equals("lt") || name.equals("gt")
+                            || name.equals("quot") || name.equals("apos")) {
+                        result.append('&').append(name).append(';');
+                    }
+                    // Otherwise: remove (don't append)
+                } else {
+                    // Not a valid entity reference — keep original characters
+                    result.append(input, start, i);
+                }
+            } else {
+                result.append(input.charAt(i));
+                i++;
+            }
+        }
+        return result.toString();
     }
 
     /**
