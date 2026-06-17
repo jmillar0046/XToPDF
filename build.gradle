@@ -86,8 +86,8 @@ dependencies {
 	implementation 'org.xhtmlrenderer:flying-saucer-pdf-openpdf:9.3.2'
 
 	// Apache Batik for production-grade SVG rendering
-	implementation 'org.apache.xmlgraphics:batik-transcoder:1.17'
-	implementation 'org.apache.xmlgraphics:batik-codec:1.17'
+	implementation 'org.apache.xmlgraphics:batik-transcoder:1.19'
+	implementation 'org.apache.xmlgraphics:batik-codec:1.19'
 
 	// Distributed Tracing - Micrometer Tracing with OpenTelemetry bridge
 	implementation 'io.micrometer:micrometer-tracing-bridge-otel'
