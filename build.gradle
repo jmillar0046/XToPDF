@@ -45,9 +45,9 @@ configurations.configureEach {
 		force 'org.bouncycastle:bcpkix-jdk18on:1.84'
 		force 'org.bouncycastle:bcutil-jdk18on:1.84'
 		// Fix Tomcat CVEs (digest auth bypass, HTTP/2 validation, security constraints)
-		force 'org.apache.tomcat.embed:tomcat-embed-core:11.0.22'
-		force 'org.apache.tomcat.embed:tomcat-embed-el:11.0.22'
-		force 'org.apache.tomcat.embed:tomcat-embed-websocket:11.0.22'
+		force 'org.apache.tomcat.embed:tomcat-embed-core:11.0.23'
+		force 'org.apache.tomcat.embed:tomcat-embed-el:11.0.23'
+		force 'org.apache.tomcat.embed:tomcat-embed-websocket:11.0.23'
 	}
 }
 
