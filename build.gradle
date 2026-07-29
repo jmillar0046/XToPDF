@@ -45,9 +45,9 @@ configurations.configureEach {
 		force 'org.bouncycastle:bcpkix-jdk18on:1.84'
 		force 'org.bouncycastle:bcutil-jdk18on:1.84'
 		// Fix Tomcat CVEs (digest auth bypass, HTTP/2 validation, security constraints)
-		force 'org.apache.tomcat.embed:tomcat-embed-core:11.0.22'
-		force 'org.apache.tomcat.embed:tomcat-embed-el:11.0.22'
-		force 'org.apache.tomcat.embed:tomcat-embed-websocket:11.0.22'
+		force 'org.apache.tomcat.embed:tomcat-embed-core:11.0.24'
+		force 'org.apache.tomcat.embed:tomcat-embed-el:11.0.24'
+		force 'org.apache.tomcat.embed:tomcat-embed-websocket:11.0.24'
 	}
 }
 
@@ -61,7 +61,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
 	implementation 'org.aspectj:aspectjweaver'
-	implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	implementation 'org.apache.poi:poi:5.5.1'
 	implementation 'org.apache.poi:poi-ooxml:5.5.1'
