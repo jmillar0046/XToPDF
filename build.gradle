@@ -41,9 +41,9 @@ configurations.configureEach {
 		force 'org.apache.jena:jena-base:6.1.0'
 		force 'org.apache.jena:jena-iri3986:6.1.0'
 		force 'org.apache.jena:jena-langtag:6.1.0'
-		force 'org.bouncycastle:bcprov-jdk18on:1.84'
-		force 'org.bouncycastle:bcpkix-jdk18on:1.84'
-		force 'org.bouncycastle:bcutil-jdk18on:1.84'
+		force 'org.bouncycastle:bcprov-jdk18on:1.85.2'
+		force 'org.bouncycastle:bcpkix-jdk18on:1.85.2'
+		force 'org.bouncycastle:bcutil-jdk18on:1.85.2'
 		// Fix Tomcat CVEs (digest auth bypass, HTTP/2 validation, security constraints)
 		force 'org.apache.tomcat.embed:tomcat-embed-core:11.0.24'
 		force 'org.apache.tomcat.embed:tomcat-embed-el:11.0.24'
@@ -67,7 +67,7 @@ dependencies {
 	implementation 'org.apache.poi:poi-ooxml:5.5.1'
 	implementation 'org.apache.poi:poi-scratchpad:5.5.1'
 	implementation 'org.apache.pdfbox:pdfbox:3.0.8'
-	implementation 'org.jsoup:jsoup:1.22.2'
+	implementation 'org.jsoup:jsoup:1.23.1'
 	implementation 'com.github.jai-imageio:jai-imageio-core:1.4.0'
 	implementation 'org.commonmark:commonmark:0.29.0'
 	implementation('org.odftoolkit:odfdom-java:0.13.0') {
